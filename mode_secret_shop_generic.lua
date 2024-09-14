@@ -162,10 +162,16 @@ function IsTeamSuitableToTormentor()
 	local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
 	local FilteredAllies = PAF.FilterTrueUnits(Allies)
 	
+	local AliveAllies = 0
+	
 	for v, ally in pairs(FilteredAllies) do
 		if ally:IsAlive() and GetUnitToLocationDistance(ally, TeamTormentor) <= 7000 then
 			AliveAllies = (AliveAllies + 1)
 		end
+	end
+	
+	if AliveAllies >= 5 then
+		return true
 	end
 	
 	return false
@@ -219,9 +225,12 @@ function GetClosestAllyToWisdomRune()
 		for v, Ally in pairs(FilteredAllies) do
 			if PRoles.GetPRole(Ally, Ally:GetUnitName()) == "SoftSupport" then
 				return Ally
-			--[[elseif PRoles.GetPRole(Ally, Ally:GetUnitName()) == "OffLane"
-			and Ally:IsAlive() then
-				return Ally]]--
+			end
+		end
+		
+		for v, Ally in pairs(FilteredAllies) do
+			if not Ally:IsBot() then
+				return Ally
 			end
 		end
 	else

@@ -6,18 +6,25 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
 
 function PPush.GetPushDesire(bot, lane)
-	local NetworthMin = 0
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane"
-	or PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane"
-	or PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		NetworthMin = 3055
+	local NumBots = 0
+	local BotsReadyToPush = 0
+	
+	local IDs = GetTeamPlayers(bot:GetTeam())
+	for v, ID in pairs(IDs) do
+		if IsPlayerBot(ID) then
+			NumBots = (NumBots + 1)
+			
+			if GetHeroLevel(ID) >= 6 then
+				BotsReadyToPush = (BotsReadyToPush + 1)
+			end
+		end
 	end
-
-	if not P.IsInLaningPhase() and bot:GetLevel() >= 6 and bot:GetNetWorth() >= NetworthMin then
-		return GetPushLaneDesire(lane)
-	else
+	
+	if P.IsInLaningPhase() or BotsReadyToPush < NumBots then
 		return 0
 	end
+	
+	return GetPushLaneDesire(lane)
 end
 
 function PPush.PushThink(bot, lane)
@@ -66,6 +73,21 @@ function PPush.PushThink(bot, lane)
 				return
 			end
 		end
+	end
+	
+	local NearbyLaneCreeps = bot:GetNearbyLaneCreeps(1600, true)
+	local IsBeingTargetedByLaneCreep = false
+		
+	for v, Creep in pairs(NearbyLaneCreeps) do
+		if Creep:CanBeSeen() and Creep:GetAttackTarget() == bot then
+			IsBeingTargetedByLaneCreep = true
+			break
+		end
+	end
+	
+	if IsBeingTargetedByLaneCreep then
+		bot:Action_MoveToLocation(MoveToPos)
+		return
 	end
 	
 	if #NearbyEnemyLaneCreeps > 0 then

@@ -140,14 +140,18 @@ function GetDesire()
 	end
 	
 	if P.IsInLaningPhase() then
-		if IsSuitableToLastHit() then
+		if IsSuitableToLastHit()
+		and not PAF.IsEngaging(bot)
+		and not P.IsRetreating(bot) then
 			if CanLastHitCreep(enemycreeps) and not IsCoreNearby() then
 				desiremode = "LH"
-				return 0.56
+				return BOT_MODE_DESIRE_VERYHIGH
+				--return 0.56
 			end
 			if CanLastHitCreep(allycreeps) then
 				desiremode = "Deny"
-				return 0.56
+				return BOT_MODE_DESIRE_VERYHIGH
+				--return 0.56
 			end
 		end
 	end
@@ -159,7 +163,9 @@ function GetDesire()
 	and not IsCoreNearby()
 	and bot:GetActiveMode() ~= BOT_MODE_DEFEND_TOWER_TOP
 	and bot:GetActiveMode() ~= BOT_MODE_DEFEND_TOWER_MID
-	and bot:GetActiveMode() ~= BOT_MODE_DEFEND_TOWER_BOT then
+	and bot:GetActiveMode() ~= BOT_MODE_DEFEND_TOWER_BOT
+	and not PAF.IsEngaging(bot)
+	and not P.IsRetreating(bot) then
 		if CanLastHitCreep(enemycreeps) then
 			desiremode = "LH"
 			return BOT_MODE_DESIRE_ABSOLUTE * 1.12

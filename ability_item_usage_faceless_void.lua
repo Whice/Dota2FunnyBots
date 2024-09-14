@@ -85,7 +85,7 @@ function UseTimeWalk()
 			
 			if EstimatedDamage > BotTarget:GetHealth() then
 				if GetUnitToUnitDistance(bot, BotTarget) < CastRange
-				and GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 50) then
+				and GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
 				end
 			end
@@ -105,7 +105,7 @@ function UseTimeWalk()
 				local AoECount = PAF.GetUnitsNearTarget(BotTarget:GetLocation(), FilteredEnemies, 800)
 				
 				if AoECount <= 2 then
-					if GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 50) then
+					if GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
 						return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
 					end
 				end

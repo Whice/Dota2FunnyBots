@@ -28,6 +28,7 @@ PRoles["SafeLane"] = {
 	"npc_dota_hero_zuus",
 	"npc_dota_hero_riki",
 	"npc_dota_hero_lina",
+	"npc_dota_hero_weaver",
 }
 
 PRoles["MidLane"] = {
@@ -56,6 +57,7 @@ PRoles["MidLane"] = {
 	"npc_dota_hero_pudge",
 	"npc_dota_hero_zuus",
 	"npc_dota_hero_leshrac",
+	"npc_dota_hero_magnataur",
 }
 
 PRoles["OffLane"] = {
@@ -89,6 +91,7 @@ PRoles["OffLane"] = {
 	"npc_dota_hero_skeleton_king",
 	"npc_dota_hero_kunkka",
 	"npc_dota_hero_shredder",
+	"npc_dota_hero_magnataur",
 }
 
 PRoles["SoftSupport"] = {
@@ -168,6 +171,30 @@ PRoles["SphereHeroes"] = {
 	"npc_dota_hero_doom_bringer",
 }
 
+PRoles["StrongPassiveHeroes"] = {
+	"npc_dota_hero_phantom_assassin",
+	"npc_dota_hero_ursa",
+	"npc_dota_hero_bristleback",
+	"npc_dota_hero_spectre",
+	"npc_dota_hero_enchantress",
+	"npc_dota_hero_huskar",
+	"npc_dota_hero_lina",
+	"npc_dota_hero_troll_warlord",
+	"npc_dota_hero_shredder",
+	"npc_dota_hero_tidehunter",
+}
+
+PRoles["EvasionArmorHeroes"] = {
+	"npc_dota_hero_phantom_assassin",
+	"npc_dota_hero_windrunner",
+	"npc_dota_hero_riki",
+	"npc_dota_hero_alchemist",
+	"npc_dota_hero_brewmaster",
+	"npc_dota_hero_terrorblade",
+	"npc_dota_hero_dragon_knight",
+	"npc_dota_hero_primal_beast",
+}
+
 function PRoles.GetPRole(bot, hero)
 	for i = 1, #PRoles["SafeLane"] do
 		if PRoles['SafeLane'][i] == hero then
@@ -241,6 +268,38 @@ function PRoles.ShouldBuySphere(FirstChoice)
 		for x, SummonHero in pairs(PRoles["SphereHeroes"]) do
 			if EnemyName == SummonHero then
 				return "item_sphere"
+			end
+		end
+	end
+	
+	return FirstChoice
+end
+
+function PRoles.ShouldBuySilverEdge(FirstChoice)
+	local EnemyPlayers = GetTeamPlayers(GetOpposingTeam())
+	
+	for v, Hero in pairs(EnemyPlayers) do
+		local EnemyName = GetSelectedHeroName(Hero)
+		
+		for x, SummonHero in pairs(PRoles["StrongPassiveHeroes"]) do
+			if EnemyName == SummonHero then
+				return "item_silver_edge"
+			end
+		end
+	end
+	
+	return FirstChoice
+end
+
+function PRoles.ShouldBuyMKB(FirstChoice)
+	local EnemyPlayers = GetTeamPlayers(GetOpposingTeam())
+	
+	for v, Hero in pairs(EnemyPlayers) do
+		local EnemyName = GetSelectedHeroName(Hero)
+		
+		for x, SummonHero in pairs(PRoles["EvasionArmorHeroes"]) do
+			if EnemyName == SummonHero then
+				return "item_monkey_king_bar"
 			end
 		end
 	end

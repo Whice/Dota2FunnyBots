@@ -77,10 +77,9 @@ function X.GetHeroItemBuild()
 		CoreItem,
 		"item_blink",
 		"item_ultimate_scepter",
-		"item_eternal_shroud",
+		"item_black_king_bar",
 		"item_assault",
 		"item_ultimate_scepter_2",
-		"item_black_king_bar",
 		"item_overwhelming_blink",
 		}
 	end

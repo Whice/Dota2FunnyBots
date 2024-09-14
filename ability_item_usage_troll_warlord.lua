@@ -23,7 +23,7 @@ function ItemUsageThink()
 	ability_item_usage_generic.ItemUsageThink();
 end
 
-local BerserkersRage = bot:GetAbilityByName("troll_warlord_berserkers_rage")
+local BerserkersRage = bot:GetAbilityByName("troll_warlord_switch_stance")
 local WhirlingAxesRanged = bot:GetAbilityByName("troll_warlord_whirling_axes_ranged")
 local WhirlingAxesMelee = bot:GetAbilityByName("troll_warlord_whirling_axes_melee")
 local Fervor = bot:GetAbilityByName("troll_warlord_fervor")

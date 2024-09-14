@@ -18,6 +18,14 @@ local AllRunes = {BottomBounty, TopRiver, TopBounty, BottomRiver}
 
 local RuneToCheck = nil
 
+local Radiant15Pos = Vector( 1283.432861, -4635.932617, 256.000000 )
+local Radiant2Pos = Vector( -1914.282593, 67.686188, 128.000000 )
+local Radiant34Pos = Vector( -3421.025635, 516.299316, 256.000000 )
+local Dire1Pos = Vector( -1832.766724, 3072.584961, 256.000000 )
+local Dire5Pos = Vector( -1056.839233, 3136.392578, 256.000000 )
+local Dire2Pos = Vector( 1150.164185, -317.183716, 128.000000 )
+local Dire34Pos = Vector( 2722.729980, -1398.364258, 256.000000 )
+
 function GetDesire()
 	if RuneToCheck ~= nil and not IsAllyWithBottleNearby(RuneToCheck) then
 		if GetUnitToLocationDistance(bot, GetRuneSpawnLocation(RuneToCheck)) <= 50 then
@@ -25,8 +33,8 @@ function GetDesire()
 		end
 	end
 
-	if ShouldMoveToStartBounty() then
-		return BOT_MODE_DESIRE_HIGH
+	if ShouldMoveToPregameLoc() or ShouldMoveToStartBounty() then
+		return BOT_MODE_DESIRE_MODERATE
 	end
 	
 	if AreWaterRunesActive() then
@@ -88,20 +96,34 @@ function GetDesire()
 end
 
 function Think()
+	if ShouldMoveToPregameLoc() then
+		local PregameLoc = GetPregameLoc()
+		
+		if GetUnitToLocationDistance(bot, PregameLoc) > 300 then
+			bot:Action_MoveToLocation(PregameLoc)
+		else
+			bot:Action_MoveToLocation(PregameLoc+RandomVector(300))
+		end
+	end
+	
 	if ShouldMoveToStartBounty() then
 		if bot:GetTeam() == TEAM_RADIANT then
 			if bot:GetAssignedLane() == LANE_TOP
 			or bot:GetAssignedLane() == LANE_MID then
 				bot:Action_MoveToLocation(GetRuneSpawnLocation(TopRiver))
+				return
 			elseif bot:GetAssignedLane() == LANE_BOT then
 				bot:Action_MoveToLocation(GetRuneSpawnLocation(BottomBounty))
+				return
 			end
 		elseif bot:GetTeam() == TEAM_DIRE then
 			if bot:GetAssignedLane() == LANE_BOT
 			or bot:GetAssignedLane() == LANE_MID then
 				bot:Action_MoveToLocation(GetRuneSpawnLocation(BottomRiver))
+				return
 			elseif bot:GetAssignedLane() == LANE_TOP then
 				bot:Action_MoveToLocation(GetRuneSpawnLocation(TopBounty))
+				return
 			end
 		end
 		
@@ -132,7 +154,7 @@ function ShouldCheckRune(Rune)
 end
 
 function ShouldMoveToStartBounty()
-	if DotaTime() >= -20 and DotaTime() <= 0 then
+	if DotaTime() >= -10 and DotaTime() <= 0 then
 		return true
 	end
 	
@@ -170,4 +192,52 @@ function IsAllyWithBottleNearby(Rune)
 	end
 	
 	return false
+end
+
+function ShouldMoveToPregameLoc()
+	if DotaTime() < -10 then
+		return true
+	end
+	
+	return false
+end
+
+function GetPregameLoc()
+	if bot:GetTeam() == TEAM_RADIANT then
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+			return Radiant15Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+			return Radiant2Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
+			return Radiant34Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
+			return Radiant34Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
+			return Radiant15Pos
+		end
+	end
+	
+	if bot:GetTeam() == TEAM_DIRE then
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+			return Dire1Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+			return Dire2Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
+			return Dire34Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
+			return Dire34Pos
+		end
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
+			return Dire5Pos
+		end
+	end
+	
+	return nil
 end

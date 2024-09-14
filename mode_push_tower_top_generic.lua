@@ -12,7 +12,7 @@ local bot = GetBot()
 end]]--
 
 function OnStart()
-	if (DotaTime() - LastMessageTime) > 30 then
+	if (DotaTime() - LastMessageTime) > 60 then
 		LastMessageTime = DotaTime()
 		bot:ActionImmediate_Chat("Pushing top", false);
 	end

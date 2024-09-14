@@ -76,10 +76,11 @@ function X.GetHeroItemBuild()
 		"item_phylactery",
 		
 		CoreItem,
+		"item_ultimate_scepter",
+		"item_octarine_core",
 		"item_black_king_bar",
 		"item_angels_demise",
 		"item_assault",
-		"item_nullifier",
 		"item_ultimate_scepter_2",
 		}
 	end

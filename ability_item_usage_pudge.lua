@@ -206,7 +206,7 @@ function UseRot()
 	if not Rot:IsFullyCastable() then return 0 end
 	if bot:IsSilenced() or bot:IsHexed() or bot:HasModifier("modifier_doom_bringer_doom") then return 0 end
 	
-	local CastRange = (Rot:GetSpecialValueInt('rot_radius') + 100)
+	local CastRange = (Rot:GetSpecialValueInt('rot_radius') + 25)
 	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	

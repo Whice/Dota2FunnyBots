@@ -65,6 +65,8 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuyMKB("item_bloodthorn")
+		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
@@ -75,16 +77,16 @@ function X.GetHeroItemBuild()
 		"item_armlet",
 		"item_radiance",
 		"item_blink",
-		"item_orchid",
 		"item_ultimate_scepter_2",
 		"item_black_king_bar",
-		"item_bloodthorn",
+		SituationalItem1,
 		"item_overwhelming_blink",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
 		local CoreItem = PRoles.GetAOEItem()
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_desolator")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -95,7 +97,7 @@ function X.GetHeroItemBuild()
 		"item_hand_of_midas",
 		
 		CoreItem,
-		"item_desolator",
+		SituationalItem1,
 		"item_blink",
 		"item_heavens_halberd",
 		"item_assault",

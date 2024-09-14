@@ -5,7 +5,7 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
 local SplitShot = bot:GetAbilityByName("medusa_split_shot")
 local MysticSnake = bot:GetAbilityByName("medusa_mystic_snake")
-local ManaShield = bot:GetAbilityByName("medusa_mana_shield")
+local GorgonGrasp = bot:GetAbilityByName("medusa_gorgon_grasp")
 local StoneGaze = bot:GetAbilityByName("medusa_stone_gaze")
 
 function X.GetHeroLevelPoints()
@@ -13,7 +13,7 @@ function X.GetHeroLevelPoints()
 	
 	table.insert(abilities, SplitShot:GetName())
 	table.insert(abilities, MysticSnake:GetName())
-	table.insert(abilities, ManaShield:GetName())
+	table.insert(abilities, GorgonGrasp:GetName())
 	table.insert(abilities, StoneGaze:GetName())
 	
 	local talents = {}
@@ -27,18 +27,18 @@ function X.GetHeroLevelPoints()
 	
 	local SkillPoints = {
 	abilities[2], -- Level 1
-	abilities[1], -- Level 2
+	abilities[3], -- Level 2
 	abilities[2], -- Level 3
-	abilities[1], -- Level 4
+	abilities[3], -- Level 4
 	abilities[2], -- Level 5
-	abilities[1], -- Level 6
+	abilities[4], -- Level 6
 	abilities[2], -- Level 7
 	abilities[1], -- Level 8
-	abilities[4], -- Level 9
+	abilities[1], -- Level 9
 	talents[1],   -- Level 10
-	abilities[3], -- Level 11
+	abilities[1], -- Level 11
 	abilities[3], -- Level 12
-	abilities[3], -- Level 13
+	abilities[1], -- Level 13
 	abilities[3], -- Level 14
 	talents[4],   -- Level 15
 	abilities[4], -- Level 16
@@ -65,16 +65,20 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_butterfly")
+		local SituationalItem3 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		
 		ItemBuild = { 
 		"item_ring_of_basilius",
-		"item_null_talisman",
-		"item_power_treads",
+		"item_arcane_boots",
+		"item_wraith_band",
 	
-		"item_manta",
-		"item_butterfly",
+		SituationalItem1,
+		SituationalItem2,
 		"item_skadi",
 		"item_black_king_bar",
-		"item_greater_crit",
+		SituationalItem3,
 		}
 	end
 	

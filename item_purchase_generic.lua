@@ -162,8 +162,7 @@ local declarePosition = false
 local listset = false
 
 function ItemPurchaseThink()  
-	PChat.ChatModule()
-	PAF.AcquireTarget()
+	--PChat.ChatModule()
 
 	if buystartingitems == false then
 		if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then

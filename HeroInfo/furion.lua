@@ -66,6 +66,7 @@ function X.GetHeroItemBuild()
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
 		local CoreItem = PRoles.GetAOEItem()
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -75,10 +76,10 @@ function X.GetHeroItemBuild()
 		"item_power_treads",
 		
 		CoreItem,
-		"item_heavens_halberd",
+		"item_gungir",
 		"item_black_king_bar",
 		"item_assault",
-		"item_greater_crit",
+		SituationalItem1,
 		"item_ultimate_scepter_2",
 		}
 	end

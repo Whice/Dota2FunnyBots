@@ -369,7 +369,7 @@ function IsSuitableToWard()
 	local mode = bot:GetActiveMode();
 	if ( ( mode == BOT_MODE_RETREAT and bot:GetActiveModeDesire() >= BOT_MODE_DESIRE_HIGH )
 		or mode == BOT_MODE_ATTACK
-		or mode == BOT_MODE_RUNE 
+		or (mode == BOT_MODE_RUNE and DotaTime() > 0) 
 		or mode == BOT_MODE_DEFEND_ALLY
 		or mode == BOT_MODE_DEFEND_TOWER_TOP
 		or mode == BOT_MODE_DEFEND_TOWER_MID

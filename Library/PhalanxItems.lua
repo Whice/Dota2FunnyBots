@@ -289,7 +289,7 @@ PItems["item_mekansm"] = { "item_chainmail"; "item_headdress"; "item_recipe_meka
 
 PItems["item_mjollnir"] = { "item_maelstrom"; "item_hyperstone"; "item_recipe_mjollnir" }
 
-PItems["item_monkey_king_bar"] = { "item_quarterstaff"; "item_javelin"; "item_demon_edge" }
+PItems["item_monkey_king_bar"] = { "item_demon_edge"; "item_javelin"; "item_blitz_knuckles"; "item_recipe_monkey_king_bar" }
 
 PItems["item_moon_shard"] = { "item_hyperstone"; "item_hyperstone"}
 
@@ -359,7 +359,7 @@ PItems["item_soul_ring"] = { "item_ring_of_protection"; "item_gauntlets"; "item_
 
 PItems["item_tranquil_boots"] = { "item_wind_lace"; "item_boots"; "item_ring_of_regen" }
 
-PItems["item_urn_of_shadows"] = { "item_sobi_mask" ; "item_circlet"; "item_ring_of_protection"; "item_recipe_urn_of_shadows" }
+PItems["item_urn_of_shadows"] = { "item_sobi_mask" ; "item_ring_of_protection"; "item_fluffy_hat"; "item_recipe_urn_of_shadows" }
 
 PItems["item_vanguard"] = { "item_vitality_booster"; "item_ring_of_health"  }
 
@@ -376,7 +376,7 @@ PItems["item_meteor_hammer"] = { "item_crown"; "item_kaya"; "item_recipe_meteor_
 --aeon disk
 PItems["item_aeon_disk"] = { "item_vitality_booster"; "item_energy_booster"; "item_recipe_aeon_disk" }
 
-PItems["item_spirit_vessel"] = { "item_urn_of_shadows"; "item_crown"; "item_fluffy_hat"; "item_recipe_spirit_vessel" }
+PItems["item_spirit_vessel"] = { "item_urn_of_shadows"; "item_vitality_booster"; "item_recipe_spirit_vessel" }
 
 PItems["item_nullifier"] = { "item_helm_of_iron_will"; "item_relic" }
 --kaya

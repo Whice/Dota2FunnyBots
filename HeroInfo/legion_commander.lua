@@ -8,9 +8,6 @@ local PressTheAttack = bot:GetAbilityByName("legion_commander_press_the_attack")
 local MomentOfCourage = bot:GetAbilityByName("legion_commander_moment_of_courage")
 local Duel = bot:GetAbilityByName("legion_commander_duel")
 
-local AttackRange
-local manathreshold
-
 function X.GetHeroLevelPoints()
 	local abilities = {}
 	

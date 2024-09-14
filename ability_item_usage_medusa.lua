@@ -25,12 +25,12 @@ end
 
 local SplitShot = bot:GetAbilityByName("medusa_split_shot")
 local MysticSnake = bot:GetAbilityByName("medusa_mystic_snake")
-local ManaShield = bot:GetAbilityByName("medusa_mana_shield")
+local GorgonGrasp = bot:GetAbilityByName("medusa_gorgon_grasp")
 local StoneGaze = bot:GetAbilityByName("medusa_stone_gaze")
 
 local SplitShotDesire = 0
 local MysticSnakeDesire = 0
-local ManaShieldDesire = 0
+local GorgonGraspDesire = 0
 local StoneGazeDesire = 0
 
 local AttackRange
@@ -56,6 +56,12 @@ function AbilityUsageThink()
 	MysticSnakeDesire, MysticSnakeTarget = UseMysticSnake()
 	if MysticSnakeDesire > 0 then
 		bot:Action_UseAbilityOnEntity(MysticSnake, MysticSnakeTarget)
+		return
+	end
+	
+	GorgonGraspDesire, GorgonGraspTarget = UseGorgonGrasp()
+	if GorgonGraspDesire > 0 then
+		bot:Action_UseAbilityOnLocation(GorgonGrasp, GorgonGraspTarget)
 		return
 	end
 end
@@ -168,6 +174,25 @@ function UseMysticSnake()
 		if PAF.IsRoshan(AttackTarget)
 		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
 			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		end
+	end
+	
+	return 0
+end
+
+function UseGorgonGrasp()
+	if not GorgonGrasp:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local CR = GorgonGrasp:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			end
 		end
 	end
 	

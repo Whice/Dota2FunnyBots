@@ -12,13 +12,15 @@ function GetDesire()
 		NetworthMin = 3055
 	end
 	
-	if P.IsInLaningPhase()
+	if (P.IsInLaningPhase()
 	or bot:GetLevel() < 6
-	or bot:GetNetWorth() < NetworthMin then
+	or bot:GetNetWorth() < NetworthMin)
+	and DotaTime() >= 0 then
 		return BOT_MODE_DESIRE_MODERATE
 	end
 	
-	if DotaTime() < 60 * 15 then
+	if DotaTime() < 60 * 15
+	and DotaTime() >= 0 then
 		return BOT_MODE_DESIRE_LOW
 	end
 	

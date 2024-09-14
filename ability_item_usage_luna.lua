@@ -25,12 +25,12 @@ end
 
 local LucentBeam = bot:GetAbilityByName("luna_lucent_beam")
 local MoonGlaives = bot:GetAbilityByName("luna_moon_glaive")
-local LunarBlessing = bot:GetAbilityByName("luna_lunar_blessing")
+local LunarOrbit = bot:GetAbilityByName("luna_lunar_orbit")
 local Eclipse = bot:GetAbilityByName("luna_eclipse")
 
 local LucentBeamDesire = 0
 local EclipseDesire = 0
-local MoonGlaivesDesire = 0
+local LunarOrbitDesire = 0
 
 local AttackRange
 local BotTarget
@@ -43,12 +43,12 @@ function AbilityUsageThink()
 	manathreshold = 100
 	manathreshold = manathreshold + LucentBeam:GetManaCost()
 	manathreshold = manathreshold + Eclipse:GetManaCost()
-	manathreshold = manathreshold + MoonGlaives:GetManaCost()
+	manathreshold = manathreshold + LunarOrbit:GetManaCost()
 	
 	-- The order to use abilities in
-	MoonGlaivesDesire = UseMoonGlaives()
-	if MoonGlaivesDesire > 0 then
-		bot:Action_UseAbility(MoonGlaives)
+	LunarOrbitDesire = UseLunarOrbit()
+	if LunarOrbitDesire > 0 then
+		bot:Action_UseAbility(LunarOrbit)
 		return
 	end
 	
@@ -121,19 +121,16 @@ function UseEclipse()
 	return 0
 end
 
-function UseMoonGlaives()
-	if not MoonGlaives:IsFullyCastable() then return 0 end
-	if MoonGlaives:IsPassive() then return 0 end
+function UseLunarOrbit()
+	if not LunarOrbit:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local Radius = 150
+	local Radius = LunarOrbit:GetSpecialValueInt("rotating_glaives_movement_radius")
 	local EnemiesWithinRange = bot:GetNearbyHeroes(Radius, true, BOT_MODE_NONE)
 	
 	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH
-			end
+		if #EnemiesWithinRange >= 1 then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	

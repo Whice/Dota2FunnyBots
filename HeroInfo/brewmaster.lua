@@ -78,7 +78,7 @@ function X.GetHeroItemBuild()
 		
 		CoreItem,
 		"item_radiance",
-		"item_octarine_core",
+		"item_manta",
 		"item_assault",
 		"item_black_king_bar",
 		"item_ultimate_scepter_2",

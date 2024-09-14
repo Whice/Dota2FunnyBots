@@ -77,10 +77,9 @@ function X.GetHeroItemBuild()
 		"item_soul_ring",
 		
 		CoreItem,
+		"item_mage_slayer",
 		"item_blink",
 		"item_black_king_bar",
-		"item_ultimate_scepter",
-		"item_manta",
 		"item_ultimate_scepter_2",
 		"item_assault",
 		"item_overwhelming_blink",

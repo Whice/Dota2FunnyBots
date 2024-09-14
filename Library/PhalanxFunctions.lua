@@ -80,15 +80,38 @@ function P.IsMeepoClone(unit)
 	return false
 end
 
-function P.IllusionTargetTEST(hMinionUnit, bot)
-	local BotTarget = bot:GetAttackTarget()
+--[[function P.IllusionTargetTEST(hMinionUnit, bot)
+	local Target = nil
+	local Mode = bot:GetActiveMode()
 	
-	if BotTarget ~= nil then
-		return BotTarget
+	local BotLocation = bot:GetLocation()
+	
+	if PAF.IsEngaging(bot) then
+		local BotTarget = bot:GetTarget()
+		
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			Target = BotTarget
+		end
+	elseif P.IsRetreating(bot) then
+		local Enemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(Enemies)
+		
+		if #FilteredEnemies > 0 then
+			Target = PAF.GetWeakestUnit(FilteredEnemies)
+		end
+	elseif P.IsFarming(bot)
+	or P.IsPushing(bot)
+	or P.IsDefending(bot)
+	or Mode == BOT_MODE_ROSHAN then
+		local AttackTarget = bot:GetAttackTarget()
+		
+		if AttackTarget ~= nil
+		and AttackTarget:IsAlive()
+		and AttackTarget:CanBeSeen() then
+			Target = BotTarget
+		end
 	end
-	
-	return nil
-end
+end]]--
 
 function P.IllusionTarget(hMinionUnit, bot)
 	local enemies = bot:GetNearbyHeroes(1000, true, BOT_MODE_NONE)

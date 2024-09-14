@@ -27,13 +27,13 @@ local VenomousGale = bot:GetAbilityByName("venomancer_venomous_gale")
 local PoisonSting = bot:GetAbilityByName("venomancer_poison_sting")
 local PlagueWard = bot:GetAbilityByName("venomancer_plague_ward")
 local NoxiousPlague = bot:GetAbilityByName("venomancer_noxious_plague")
-local PoisonNova = bot:GetAbilityByName("venomancer_poison_nova")
-local LatentToxicity = bot:GetAbilityByName("venomancer_latent_poison")
+--local PoisonNova = bot:GetAbilityByName("venomancer_poison_nova")
+--local LatentToxicity = bot:GetAbilityByName("venomancer_latent_poison")
 
 local VenomousGaleDesire = 0
 local PlagueWardDesire = 0
 local NoxiousPlagueDesire = 0
-local LatentToxicityDesire = 0
+--local LatentToxicityDesire = 0
 
 local AttackRange
 local BotTarget
@@ -55,11 +55,11 @@ function AbilityUsageThink()
 		return
 	end
 	
-	LatentToxicityDesire, LatentToxicityTarget = UseLatentToxicity()
+	--[[LatentToxicityDesire, LatentToxicityTarget = UseLatentToxicity()
 	if LatentToxicityDesire > 0 then
 		bot:Action_UseAbilityOnEntity(LatentToxicity, LatentToxicityTarget)
 		return
-	end
+	end]]--
 	
 	PlagueWardDesire, PlagueWardTarget = UsePlagueWard()
 	if PlagueWardDesire > 0 then
@@ -133,7 +133,7 @@ function UseNoxiousPlague()
 	return 0
 end
 
-function UseLatentToxicity()
+--[[function UseLatentToxicity()
 	if not LatentToxicity:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
@@ -159,4 +159,4 @@ function UseLatentToxicity()
 	end
 	
 	return 0
-end
+end]]--

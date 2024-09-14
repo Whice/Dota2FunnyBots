@@ -65,6 +65,9 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_nullifier")
+		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
@@ -73,9 +76,9 @@ function X.GetHeroItemBuild()
 		"item_power_treads",
 		
 		"item_diffusal_blade",
-		"item_manta",
+		SituationalItem1,
 		"item_skadi",
-		"item_nullifier",
+		SituationalItem2,
 		"item_greater_crit",
 		"item_disperser",
 		"item_ultimate_scepter_2",
@@ -83,6 +86,9 @@ function X.GetHeroItemBuild()
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_nullifier")
+		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
@@ -91,9 +97,9 @@ function X.GetHeroItemBuild()
 		"item_power_treads",
 		
 		"item_diffusal_blade",
-		"item_manta",
+		SituationalItem1,
 		"item_skadi",
-		"item_nullifier",
+		SituationalItem2,
 		"item_greater_crit",
 		"item_disperser",
 		"item_ultimate_scepter_2",

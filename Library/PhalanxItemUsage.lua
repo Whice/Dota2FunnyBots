@@ -938,49 +938,64 @@ end
 --item_blink
 PIU.Use['item_blink'] = function(item, bot, mode, extra_range)
 
-	if bot:IsRooted() then return BOT_ACTION_DESIRE_NONE end
+	if bot:IsRooted() then return 0 end
+	
+	local nCastRange = (1200 + extra_range)
+	if item:GetName() == "item_arcane_blink" then
+		nCastRange = (1400 + extra_range)
+	end
 
-	local nCastRange = 1200 + extra_range;
-	if P.IsStuck(bot) == true 
-	then
-		local loc = P.GetEscapeLoc();
-		return BOT_ACTION_DESIRE_ABSOLUTE, bot:GetXUnitsTowardsLocation( loc, nCastRange ), 'point';
+	local AttackRange = bot:GetAttackRange()
+	local Allies = bot:GetNearbyHeroes(1600, false, BOT_MODE_NONE)
+	local FilteredAllies = PAF.FilterTrueUnits(Allies)
+	local Enemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(Enemies)
+	
+	if P.IsRetreating(bot) then
+		return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PAF.GetFountainLocation(bot), nCastRange), 'point'
 	end
 	
-	if P.IsRetreating(bot)
-		and ( bot:WasRecentlyDamagedByAnyHero(5.0) == true or bot:WasRecentlyDamagedByTower(5.0) == true )
-	then	
-		local enemies = bot:GetNearbyHeroes(1300, true, BOT_MODE_NONE)
-		if #enemies > 0 then
-			local loc = P.GetEscapeLoc();
-			return BOT_ACTION_DESIRE_ABSOLUTE, bot:GetXUnitsTowardsLocation( loc, nCastRange ), 'point';
-		end
-		
-		if PIU.CanDodgeProjectile(bot, 250) == true 
-		then
-			local loc = P.GetEscapeLoc();
-			return BOT_ACTION_DESIRE_ABSOLUTE, bot:GetXUnitsTowardsLocation( loc, nCastRange ), 'point';
-		end
-		
-	end	
+	local projectiles = bot:GetIncomingTrackingProjectiles()
 	
-	if 	P.IsGoingOnSomeone(bot)
-	then
-		local target = bot:GetTarget();
-		if  P.IsValidTarget(target) 
-			and P.IsInRange(target, bot, bot:GetAttackRange() + 200) == false 
-			and P.IsInRange(target, bot, nCastRange) == true
-		then
-			local allies = target:GetNearbyHeroes(1300, true, BOT_MODE_NONE);
-			local enemies = target:GetNearbyHeroes(1300, false, BOT_MODE_NONE);
-			if ( enemies ~= nil and allies ~= nil and #allies >= #enemies ) or bot:GetStunDuration(true) > 0.5 
-			then
-				return BOT_ACTION_DESIRE_ABSOLUTE, target:GetLocation()+RandomVector(150), 'point';
-			end
+	for v, proj in pairs(projectiles) do
+		if GetUnitToLocationDistance(bot, proj.location) <= 200
+		and proj.is_dodgeable
+		and proj.is_attack == false then
+			return BOT_ACTION_DESIRE_ABSOLUTE, (bot:GetLocation()+RandomVector(150)), 'point'
 		end
-		if PIU.CanDodgeProjectile(bot, 250) == true 
-		then
-			return BOT_ACTION_DESIRE_ABSOLUTE, bot:GetLocation()+RandomVector(250), 'point';
+	end
+	
+	if PAF.IsEngaging(bot) then
+		local BotTarget = bot:GetTarget()
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			local CombinedAllyPower = PAF.CombineOffensivePower(FilteredAllies, true)
+			local CombinedEnemyPower = PAF.CombineOffensivePower(FilteredEnemies, true)
+			
+			if CombinedAllyPower >= CombinedEnemyPower then
+				if GetUnitToUnitDistance(bot, BotTarget) <= nCastRange
+				and GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
+					if bot:GetUnitName() == "npc_dota_hero_magnataur" then
+						local Skewer = bot:GetAbilityByName("magnataur_skewer")
+						if Skewer:IsFullyCastable() then
+							local Radius = Skewer:GetSpecialValueInt("skewer_radius")
+							return BOT_ACTION_DESIRE_HIGH, BotTarget:GetXUnitsTowardsLocation(PAF.GetFountainLocation(BotTarget), Radius), 'point'
+						end
+					end
+					
+					return BOT_ACTION_DESIRE_ABSOLUTE, BotTarget:GetLocation(), 'point'
+				end
+			end
+			
+			if PAF.IsChasing(bot, BotTarget) then
+				local AoECount = PAF.GetUnitsNearTarget(BotTarget:GetLocation(), FilteredEnemies, 800)
+					
+				if AoECount <= 2 then
+					if GetUnitToUnitDistance(bot, BotTarget) <= (nCastRange + (AttackRange + 150))
+					and GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
+						return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1), 'point'
+					end
+				end
+			end
 		end
 	end
 	
@@ -1963,7 +1978,7 @@ PIU.Use['item_manta'] = function(item, bot, mode, extra_range)
 		end
 	end
 	
-	if (bot:IsSilenced() and not bot:HasModifier("modifier_item_mask_of_madness"))
+	if (bot:IsSilenced() and not bot:HasModifier("modifier_item_mask_of_madness_berserk"))
 	or bot:IsRooted() then
 		return BOT_ACTION_DESIRE_ABSOLUTE, nil, 'no_target'
 	end
@@ -1990,7 +2005,7 @@ PIU.Use['item_black_king_bar'] = function(item, bot, mode, extra_range)
 			return BOT_ACTION_DESIRE_ABSOLUTE, nil, 'no_target'
 		end
 		
-		if (bot:IsSilenced() and not bot:HasModifier("modifier_item_mask_of_madness"))
+		if (bot:IsSilenced() and not bot:HasModifier("modifier_item_mask_of_madness_berserk"))
 		or bot:IsRooted() then
 			return BOT_ACTION_DESIRE_ABSOLUTE, nil, 'no_target'
 		end
@@ -2166,10 +2181,23 @@ end
 PIU.Use['item_invis_sword'] = function(item, bot, mode, extra_range)
 	if P.IsRetreating(bot)
 	or bot:GetActiveMode() == BOT_MODE_ROAM then
-		return BOT_ACTION_DESIRE_ABSOLUTE, nil, 'no_target';
+		return BOT_ACTION_DESIRE_ABSOLUTE, nil, 'no_target'
 	end
 	
-	return BOT_ACTION_DESIRE_NONE;
+	local AttackTarget = bot:GetAttackTarget()
+	local AttackRange = bot:GetAttackRange()
+	
+	if PAF.IsValidHeroAndNotIllusion(AttackTarget) then
+		for v, PassiveHero in pairs(PRoles["StrongPassiveHeroes"]) do
+			if AttackTarget:GetUnitName() == PassiveHero then
+				if GetUnitToUnitDistance(bot, AttackTarget) <= (AttackRange + 50) then
+					return BOT_ACTION_DESIRE_ABSOLUTE, nil, 'no_target'
+				end
+			end
+		end
+	end
+	
+	return BOT_ACTION_DESIRE_NONE
 end
 
 PIU.Use['item_smoke_of_deceit'] = function(item, bot, mode, extra_range)

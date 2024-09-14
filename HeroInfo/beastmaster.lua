@@ -79,8 +79,8 @@ function X.GetHeroItemBuild()
 		
 		CoreItem,
 		"item_ultimate_scepter",
-		"item_black_king_bar",
 		"item_blink",
+		"item_black_king_bar",
 		"item_assault",
 		"item_ultimate_scepter_2",
 		"item_heavens_halberd",

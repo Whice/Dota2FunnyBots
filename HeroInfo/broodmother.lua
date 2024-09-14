@@ -84,6 +84,8 @@ function X.GetHeroItemBuild()
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_harpoon")
+		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
@@ -95,7 +97,7 @@ function X.GetHeroItemBuild()
 		"item_bloodthorn",
 		"item_black_king_bar",
 		"item_nullifier",
-		"item_harpoon",
+		SituationalItem1,
 		"item_sheepstick",
 		}
 	end

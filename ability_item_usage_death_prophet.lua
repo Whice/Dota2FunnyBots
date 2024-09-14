@@ -199,7 +199,8 @@ function UseExorcism()
 	local attacktarget = bot:GetAttackTarget()
 	
 	if attacktarget ~= nil then
-		if attacktarget:IsBuilding() then
+		if attacktarget:IsBuilding()
+		and attacktarget:GetTeam() ~= bot:GetTeam() then
 			return BOT_ACTION_DESIRE_HIGH
 		end
 		

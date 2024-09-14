@@ -66,35 +66,40 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_kaya_and_sange")
+		
 		ItemBuild = { 
 		"item_null_talisman",
 		"item_magic_wand",
 		"item_arcane_boots",
 		
 		"item_phylactery",
-		"item_manta",
 		"item_octarine_core",
-		"item_kaya_and_sange",
-		"item_angels_demise",
+		"item_ultimate_scepter",
+		SituationalItem1,
 		"item_wind_waker",
+		"item_angels_demise",
 		"item_ultimate_scepter_2",
+		"item_refresher",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_yasha_and_kaya")
+		
 		ItemBuild = { 
 		"item_null_talisman",
 		"item_magic_wand",
 		"item_power_treads",
 		
 		"item_phylactery",
-		"item_manta",
-		"item_hurricane_pike",
-		"item_kaya_and_sange",
-		"item_moon_shard",
+		"item_octarine_core",
+		"item_ultimate_scepter",
+		SituationalItem1,
 		"item_wind_waker",
 		"item_angels_demise",
 		"item_ultimate_scepter_2",
+		"item_refresher",
 		}
 	end
 	

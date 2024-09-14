@@ -66,6 +66,9 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_butterfly")
+		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
@@ -74,10 +77,11 @@ function X.GetHeroItemBuild()
 		"item_power_treads",
 	
 		"item_dragon_lance",
-		"item_manta",
-		"item_butterfly",
+		SituationalItem1,
+		SituationalItem2,
 		"item_skadi",
 		"item_black_king_bar",
+		"item_hurricane_pike",
 		}
 	end
 	

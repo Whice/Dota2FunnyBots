@@ -77,9 +77,9 @@ function X.GetHeroItemBuild()
 		"item_pipe",
 		"item_eternal_shroud",
 		"item_blink",
-		"item_ultimate_scepter",
-		"item_heavens_halberd",
+		"item_sange_and_yasha",
 		"item_assault",
+		"item_ultimate_scepter_2",
 		"item_overwhelming_blink",
 		}
 	end

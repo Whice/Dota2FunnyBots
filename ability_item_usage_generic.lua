@@ -200,6 +200,11 @@ function AbilityLevelUpThink()
 	if not HumanOnTeam then
 		UseGlyph()
 	end
+	
+	if bot:GetUnitName() == "npc_dota_life_stealer"
+	and bot:HasModifier("modifier_life_stealer_infest") then
+		return
+	end
 
 	local BotLevel = bot:GetLevel()
 	local SkillPoints = HeroInfoFile.GetHeroLevelPoints()

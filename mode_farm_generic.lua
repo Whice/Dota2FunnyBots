@@ -14,12 +14,14 @@ local LaneToFarm = LANE_MID
 local HealthyToFarmJungle = true
 
 local FinishedLaning = false
+local TeamAncient = nil
 
 function GetDesire()
 	UpdateNeutralCamps()
+	TeamAncient = GetAncient(bot:GetTeam())
 	
 	if not FinishedLaning and P.IsPushing(bot) then
-		FinishedLaning = true -- Prevent bots from preemptively entering farm mode when they can still safely lane
+		FinishedLaning = true -- Prevent bots from prematurely entering farm mode when they can still safely lane
 	end
 	
 	if P.IsInLaningPhase() or not FinishedLaning then
@@ -76,7 +78,8 @@ function GetDesire()
 				local LFLDistanceToFountain = P.GetDistance(FountainLocation, LFL)
 				
 				if HealthyToFarmJungle
-				and (IsEnemyNearLane(LFL) and LFLDistanceToFountain >= 5000) then
+				and (IsEnemyNearLane(LFL, GetLaneFrontAmount(bot:GetTeam(), LaneToFarm, true))
+				and LFLDistanceToFountain >= 5000) then
 					FarmMode = "Jungle"
 				else
 					FarmMode = "Lane"
@@ -105,7 +108,8 @@ function Think()
 			end
 		end
 		
-		if IsBeingTargetedByLaneCreep then
+		if IsBeingTargetedByLaneCreep
+		and GetUnitToLocationDistance(TeamAncient, LaneFrontLocation) > 3200 then
 			bot:Action_MoveToLocation(PAF.GetFountainLocation(bot))
 			return
 		end
@@ -302,7 +306,7 @@ function GetDesireToFarmJungle()
 	return ClampedDesire
 end
 
-function IsEnemyNearLane(lane)
+function IsEnemyNearLane(lane, LFA)
 	local EnemiesNearLaneFront = 0
 		
 	for v, Enemy in pairs(GetTeamPlayers(GetOpposingTeam())) do
@@ -311,7 +315,10 @@ function IsEnemyNearLane(lane)
 			if LSI ~= nil then
 				local nLSI = LSI[1]
 				if nLSI ~= nil then
-					if P.GetDistance(lane, nLSI.location) <= 3200 then
+					local TSSVar = RemapValClamped(LFA, 0.0, 1.0, 0.0, 20.0)
+					
+					if P.GetDistance(lane, nLSI.location) <= 3200
+					and nLSI.time_since_seen <= TSSVar then
 						EnemiesNearLaneFront = (EnemiesNearLaneFront + 1)
 					end
 				end

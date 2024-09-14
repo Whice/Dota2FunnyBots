@@ -124,8 +124,8 @@ function UseThunderStrike()
 		local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
 		
 		if WeakestEnemy ~= nil then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
-			and not PAF.IsMagicImmune(BotTarget) then
+			if GetUnitToUnitDistance(bot, WeakestEnemy) <= CastRange
+			and not PAF.IsMagicImmune(WeakestEnemy) then
 				return BOT_ACTION_DESIRE_HIGH, WeakestEnemy
 			end
 		end

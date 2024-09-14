@@ -66,6 +66,7 @@ function X.GetHeroItemBuild()
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
 		local CoreItem = PRoles.GetAOEItem()
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -73,10 +74,9 @@ function X.GetHeroItemBuild()
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
-		"item_falcon_blade",
 		
 		CoreItem,
-		"item_manta",
+		SituationalItem1,
 		"item_black_king_bar",
 		"item_heavens_halberd",
 		"item_assault",
@@ -85,6 +85,8 @@ function X.GetHeroItemBuild()
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
+		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
@@ -92,7 +94,7 @@ function X.GetHeroItemBuild()
 		"item_magic_wand",
 		"item_power_treads",
 		
-		"item_manta",
+		SituationalItem1,
 		"item_black_king_bar",
 		"item_shivas_guard",
 		"item_butterfly",
@@ -102,6 +104,8 @@ function X.GetHeroItemBuild()
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
+		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
@@ -109,7 +113,7 @@ function X.GetHeroItemBuild()
 		"item_magic_wand",
 		"item_power_treads",
 		
-		"item_manta",
+		SituationalItem1,
 		"item_black_king_bar",
 		"item_satanic",
 		"item_butterfly",

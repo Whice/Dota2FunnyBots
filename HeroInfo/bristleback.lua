@@ -9,13 +9,6 @@ local Bristleback = bot:GetAbilityByName("bristleback_bristleback")
 local Warpath = bot:GetAbilityByName("bristleback_warpath")
 local Hairball = bot:GetAbilityByName("bristleback_hairball")
 
-local ViscousNasalGooDesire = 0
-local QuillSprayDesire = 0
-local HairballDesire = 0
-
-local AttackRange
-local manathreshold
-
 function X.GetHeroLevelPoints()
 	local abilities = {}
 	
@@ -84,107 +77,15 @@ function X.GetHeroItemBuild()
 		
 		CoreItem,
 		"item_ultimate_scepter",
-		"item_eternal_shroud",
 		"item_bloodstone",
 		"item_black_king_bar",
+		"item_kaya_and_sange",
 		"item_ultimate_scepter_2",
 		"item_assault",
 		}
 	end
 	
 	return ItemBuild
-end
-
-function X.UseAbilities()
-	AttackRange = bot:GetAttackRange()
-
-	manathreshold = (bot:GetMaxMana() * 0.4)
-	
-	-- The order to use abilities in
-	HairballDesire, HairballTarget = UseHairball()
-	if HairballDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Hairball, HairballTarget)
-		return
-	end
-	
-	if bot:HasScepter() then
-		ViscousNasalGooDesire = UseViscousNasalGoo()
-		if ViscousNasalGooDesire > 0 then
-			bot:Action_UseAbility(ViscousNasalGoo)
-			return
-		end
-	else
-		ViscousNasalGooDesire, ViscousNasalGooTarget = UseViscousNasalGoo()
-		if ViscousNasalGooDesire > 0 then
-			bot:Action_UseAbilityOnEntity(ViscousNasalGoo, ViscousNasalGooTarget)
-			return
-		end
-	end
-	
-	QuillSprayDesire = UseQuillSpray()
-	if QuillSprayDesire > 0 then
-		bot:Action_UseAbility(QuillSpray)
-		return
-	end
-end
-
-function UseViscousNasalGoo()
-	if not ViscousNasalGoo:IsFullyCastable() then return 0 end
-	if not P.IsInCombativeMode(bot) then return 0 end
-	if P.CantUseAbility(bot) then return 0 end
-	
-	local CastRange = ViscousNasalGoo:GetCastRange()
-	
-	local enemies = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local target = P.GetWeakestNonImmuneEnemyHero(enemies)
-	
-	if target ~= nil then
-		if bot:HasScepter() then
-			return BOT_ACTION_DESIRE_HIGH
-		else
-			return BOT_ACTION_DESIRE_HIGH, target
-		end
-	end
-	
-	return 0
-end
-
-function UseQuillSpray()
-	if not QuillSpray:IsFullyCastable() then return 0 end
-	if P.CantUseAbility(bot) then return 0 end
-	
-	local CastRange = QuillSpray:GetSpecialValueInt("radius")
-	
-	local enemies = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	
-	if #enemies >= 1 and (P.IsInCombativeMode(bot) or P.IsRetreating(bot)) then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-	
-	if (bot:GetActiveMode() == BOT_MODE_FARM and bot:GetActiveModeDesire() >= BOT_MODE_DESIRE_VERYLOW) then
-		local neutrals = bot:GetNearbyNeutralCreeps(CastRange)
-		
-		if #neutrals >= 1 and (bot:GetMana() - QuillSpray:GetManaCost()) > manathreshold then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-	
-	return 0
-end
-
-function UseHairball()
-	if not Hairball:IsFullyCastable() then return 0 end
-	if P.CantUseAbility(bot) then return 0 end
-	
-	local CastRange = Hairball:GetCastRange()
-	local Radius = Hairball:GetSpecialValueInt("radius")
-	
-	local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
-	if (AoE.count >= 1) then
-		return BOT_ACTION_DESIRE_HIGH, AoE.targetloc;
-	end
-	
-	return 0
 end
 
 return X

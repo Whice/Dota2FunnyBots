@@ -1,6 +1,7 @@
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
 local PIU = require(GetScriptDirectory() .. "/Library/PhalanxItemUsage")
+local PChat = require(GetScriptDirectory() .. "/Library/PhalanxChat")
 
 local bot = GetBot()
 local RoamTarget = nil
@@ -19,8 +20,10 @@ local EngageTime = 0
 
 local IsWinterWyvernArcticBurn = false
 local IsBatRiderLasso = false
+local IsWeaverShukuchi = false
 
 local GankTarget = nil
+local ShukuchiTarget = nil
 
 local backpack_item = {}
 local update_bi_time = -90
@@ -28,9 +31,24 @@ local update_bi_time = -90
 local LastArrivalTime = 0
 local SmokeDuration = 45
 
+local InitiatedKillChat = false
+local LastKills = 0
+local LastKillChatAmt = 0
+local LastChatTime = 0
+local ChatDelay = 0
+
+local ChattedAncientCritical = false
+local InitiatedAncientCriticalChat = false
+local AncientChatSent = false
+local AncientCriticalDelayStart = 0
+local AncientCriticalChatDelay = 0
+
 function GetDesire()
 	--PAF.AcquireTarget()
 	ItemUsage()
+	PChat.ChatModule()
+	KillStreakChat()
+	AncientCriticalChat()
 
 	--[[GankTarget = GetSmokeTarget()
 	
@@ -70,6 +88,22 @@ function GetDesire()
 	IsBatRiderLasso = IsBatRiderCastingLasso()
 	if IsBatRiderLasso then
 		return BOT_MODE_DESIRE_ABSOLUTE
+	end
+	
+	IsWeaverShukuchi = IsWeaverCastingShukuchi()
+	if IsWeaverShukuchi then
+		local EnemiesWithinRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+		local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
+		
+		if WeakestEnemy ~= nil then
+			local NearbyTowers = WeakestEnemy:GetNearbyTowers(900, false)
+			
+			if #NearbyTowers <= 0 then
+				ShukuchiTarget = WeakestEnemy
+				return BOT_MODE_DESIRE_ABSOLUTE
+			end
+		end
 	end
 	
 	SuitableToAttackSpecialUnit = CanAttackSpecialUnit()
@@ -128,6 +162,19 @@ function Think()
 		return
 	end
 	
+	if IsWeaverShukuchi then
+		local Shukuchi = bot:GetAbilityByName("weaver_shukuchi")
+		local Radius = Shukuchi:GetSpecialValueInt("radius")
+		
+		if GetUnitToUnitDistance(bot, ShukuchiTarget) > (Radius - 25) then
+			bot:Action_MoveToLocation(ShukuchiTarget:GetLocation())
+			return
+		else
+			bot:Action_AttackUnit(ShukuchiTarget, false)
+			return
+		end
+	end
+	
 	--[[if bot:HasModifier("modifier_smoke_of_deceit")
 	and GankTarget ~= nil
 	and (DotaTime() - LastArrivalTime) > SmokeDuration then
@@ -181,6 +228,7 @@ function OnEnd()
 	SuitableToRoam = false
 
 	RoamTarget = nil
+	ShukuchiTarget = nil
 	
 	if bot.teamroaming == true then
 		bot.teamroaming = false
@@ -222,7 +270,8 @@ function CanAttackSpecialUnit()
 			or string.find(Unit:GetUnitName(), "grimstroke_ink_creature")
 			or string.find(Unit:GetUnitName(), "observer_ward")
 			or string.find(Unit:GetUnitName(), "sentry_ward")
-			or string.find(Unit:GetUnitName(), "healing_ward") then
+			or string.find(Unit:GetUnitName(), "healing_ward")
+			or string.find(Unit:GetUnitName(), "weaver_swarm") then
 				if GetUnitToUnitDistance(bot, Unit) <= SearchRange
 				and not PAF.IsPhysicalImmune(Unit) then
 					RoamTarget = Unit
@@ -414,6 +463,15 @@ function IsTimbersawCastingChakram()
 	end
 end
 
+function IsWeaverCastingShukuchi()
+	if bot:GetUnitName() == "npc_dota_hero_weaver" then
+		if bot:HasModifier("modifier_weaver_shukuchi")
+		and not P.IsRetreating(bot) then
+			return true
+		end
+	end
+end
+
 function GetClosestLastKnownLocation()
 	local ClosestLocation = nil
 	local ClosestDistance = 99999
@@ -442,6 +500,71 @@ function IsRuptured()
 	end
 	
 	return false
+end
+
+function KillStreakChat()
+	if P.IsMeepoClone(bot) or bot:HasModifier("modifier_arc_warden_tempest_double") then
+		return
+	end
+	
+	local botID = bot:GetPlayerID()
+	local CurrentKills = GetHeroKills(botID)
+	
+	if not IsHeroAlive(botID) then
+		if CurrentKills > LastKills then
+			LastKills = GetHeroKills(botID)
+		end
+	else
+		if CurrentKills > LastKillChatAmt
+		and CurrentKills > (LastKills + 2)
+		and not InitiatedKillChat then
+			LastKillChatAmt = CurrentKills
+			local ChatChance = RandomInt(1, 100)
+			
+			if ChatChance <= 20 then
+				InitiatedKillChat = true
+				LastChatTime = DotaTime()
+				ChatDelay = (RandomInt(100, 300) / 100)
+			end
+		end
+	end
+	
+	if InitiatedKillChat then
+		if (DotaTime() - LastChatTime) >= ChatDelay then
+			local KillstreakPhrase = PChat["KillstreakPhrases"][RandomInt(1, #PChat["KillstreakPhrases"])]
+			
+			bot:ActionImmediate_Chat(KillstreakPhrase, true)
+			InitiatedKillChat = false
+		end
+	end
+end
+
+function AncientCriticalChat()
+	if P.IsMeepoClone(bot) or bot:HasModifier("modifier_arc_warden_tempest_double") then
+		return
+	end
+	
+	local TeamAncient = GetAncient(bot:GetTeam())
+	
+	if not ChattedAncientCritical
+	and TeamAncient:GetHealth() <= (TeamAncient:GetMaxHealth() * 0.5) then
+		ChattedAncientCritical = true
+		local ChatChance = RandomInt(1, 100)
+			
+		if ChatChance <= 50 then
+			InitiatedAncientCriticalChat = true
+			AncientCriticalDelayStart = DotaTime()
+			AncientCriticalChatDelay = (RandomInt(100, 500) / 100)
+		end
+	end
+	
+	if not AncientChatSent and InitiatedAncientCriticalChat then
+		if (DotaTime() - AncientCriticalDelayStart) >= AncientCriticalChatDelay then
+			AncientChatSent = true
+			local AncientCriticalPhrase = PChat["AncientCriticalPhrases"][RandomInt(1, #PChat["AncientCriticalPhrases"])]
+			bot:ActionImmediate_Chat(AncientCriticalPhrase, true)
+		end
+	end
 end
 
 -- ITEM USAGE --

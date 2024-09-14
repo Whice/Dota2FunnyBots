@@ -39,6 +39,8 @@ function GetDesire()
 		return 0.9
 	end
 	
+	
+	
 	RetreatDesire = HealthRetreatVal
 	
 	if bot:WasRecentlyDamagedByAnyHero(1) or bot:WasRecentlyDamagedByTower(1) then
@@ -54,7 +56,8 @@ function GetDesire()
 	
 	local NearbyEnemies = 0
 	
-	if #Allies > 0 and #Enemies > 0 then
+
+	if #Allies > 0 then
 		for v, Ally in pairs(Allies) do
 			if not PAF.IsPossibleIllusion(Ally)
 			and not P.IsMeepoClone(Ally)
@@ -62,7 +65,9 @@ function GetDesire()
 				table.insert(TrueAllies, Ally)
 			end
 		end
+	end
 		
+	if #Enemies > 0 then
 		for v, Enemy in pairs(Enemies) do
 			if not PAF.IsPossibleIllusion(Enemy)
 			and not P.IsMeepoClone(Enemy)
@@ -70,29 +75,42 @@ function GetDesire()
 				table.insert(TrueEnemies, Enemy)
 			end
 		end
+	end
 		
-		local EnemyIDs = GetTeamPlayers(GetOpposingTeam())
-		for v, EID in pairs(EnemyIDs) do
-			local LSI = GetHeroLastSeenInfo(EID)
-			if LSI ~= nil then
-				local nLSI = LSI[1]
-				--print(nLSI.location)
+	local EnemyIDs = GetTeamPlayers(GetOpposingTeam())
+	for v, EID in pairs(EnemyIDs) do
+		local LSI = GetHeroLastSeenInfo(EID)
+		if LSI ~= nil then
+			local nLSI = LSI[1]
+			--print(nLSI.location)
 				
-				if nLSI ~= nil then
-					if GetUnitToLocationDistance(bot, nLSI.location) <= 1600 then
-						NearbyEnemies = (NearbyEnemies + 1)
-					end
+			if nLSI ~= nil then
+				if GetUnitToLocationDistance(bot, nLSI.location) <= 1600 then
+					NearbyEnemies = (NearbyEnemies + 1)
 				end
 			end
 		end
+	end
 		
-		if (NearbyEnemies - #TrueAllies) > 0 then
-			local Difference = (NearbyEnemies - #TrueAllies)
-			local OVal = (OutnumberedVal * Difference)
-			
-			RetreatDesire = (RetreatDesire + OVal)
+	local EnemyUnits = GetUnitList(UNIT_LIST_ENEMIES)
+		
+	for v, Unit in pairs(EnemyUnits) do
+		if string.find(Unit:GetUnitName(), "tombstone")
+		or string.find(Unit:GetUnitName(), "warlock_golem") then
+			if GetUnitToUnitDistance(bot, Unit) <= 1200 then
+				NearbyEnemies = (NearbyEnemies + 1)
+			end
 		end
 	end
+		
+	if (NearbyEnemies - #TrueAllies) > 0 then
+		local Difference = (NearbyEnemies - #TrueAllies)
+		local OVal = (OutnumberedVal * Difference)
+			
+		RetreatDesire = (RetreatDesire + OVal)
+	end
+	
+	
 	
 	local CombinedEnemiesOffensivePower = PAF.CombineOffensivePower(TrueEnemies, true)
 	local CombinedAlliesOffensivePower = PAF.CombineOffensivePower(TrueAllies, true)

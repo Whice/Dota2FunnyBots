@@ -4,16 +4,16 @@ local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
 local LucentBeam = bot:GetAbilityByName("luna_lucent_beam")
+local LunarBlessing = bot:GetAbilityByName("luna_lunar_orbit")
 local MoonGlaives = bot:GetAbilityByName("luna_moon_glaive")
-local LunarBlessing = bot:GetAbilityByName("luna_lunar_blessing")
 local Eclipse = bot:GetAbilityByName("luna_eclipse")
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
 	
 	table.insert(abilities, LucentBeam:GetName())
-	table.insert(abilities, MoonGlaives:GetName())
 	table.insert(abilities, LunarBlessing:GetName())
+	table.insert(abilities, MoonGlaives:GetName())
 	table.insert(abilities, Eclipse:GetName())
 	
 	local talents = {}

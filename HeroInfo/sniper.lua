@@ -66,6 +66,9 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_skadi")
+		
 		ItemBuild = { 
 		"item_wraith_band",
 		"item_magic_wand",
@@ -75,12 +78,14 @@ function X.GetHeroItemBuild()
 		"item_maelstrom",
 		"item_black_king_bar",
 		"item_hurricane_pike",
-		"item_greater_crit",
-		"item_skadi",
+		SituationalItem1,
+		SituationalItem2,
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		
 		ItemBuild = { 
 		"item_wraith_band",
 		"item_magic_wand",
@@ -90,7 +95,7 @@ function X.GetHeroItemBuild()
 		"item_maelstrom",
 		"item_black_king_bar",
 		"item_hurricane_pike",
-		"item_greater_crit",
+		SituationalItem1,
 		"item_monkey_king_bar",
 		}
 	end

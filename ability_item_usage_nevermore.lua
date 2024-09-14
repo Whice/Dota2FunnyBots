@@ -353,16 +353,13 @@ function CanDoMorePhysicalDamage(RazeDamage)
 	if BotTarget == nil then return false end
 
 	local AttackDamage = bot:GetAttackDamage()
-	local ShardCritDamage = ((AttackDamage * 1.9) / 3)
+	local StackDamage = Shadowraze1:GetSpecialValueInt("stack_bonus_damage")
 	
 	local EstimatedAttackDamage = AttackDamage
-	
-	if Necromastery:IsTrained() and not Necromastery:IsPassive() and Necromastery:GetAutoCastState() == true then
-		EstimatedAttackDamage = (AttackDamage + ShardCritDamage)
-	end
+	local EstimatedMagicDamage = (RazeDamage + (StackDamage * 2))
 	
 	local PhysicalDamage = BotTarget:GetActualIncomingDamage(EstimatedAttackDamage, DAMAGE_TYPE_PHYSICAL)
-	local MagicalDamage = BotTarget:GetActualIncomingDamage(RazeDamage, DAMAGE_TYPE_MAGICAL)
+	local MagicalDamage = BotTarget:GetActualIncomingDamage(EstimatedMagicDamage, DAMAGE_TYPE_MAGICAL)
 	
 	if PhysicalDamage > MagicalDamage then
 		return true

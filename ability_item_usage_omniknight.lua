@@ -43,7 +43,7 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	GuardianAngelDesire, GuardianAngelTarget = UseGuardianAngel()
 	if GuardianAngelDesire > 0 then
-		bot:Action_UseAbilityOnEntity(GuardianAngel, GuardianAngelTarget)
+		bot:Action_UseAbilityOnLocation(GuardianAngel, GuardianAngelTarget)
 		return
 	end
 	
@@ -166,7 +166,7 @@ function UseGuardianAngel()
 		and Ally:WasRecentlyDamagedByAnyHero(2)
 		and not Ally:HasModifier("modifier_arc_warden_tempest_double")
 		and not Ally:HasModifier("modifier_omninight_guardian_angel") then
-			return BOT_ACTION_DESIRE_ABSOLUTE, Ally
+			return BOT_ACTION_DESIRE_ABSOLUTE, Ally:GetLocation()
 		end
 	end
 	

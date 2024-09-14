@@ -87,7 +87,6 @@ function X.GetHeroItemBuild()
 		"item_kaya_and_sange",
 		"item_heavens_halberd",
 		"item_assault",
-		
 		"item_ultimate_scepter_2",
 		}
 	end

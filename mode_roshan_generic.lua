@@ -2,8 +2,21 @@ local bot = GetBot()
 
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
+local CanRoshan = true
+
 function GetDesire()
 	if P.IsMeepoClone(bot) then
+		return 0
+	end
+	
+	if CanRoshan and bot:GetHealth() < (bot:GetMaxHealth() * 0.25) then
+		CanRoshan = false
+	end
+	if not CanRoshan and bot:GetHealth() > (bot:GetMaxHealth() * 0.9) then
+		CanRoshan = true
+	end
+	
+	if not CanRoshan then
 		return 0
 	end
 
@@ -17,6 +30,7 @@ function GetDesire()
 	if CurrentTime >= (20 * 60) then
 		return Clamp(nDesire, 0.0, 0.9)
 	else
+		--return 0
 		return Clamp(GetRoshanDesire(), 0.0, 0.9)
 	end
 end

@@ -83,10 +83,10 @@ function X.GetHeroItemBuild()
 		"item_arcane_boots",
 		
 		CoreItem,
+		"item_ultimate_scepter",
 		"item_blink",
 		"item_eternal_shroud",
-		"item_ultimate_scepter",
-		"item_heavens_halberd",
+		"item_bloodstone",
 		"item_ultimate_scepter_2",
 		"item_assault",
 		}

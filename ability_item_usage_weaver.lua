@@ -109,14 +109,17 @@ function UseShukuchi()
 		end
 	end
 	
-	if P.IsRetreating(bot) then
+	if P.IsRetreating(bot)
+	or PAF.IsEngaging(bot)
+	or bot:GetActiveMode() == BOT_MODE_ROAM
+	or (bot:GetActiveMode() == BOT_MODE_RUNE and DotaTime() >= 60) then
 		return BOT_ACTION_DESIRE_HIGH
 	end
 	
-	if Shukuchi:GetLevel() == 4
+	--[[if Shukuchi:GetLevel() == 4
 	and bot:GetMana() > (bot:GetMaxMana() * 0.5) then
 		return BOT_ACTION_DESIRE_HIGH
-	end
+	end]]--
 	
 	return 0
 end
@@ -128,32 +131,10 @@ function UseGeminateAttack()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if P.IsInLaningPhase() then
-		if AttackTarget:GetTeam() ~= bot:GetTeam() and (AttackTarget:IsHero() or AttackTarget:IsBuilding()) then
-			if GeminateAttack:GetToggleState() == false then
-				return BOT_ACTION_DESIRE_HIGH
-			else
-				return 0
-			end
-		else
-			if GeminateAttack:GetToggleState() == true then
-				return BOT_ACTION_DESIRE_HIGH
-			else
-				return 0
-			end
-		end
-	else
-		if GeminateAttack:GetToggleState() == false then
-			return BOT_ACTION_DESIRE_HIGH
-		else
-			return 0
-		end
-	end
-	
-	if P.IsInLaningPhase() then
 		local AttackDamage = bot:GetAttackDamage()
 		local GeminateDamage = GeminateAttack:GetSpecialValueInt("bonus_damage")
 		local TotalDamage = ((AttackDamage * 2) + GeminateDamage)
-		local NearbyLaneCreeps = bot:GetNearbyLaneCreeps(AttackRange, true)
+		local NearbyLaneCreeps = bot:GetNearbyLaneCreeps((AttackRange + 150), true)
 		
 		for v, Creep in pairs(NearbyLaneCreeps) do
 			local EstimatedDamage = Creep:GetActualIncomingDamage(TotalDamage, DAMAGE_TYPE_PHYSICAL)
@@ -161,6 +142,33 @@ function UseGeminateAttack()
 			if Creep:GetHealth() <= EstimatedDamage then
 				return BOT_ACTION_DESIRE_HIGH, Creep
 			end
+		end
+	end
+	
+	if P.IsInLaningPhase() then
+		if AttackTarget ~= nil
+		and AttackTarget:GetTeam() ~= bot:GetTeam()
+		and (AttackTarget:IsHero() or AttackTarget:IsBuilding()) then
+			if GeminateAttack:GetAutoCastState() == false then
+				GeminateAttack:ToggleAutoCast()
+				return 0
+			else
+				return 0
+			end
+		else
+			if GeminateAttack:GetAutoCastState() == true then
+				GeminateAttack:ToggleAutoCast()
+				return 0
+			else
+				return 0
+			end
+		end
+	else
+		if GeminateAttack:GetAutoCastState() == false then
+			GeminateAttack:ToggleAutoCast()
+			return 0
+		else
+			return 0
 		end
 	end
 	
