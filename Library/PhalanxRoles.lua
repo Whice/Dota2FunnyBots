@@ -198,28 +198,46 @@ PRoles["EvasionArmorHeroes"] = {
 	"npc_dota_hero_primal_beast",
 }
 
+function IsTeamRadiant(bot)
+	return bot:GetTeam() == TEAM_RADIANT	
+end
+function IsLaneTop(bot)
+	return bot:GetAssignedLane() == LANE_TOP	
+end
+function IsLaneBottom(bot)
+	return bot:GetAssignedLane() == LANE_BOT	
+end
+function IsLaneMid(bot)
+	return bot:GetAssignedLane() == LANE_MID	
+end
+
 function PRoles.GetPRole(bot, hero)
+    local isTeamRadiant = IsTeamRadiant(bot)
+    local isLaneBottom = IsLaneBottom(bot)
+    local isLaneTop = IsLaneTop(bot)
+    local isLaneMid = IsLaneMid(bot)
+	
 	for i = 1, #PRoles["SafeLane"] do
 		if PRoles['SafeLane'][i] == hero then
-			if bot:GetTeam() == TEAM_RADIANT and bot:GetAssignedLane() == LANE_BOT then
+			if isTeamRadiant and isLaneBottom then
 				return "SafeLane"
-			elseif bot:GetTeam() == TEAM_DIRE and bot:GetAssignedLane() == LANE_TOP then
+			elseif not isTeamRadiant and isLaneTop then
 				return "SafeLane"
 			end
 		end	
 	end
 	
 	for i = 1, #PRoles["MidLane"] do
-		if PRoles['MidLane'][i] == hero and bot:GetAssignedLane() == LANE_MID then
+		if PRoles['MidLane'][i] == hero and isLaneMid then
 			return "MidLane"
 		end	
 	end
 	
 	for i = 1, #PRoles["OffLane"] do
 		if PRoles['OffLane'][i] == hero then
-			if bot:GetTeam() == TEAM_RADIANT and bot:GetAssignedLane() == LANE_TOP then
+			if isTeamRadiant and isLaneTop then
 				return "OffLane"
-			elseif bot:GetTeam() == TEAM_DIRE and bot:GetAssignedLane() == LANE_BOT then
+			elseif not isTeamRadiant and isLaneBottom then
 				return "OffLane"
 			end
 		end
@@ -227,9 +245,9 @@ function PRoles.GetPRole(bot, hero)
 	
 	for i = 1, #PRoles["SoftSupport"] do
 		if PRoles['SoftSupport'][i] == hero then
-			if bot:GetTeam() == TEAM_RADIANT and bot:GetAssignedLane() == LANE_TOP then
+			if isTeamRadiant and isLaneTop then
 				return "SoftSupport"
-			elseif bot:GetTeam() == TEAM_DIRE and bot:GetAssignedLane() == LANE_BOT then
+			elseif not isTeamRadiant and isLaneBottom then
 				return "SoftSupport"
 			end
 		end
@@ -237,9 +255,9 @@ function PRoles.GetPRole(bot, hero)
 	
 	for i = 1, #PRoles['HardSupport'] do
 		if PRoles['HardSupport'][i] == hero then
-			if bot:GetTeam() == TEAM_RADIANT and bot:GetAssignedLane() == LANE_BOT then
+			if isTeamRadiant and isLaneBottom then
 				return "HardSupport"
-			elseif bot:GetTeam() == TEAM_DIRE and bot:GetAssignedLane() == LANE_TOP then
+			elseif not isTeamRadiant and isLaneTop then
 				return "HardSupport"
 			end
 		end
