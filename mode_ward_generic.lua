@@ -1,410 +1,374 @@
--- ----------------------------------------------------------------------------------------------------
--- -- Author:Arizona Fauzie  BOT EXPERIMENT Link:http://steamcommunity.com/sharedfiles/filedetails/?id=837040016
--- ----------------------------------------------------------------------------------------------------
-
-
 if GetBot():IsInvulnerable() or not GetBot():IsHero() or not string.find(GetBot():GetUnitName(), "hero") or  GetBot():IsIllusion() then
-	return;
+	return
 end
 
-local ItemUsage = require(GetScriptDirectory().."/Library/ItemUsageUtility")
-local utility = require( GetScriptDirectory() .. "/Library/util" ) 
-local wardUtils = require(GetScriptDirectory() ..  "/Library/WardUtility")
+local bot = GetBot()
+
+local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
+local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
 local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
-local bot = GetBot();
-local AvailableSpots = {};
-local nWardCastRange = 500;
-local wt = nil;
-local itemWard = nil;
-local targetLoc = nil;
-local smoke = nil;
-local wardCastTime = -90;
-local swapTime = -90;
-local enemyPids = nil;
 
-bot.ward = false;
-bot.steal = false;
+local WardLocations = {}
+local WardedLocations = {}
 
-local route = {
-	Vector(-6263.000000, 2265.000000, 0.000000),
-	Vector(-5012.000000, 4765.000000, 0.000000),
-	Vector(-3212.000000, 4865.000000, 0.000000),
-	Vector(-3706.000000, 2950.000000, 0.000000)
+local ClosestWardLocation = nil
+local ClosestDistance = 3200
+
+local CastRange = 500
+
+local MinDistClamp = 0
+local MaxDistClamp = 3200
+
+local WardLocationCooldown = 780
+
+local BaseRadiantWardSpots = {
+	Vector(-5265, 4894, 128),
+	Vector(-1176, -451, 128),
+	Vector(6102, -7444, 256),
+	Vector(-3047, 1831, 128),
 }
 
-local route2 = {
-	Vector(6041.000000, -1978.000000, 0.000000),
-	Vector(4622.000000, -4873.000000, 0.000000),
-	Vector(3561.000000, -4297.000000, 0.000000),
-	Vector(3957.000000, -2808.000000, 0.000000)
+local BaseDireWardSpots = {
+	Vector(-532, 315, 128),
+	Vector(5134, -4894, 128),
+	Vector(-6355, 7180, 256),
+	Vector(-3047, 1831, 128),
 }
 
-local vNonStuck = Vector(-2610.000000, 538.000000, 0.000000);
+local RadiantPreGameWards = {
+	Vector(-1584, 261, 128),
+	Vector(-78, -1783, 256),
+}
 
-local chat = false;
-local height = -1;
+local DirePreGameWards = {
+	Vector(820, -490, 128),
+	Vector(-662, 920, 128),
+}
+
+--// RADIANT TOP LANE \\--
+local RadiantTopTierOneWardSpots = {
+	Vector(-7933, 1827, 535),
+	Vector(-4100, 1538, 535),
+}
+local RadiantTopTierTwoWardSpots = {
+	Vector(-7651, -369, 256),
+}
+local RadiantTopTierThreeWardSpots = {
+	Vector(-5447, -3290, 256)
+}
+
+--// RADIANT MID LANE \\--
+local RadiantMidTierOneWardSpots = {
+	Vector(-947, -2162, 256),
+}
+local RadiantMidTierTwoWardSpots = {
+	Vector(-1364, -3675, 256),
+	Vector(-4347, -1013, 535),
+}
+local RadiantMidTierThreeWardSpots = {
+	Vector(-4372, -3921)
+}
+
+--// RADIANT BOT LANE \\--
+local RadiantBottomTierOneWardSpots = {
+	Vector(3862, -4603, 535),
+	Vector(2556, -7154, 407),
+}
+local RadiantBottomTierTwoWardSpots = {
+	Vector(769, -4600, 535),
+	Vector(-2102, -6340, 128),
+}
+local RadiantBottomTierThreeWardSpots = {
+	Vector(-3871, -4983, 256)
+}
+
+--// DIRE TOP LANE \\--
+local DireTopTierOneWardSpots = {
+	Vector(-1543, 6910, 399),
+	Vector(-2505, 4815, 256),
+}
+local DireTopTierTwoWardSpots = {
+	Vector(1379, 6039, 128),
+}
+local DireTopTierThreeWardSpots = {
+	Vector(3292, 4541, 256)
+}
+
+--// DIRE MID LANE \\--
+local DireMidTierOneWardSpots = {
+	Vector(-765, 3591, 527),
+	Vector(2045, -774, 527),
+}
+local DireMidTierTwoWardSpots = {
+	Vector(1028, 3323, 399),
+	Vector(3665, 2695, 128),
+}
+local DireMidTierThreeWardSpots = {
+	Vector(4021, 3477)
+}
+
+--// DIRE BOT LANE \\--
+local DireBottomTierOneWardSpots = {
+	Vector(7680, -1528, 527),
+}
+local DireBottomTierTwoWardSpots = {
+	Vector(7946, 249, 256),
+	Vector(4598, 781, 527),
+}
+local DireBottomTierThreeWardSpots = {
+	Vector(5125, 2846, 256)
+}
+
 function GetDesire()
-	-- "morphling_replicate"
-	-- "morphling_morph_replicate"
-
-	-- local numPlayer =  GetTeamPlayers(GetTeam());
-	-- for i = 1, #numPlayer
-	-- do
-	-- 	local player = GetTeamMember(i);
-	-- 	if player ~= nil and not IsPlayerBot(player:GetPlayerID()) then
-	-- 		local ab = player:GetAbilityInSlot(0);
-	-- 		print(ab:GetName());
-	-- 		local m1 = player:GetAbilityByName('morphling_replicate');
-	-- 		local m2 = player:GetAbilityByName('morphling_morph_replicate');
-	-- 		if m1:IsHidden() == false then
-	-- 			print('morphling_replicate');
-	-- 		end	
-
-	-- 		if m2:IsHidden() == false then
-	-- 			print('morphling_morph_replicate');
-	-- 		end	
-	-- 			-- local mods = player:GetModifierList( );
-	-- 			-- for _,r in pairs(mods) do
-	-- 			-- 	if r ~= nil then
-	-- 			-- 		print(r);
-	-- 			-- 	end
-	-- 			-- end
-	-- 	end
-	-- end
-
-	-- if bot:GetPlayerID() == 2 then
-		-- print(bot:GetUnitName())
-		-- local at = GetAmountAlongLane(LANE_TOP, bot:GetLocation())
-		-- local am = GetAmountAlongLane(LANE_MID, bot:GetLocation())
-		-- local ab = GetAmountAlongLane(LANE_BOT, bot:GetLocation())
-		-- print("AT: "..tostring(at.amount).."|"..tostring(at.distance))
-		-- print("AM: "..tostring(am.amount).."|"..tostring(am.distance))
-		-- print("AB: "..tostring(ab.amount).."|"..tostring(ab.distance))
-	-- end
-	
-	--[[print(bot:GetUnitName())
-	print("tp:"..tostring(bot:FindItemSlot('item_tpscroll')))
-	for i=0, 23 do
-		local it = bot:GetItemInSlot(i)
-		if(it ~= nil) then
-			print("Slot "..tostring(i)..":"..it:GetName());
-		end
-	end]]--
-
-	-- local pg = wardUtils.GetHumanPing();
-	-- if pg ~= nil and pg.time > 0 and GameTime() - pg.time < 0.25 then
-		-- print(tostring(pg.location)..":Vis:"..tostring(IsLocationVisible(pg.location))..":Pas:"..tostring(IsLocationPassable(pg.location)).."HLvl:"..tostring(GetHeightLevel(pg.location)));
-	-- end
-
-	--[[if bot.lastPlayerChat ~= nil and string.find(bot.lastPlayerChat.text, "ward") then
-		bot:ActionImmediate_Chat("Catch this in mode_ward_generic", false);
-		bot.lastPlayerChat = nil;
-	end]]--
-	
-
-	if bot:IsChanneling() or bot:IsIllusion() or bot:IsInvulnerable() or not bot:IsHero() or not IsSuitableToWard() 
-	   or bot:GetCurrentActionType() == BOT_ACTION_TYPE_IDLE 
-	then
-		return BOT_MODE_DESIRE_NONE;
+	local NearbyEnemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+	if #NearbyEnemies > 0 then
+		return 0
 	end
 	
-	-- if DotaTime() < 0 then
-	-- 	local enemies = bot:GetNearbyHeroes(500, true, BOT_MODE_NONE)
-	-- 	if not IsSafelaneCarry() and bot:GetAssignedLane() ~= LANE_MID 
-	-- 	   and ( (GetTeam() == TEAM_RADIANT and bot:GetAssignedLane() == LANE_TOP) 
-	-- 	      or (GetTeam() == TEAM_DIRE and bot:GetAssignedLane() == LANE_BOT) 
-	-- 		  or  role.IsSupport(bot:GetUnitName()) 
-	-- 		  or ( bot:GetUnitName() == "npc_dota_hero_elder_titan" and DotaTime() > -59 ) 
-	-- 		  or ( bot:GetUnitName() == 'npc_dota_hero_wisp' and DotaTime() > -59 )
-	-- 		  ) 
-	-- 	  and #enemies == 0 
-	-- 	then
-	-- 		bot.steal = true;
-	-- 		return BOT_MODE_DESIRE_ABSOLUTE;
-	-- 	end
-	-- else	
-	-- 	bot.steal = false;
-	-- end
-	
-	itemWard = wardUtils.GetItemWard(bot);
-	
-	if itemWard ~= nil  then
-		local wardSlot = bot:FindItemSlot(itemWard:GetName());
-		if bot:GetItemSlotType(wardSlot) == ITEM_SLOT_TYPE_BACKPACK then
-			return 0
-		end
-		
-		pinged, wt = wardUtils.IsPingedByHumanPlayer(bot);
-		--wt = GetUnitHandleByID(bot.lastPlayerChat.text);
-		if pinged then	
-			return RemapValClamped(GetUnitToUnitDistance(bot, wt), 1000, 0, BOT_MODE_DESIRE_HIGH, BOT_MODE_DESIRE_VERYHIGH);
-		end
-		--[[if bot.lastPlayerChat ~= nil and string.find(bot.lastPlayerChat.text, "ward") then
-			if GetTeamForPlayer(bot.lastPlayerChat.pid) == bot:GetTeam() then
-				pinged = false;
-				bot:ActionImmediate_Chat("OK I'll give you ward", false);
-				bot.lastPlayerChat = nil;
-			elseif GetTeamForPlayer(bot.lastPlayerChat.pid) ~= bot:GetTeam() then
-				bot:ActionImmediate_Chat("You're using All Chat dude!", true);
-				bot.lastPlayerChat = nil;
-			end
-		else
-			bot.lastPlayerChat = nil;	
-		end]]--
-		
-		AvailableSpots = wardUtils.GetAvailableSpot(bot);
-		targetLoc, targetDist = wardUtils.GetClosestSpot(bot, AvailableSpots);
-		
-		if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-			targetLoc = targetLoc+RandomVector(50)
-		end
-		
-		if targetLoc ~= nil and DotaTime() > wardCastTime + 1.0 and IsEnemyCloserToWardLoc(targetLoc, targetDist) == false then
-			bot.ward = true;
-			return RemapValClamped(targetDist, 6000, 0, BOT_MODE_DESIRE_MODERATE, BOT_MODE_DESIRE_VERYHIGH);
-		end
-	else
-		bot.lastPlayerChat = nil;
-	end
-	return BOT_MODE_DESIRE_NONE;
-end
-
---[[function OnStart()
-	if itemWard ~= nil then
-		local wardSlot = bot:FindItemSlot(itemWard:GetName());
-		if bot:GetItemSlotType(wardSlot) == ITEM_SLOT_TYPE_BACKPACK then
-			local leastCostItem = FindLeastItemSlot();
-			if leastCostItem ~= -1 then
-				swapTime = DotaTime();
-				bot:ActionImmediate_SwapItems( wardSlot, leastCostItem );
-				return
-			end
-			local active = bot:GetItemInSlot(leastCostItem);
-			print(tostring(active:IsFullyCastable()));
+	local WardSlot = nil
+	for i = 0,8 do
+		local item = bot:GetItemInSlot(i)
+		if item ~= nil and (item:GetName() == "item_ward_observer" or item:GetName() == "item_ward_sentry") then
+			WardSlot = item
 		end
 	end
-end]]--
-
-function OnEnd()
-	AvailableSpots = {};
-	bot.steal = false;
-	itemWard = nil;
-	wt = nil;
-	local wardSlot
+	if WardSlot == nil then
+		return 0
+	end
 	
+	local WardList = GetUnitList(UNIT_LIST_ALLIED_WARDS)
+	local ObserverWardList = GetObserverWards(WardList)
+	local SentryWardList = GetSentryWards(WardList)
+	
+	ClosestWardLocation = nil
+	ClosestDistance = 1600
+	
+	local WardsToSearchFor = WardList
+	local WardType = nil
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
-		wardSlot = bot:FindItemSlot('item_ward_observer')
+		WardsToSearchFor = ObserverWardList
+		WardType = "Observer"
 	elseif PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-		wardSlot = bot:FindItemSlot('item_ward_sentry')
+		WardsToSearchFor = SentryWardList
+		WardType = "Sentry"
 	end
 	
-	--[[if wardSlot >=0 and wardSlot <= 5 then
-		local mostCostItem = FindMostItemSlot();
-		if mostCostItem ~= -1 then
-			bot:ActionImmediate_SwapItems( wardSlot, mostCostItem );
-			return
+	if DotaTime() < 0 then
+		if bot:GetTeam() == TEAM_RADIANT then
+			WardLocations = RadiantPreGameWards
+		elseif bot:GetTeam() == TEAM_DIRE then
+			WardLocations = DirePreGameWards
 		end
-	end]]--
+		
+		ClosestDistance = 99999999
+	else
+		if bot:GetTeam() == TEAM_RADIANT then
+			WardLocations = UpdateWardSpots(BaseRadiantWardSpots)
+		elseif bot:GetTeam() == TEAM_DIRE then
+			WardLocations = UpdateWardSpots(BaseDireWardSpots)
+		end
+	end
+	
+	for v, WardLoc in pairs(WardLocations) do
+		local ShouldAvoidWarding = false
+		
+		if WardedLocations[WardLoc] and (DotaTime() - WardedLocations[WardLoc]) < WardLocationCooldown then
+			ShouldAvoidWarding = true
+		end
+		
+		if GetUnitToLocationDistance(bot, WardLoc) <= ClosestDistance
+		and not IsWardNearby(WardsToSearchFor, WardType, WardLoc)
+		and not ShouldAvoidWarding then
+			ClosestWardLocation = WardLoc
+			ClosestDistance = GetUnitToLocationDistance(bot, WardLoc)
+		end
+	end
+	
+	if ClosestWardLocation ~= nil then
+		if not IsWardNearby(WardsToSearchFor, WardType, ClosestWardLocation) then
+			local Distance = GetUnitToLocationDistance(bot, ClosestWardLocation)
+			local DesireVariable = RemapValClamped(Distance, MinDistClamp, MaxDistClamp, 0.0, 1.0)
+			local WardDesire = (1.0 - DesireVariable)
+			
+			if DotaTime() < 0 then
+				return BOT_MODE_DESIRE_VERYHIGH
+			else
+				return Clamp((WardDesire * 2), 0.0, 0.9)
+			end
+		end
+	end
+	
+	return 0
 end
 
 function Think()
-	if bot:IsChanneling() or bot:IsUsingAbility() or bot:GetQueuedActionType(0) == BOT_ACTION_TYPE_USE_ABILITY then
-		return
-	end
-	if  GetGameState()~=GAME_STATE_PRE_GAME and GetGameState()~= GAME_STATE_GAME_IN_PROGRESS then
-		return;
-	end
-	
-	if wt ~= nil then
-		bot:Action_UseAbilityOnEntity(itemWard, wt);
-		return
-	end
-	
-	if bot.ward then
-		if targetDist <= nWardCastRange then
-			if  DotaTime() > swapTime + 7.0 then
-				ItemUsage.UseItemOnLocation(bot, itemWard, targetLoc);
-				wardCastTime = DotaTime();	
-				return
-			else
-				if targetLoc.x == Vector(-2948.000000, 769.000000, 0.000000) then
-					bot:Action_MoveToLocation(vNonStuck+RandomVector(300));
-					return
-				else	
-					bot:Action_MoveToLocation(targetLoc+RandomVector(300));
-					return
-				end
+	if ClosestWardLocation ~= nil then
+		local WardItem = nil
+		for i = 0,8 do
+			local item = bot:GetItemInSlot(i)
+			if item ~= nil and (item:GetName() == "item_ward_observer" or item:GetName() == "item_ward_sentry") then
+				WardItem = item
 			end
+		end
+		
+		if GetUnitToLocationDistance(bot, ClosestWardLocation) > CastRange then
+			bot:Action_MoveToLocation(ClosestWardLocation)
 		else
-			if targetLoc == Vector(-2948.000000, 769.000000, 0.000000) then
-				bot:Action_MoveToLocation(vNonStuck);
-				return
-			else	
-				bot:Action_MoveToLocation(targetLoc);
-				return
+			if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
+				bot:Action_UseAbilityOnLocation(WardItem, ClosestWardLocation)
+				WardedLocations[ClosestWardLocation] = DotaTime()
+			elseif PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
+				bot:Action_UseAbilityOnLocation(WardItem, ClosestWardLocation+RandomVector(50))
 			end
+		end
+	end
+end
+
+
+function GetObserverWards(WardList)
+	local ObserverWardList = {}
+	
+	for v, Ward in pairs(WardList) do
+		if Ward:GetUnitName() == "npc_dota_observer_wards" then
+			table.insert(ObserverWardList, Ward)
 		end
 	end
 	
-	if bot.steal == true then
-		local stealCount = CountStealingUnit();
-		smoke = HasItem('item_smoke_of_deceit');
-		local loc = nil;
+	return ObserverWardList
+end
+
+function GetSentryWards(WardList)
+	local SentryWardList = {}
+	
+	for v, Ward in pairs(WardList) do
+		if Ward:GetUnitName() == "npc_dota_sentry_wards" then
+			table.insert(SentryWardList, Ward)
+		end
+	end
+	
+	return SentryWardList
+end
+
+function IsWardNearby(WardList, WardType, Location)
+	local WardRange = 0
+	if WardType == "Observer" then
+		WardRange = 1600
+	elseif WardType == "Sentry" then
+		WardRange = 1000
+	end
+	
+	for v, Ward in pairs(WardList) do
+		if GetUnitToLocationDistance(Ward, Location) <= WardRange then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function CombineTables(TableOne, TableTwo)
+	local CombinedTable = {}
+
+	for v, TableItem in pairs(TableOne) do
+		table.insert(CombinedTable, TableItem)
+	end
+	for v, TableItem in pairs(TableTwo) do
+		table.insert(CombinedTable, TableItem)
+	end
+	
+	return CombinedTable
+end
+
+function UpdateWardSpots(WardList)
+	local WardSpots = WardList
+	
+	if bot:GetTeam() == TEAM_RADIANT then
+		WardSpots = CombineTables(WardSpots, DireTopTierOneWardSpots)
+		WardSpots = CombineTables(WardSpots, DireTopTierTwoWardSpots)
+		WardSpots = CombineTables(WardSpots, DireTopTierThreeWardSpots)
+		WardSpots = CombineTables(WardSpots, DireMidTierOneWardSpots)
+		WardSpots = CombineTables(WardSpots, DireMidTierTwoWardSpots)
+		WardSpots = CombineTables(WardSpots, DireMidTierThreeWardSpots)
+		WardSpots = CombineTables(WardSpots, DireBottomTierOneWardSpots)
+		WardSpots = CombineTables(WardSpots, DireBottomTierTwoWardSpots)
+		WardSpots = CombineTables(WardSpots, DireBottomTierThreeWardSpots)
 		
-		if smoke ~= nil and chat == false then
-			chat = true;
-			bot:ActionImmediate_Chat("Let's steal the bounty rune!",false);
-			return
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_TOP_1)) then
+			WardSpots = CombineTables(WardSpots, RadiantTopTierOneWardSpots)
 		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_TOP_2)) then
+			WardSpots = CombineTables(WardSpots, RadiantTopTierTwoWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_TOP_3)) then
+			WardSpots = CombineTables(WardSpots, RadiantTopTierThreeWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_MID_1)) then
+			WardSpots = CombineTables(WardSpots, RadiantMidTierOneWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_MID_2)) then
+			WardSpots = CombineTables(WardSpots, RadiantMidTierTwoWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_MID_3)) then
+			WardSpots = CombineTables(WardSpots, RadiantMidTierThreeWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_BOT_1)) then
+			WardSpots = CombineTables(WardSpots, RadiantBottomTierOneWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_BOT_2)) then
+			WardSpots = CombineTables(WardSpots, RadiantBottomTierTwoWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_BOT_3)) then
+			WardSpots = CombineTables(WardSpots, RadiantBottomTierThreeWardSpots)
+		end
+	elseif bot:GetTeam() == TEAM_DIRE then
+		WardSpots = CombineTables(WardSpots, RadiantTopTierOneWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantTopTierTwoWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantTopTierThreeWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantMidTierOneWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantMidTierTwoWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantMidTierThreeWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantBottomTierOneWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantBottomTierTwoWardSpots)
+		WardSpots = CombineTables(WardSpots, RadiantBottomTierThreeWardSpots)
 		
-		if smoke ~= nil and smoke:IsFullyCastable() and not bot:HasModifier('modifier_smoke_of_deceit') then
-			bot:Action_UseAbility(smoke);
-			return
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_TOP_1)) then
+			WardSpots = CombineTables(WardSpots, DireTopTierOneWardSpots)
 		end
-		
-		if GetTeam() == TEAM_RADIANT then
-			for _,r in pairs(route) do
-				if r ~= nil then
-					loc = r;
-					break;
-				end
-			end
-		else
-			for _,r in pairs(route2) do
-				if r ~= nil then
-					loc = r;
-					break;
-				end
-			end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_TOP_2)) then
+			WardSpots = CombineTables(WardSpots, DireTopTierTwoWardSpots)
 		end
-		
-		local allies = CountStealUnitNearLoc(loc, 300);
-		
-		if ( GetTeam() == TEAM_RADIANT and #route == 1 ) or ( GetTeam() == TEAM_DIRE and #route2 == 1 )  then
-			bot:Action_MoveToLocation(loc);
-			return
-		elseif GetUnitToLocationDistance(bot, loc) <= 300 and allies < stealCount then
-			bot:Action_MoveToLocation(loc);
-			return	
-		elseif GetUnitToLocationDistance(bot, loc) > 300 then
-			bot:Action_MoveToLocation(loc);
-			return
-		else
-			if GetTeam() == TEAM_RADIANT then
-				table.remove(route,1);
-			else
-				table.remove(route2,1);
-			end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_TOP_3)) then
+			WardSpots = CombineTables(WardSpots, DireTopTierThreeWardSpots)
 		end
-		
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_MID_1)) then
+			WardSpots = CombineTables(WardSpots, DireMidTierOneWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_MID_2)) then
+			WardSpots = CombineTables(WardSpots, DireMidTierTwoWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_MID_3)) then
+			WardSpots = CombineTables(WardSpots, DireMidTierThreeWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_BOT_1)) then
+			WardSpots = CombineTables(WardSpots, DireBottomTierOneWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_BOT_2)) then
+			WardSpots = CombineTables(WardSpots, DireBottomTierTwoWardSpots)
+		end
+		if not NotNilOrDead(GetTower(bot:GetTeam(), TOWER_BOT_3)) then
+			WardSpots = CombineTables(WardSpots, DireBottomTierThreeWardSpots)
+		end
 	end
-
+	
+	return WardSpots
 end
 
-function CountStealingUnit()
-	local count = 0;
-	for i,id in pairs(GetTeamPlayers(GetTeam())) do
-		local unit = GetTeamMember(i);
-		if IsPlayerBot(id) and unit ~= nil and unit.steal == true then
-			count = count + 1;
-		end
+function NotNilOrDead(unit)
+	if unit == nil or unit:IsNull() then
+		return false
 	end
-	return count;
-end
-
-function  CountStealUnitNearLoc(loc, nRadius)
-	local count = 0;
-	for i,id in pairs(GetTeamPlayers(GetTeam())) do
-		local unit = GetTeamMember(i);
-		if unit ~= nil and unit.steal == true and GetUnitToLocationDistance(unit, loc) <= nRadius then
-			count = count + 1;
-		end
+	if unit:IsAlive() then
+		return true
 	end
-	return count;
-end
-
-function FindLeastItemSlot()
-	local minCost = 100000;
-	local idx = -1;
-	for i=0,5 do
-		if  bot:GetItemInSlot(i) ~= nil and bot:GetItemInSlot(i):GetName() ~= "item_aegis"  then
-			local _item = bot:GetItemInSlot(i):GetName()
-			if( GetItemCost(_item) < minCost ) then
-				minCost = GetItemCost(_item);
-				idx = i;
-			end
-		end
-	end
-	return idx;
-end
-
-function FindMostItemSlot()
-	local maxCost = 0;
-	local idx = -1;
-	for i=6,8 do
-		if  bot:GetItemInSlot(i) ~= nil  then
-			local _item = bot:GetItemInSlot(i):GetName()
-			if( GetItemCost(_item) > maxCost ) then
-				maxCost = GetItemCost(_item);
-				idx = i;
-			end
-		end
-	end
-	return idx;
-end
-
-function HasItem(item_name)
-	for i=0,5  do
-		local item = bot:GetItemInSlot(i); 
-		if item ~= nil and item:GetName() == item_name then
-			return item;
-		end
-	end
-	return nil;
-end
-
---check if the condition is suitable for warding
-function IsSuitableToWard()
-	local Enemies = bot:GetNearbyHeroes(1300, true, BOT_MODE_NONE);
-	local mode = bot:GetActiveMode();
-	if ( ( mode == BOT_MODE_RETREAT and bot:GetActiveModeDesire() >= BOT_MODE_DESIRE_HIGH )
-		or mode == BOT_MODE_ATTACK
-		or (mode == BOT_MODE_RUNE and DotaTime() > 0) 
-		or mode == BOT_MODE_DEFEND_ALLY
-		or mode == BOT_MODE_DEFEND_TOWER_TOP
-		or mode == BOT_MODE_DEFEND_TOWER_MID
-		or mode == BOT_MODE_DEFEND_TOWER_BOT
-		or ( #Enemies >= 1 and IsIBecameTheTarget(Enemies) )
-		or bot:WasRecentlyDamagedByAnyHero(5.0)
-		) 
-	then
-		return false;
-	end
-	return true;
-end
-
-function IsIBecameTheTarget(units)
-	for _,u in pairs(units) do
-		if u:GetAttackTarget() == bot then
-			return true;
-		end
-	end
-	return false;
-end
-
-function IsEnemyCloserToWardLoc(wardLoc, botDist)
-	if enemyPids == nil then
-		enemyPids = GetTeamPlayers(GetOpposingTeam())
-	end	
-	for i = 1, #enemyPids do
-		local info = GetHeroLastSeenInfo(enemyPids[i])
-		if info ~= nil then
-			local dInfo = info[1]; 
-			if dInfo ~= nil and dInfo.time_since_seen < 3.0  and utility.GetDistance(dInfo.location, wardLoc) <  botDist
-			then	
-				return true;
-			end
-		end	
-	end
-	return false;
+	return false
 end

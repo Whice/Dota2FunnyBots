@@ -156,11 +156,11 @@ function UseFirefly()
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if bot:HasModifier("modifier_batrider_flaming_lasso_self") then
-				return true
+				return BOT_ACTION_DESIRE_HIGH
 			end
 			
 			if BotTarget:HasModifier("modifier_batrider_flaming_lasso") then
-				return true
+				return BOT_ACTION_DESIRE_HIGH
 			end
 		
 			if GetUnitToUnitDistance(bot, BotTarget) <= 250

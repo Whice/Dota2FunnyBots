@@ -99,7 +99,8 @@ function UseSplitEarth()
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and (BotTarget:HasModifier("modifier_leshrac_lightning_storm_slow") or PAF.IsDisabled(BotTarget)) then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(ExtrapLoc)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
+					PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(ExtrapLoc)
 				end

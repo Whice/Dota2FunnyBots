@@ -149,7 +149,7 @@ function UseLightStrikeArray()
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(1.5)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(1), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(1), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1.5)
 				end

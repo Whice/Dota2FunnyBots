@@ -137,12 +137,31 @@ end
 
 function UseFlakCannon()
 	if not FlakCannon:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-		if GetUnitToUnitDistance(bot, BotTarget) <= AttackRange then
-			return BOT_ACTION_DESIRE_HIGH
+	local radius = FlakCannon:GetSpecialValueInt("radius")
+	local EnemiesWithinRange = bot:GetNearbyHeroes(radius, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	
+	if PAF.IsEngaging(bot) and #FilteredEnemies > 1 then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= AttackRange then
+				return BOT_ACTION_DESIRE_HIGH
+			end
+		end
+	end
+	
+	if P.IsPushing(bot) or bot:GetActiveMode() == BOT_MODE_FARM then
+		local AttackTarget = bot:GetAttackTarget()
+		if AttackTarget ~= nil then
+			if AttackTarget:IsCreep() and AttackTarget:GetTeam() ~= bot:GetTeam() then
+				local NearbyCreeps = bot:GetNearbyCreeps(radius, true)
+				if #NearbyCreeps >= 3 then
+					if bot:GetMana() > (bot:GetMaxMana() * 0.55) then
+						return BOT_ACTION_DESIRE_HIGH
+					end
+				end
+			end
 		end
 	end
 	

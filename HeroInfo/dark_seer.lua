@@ -45,17 +45,17 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
 	"NoLevel",    -- Level 19
-	talents[6],   -- Level 20
+	talents[5],   -- Level 20
 	"NoLevel",    -- Level 21
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[7],   -- Level 25
+	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
 	talents[2],   -- Level 27
 	talents[4],   -- Level 28
-	talents[5],   -- Level 29
-	talents[8]    -- Level 30
+	talents[6],   -- Level 29
+	talents[7]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -65,14 +65,20 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
+		local CoreItem = PRoles.GetAOEItem()
+		
 		ItemBuild = { 
-		"item_null_talisman",
+		"item_bracer",
 		"item_magic_wand",
 		"item_arcane_boots",
 		"item_soul_ring",
 		
-		"items_offlane_blink",
+		"item_blink",
+		CoreItem,
+		"item_black_king_bar",
+		"item_shivas_guard",
 		"item_ultimate_scepter_2",
+		"item_sheepstick",
 		}
 	end
 	

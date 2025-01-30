@@ -29,20 +29,31 @@ local InkSwell = bot:GetAbilityByName("grimstroke_spirit_walk")
 local Soulbind = bot:GetAbilityByName("grimstroke_soul_chain")
 local DarkPortrait = bot:GetAbilityByName("grimstroke_dark_portrait")
 
+local InkExplosion = bot:GetAbilityByName("grimstroke_return")
+
 local StrokeOfFateDesire = 0
 local PhantomsEmbraceDesire = 0
 local InkSwellDesire = 0
 local SoulbindDesire = 0
 local DarkPortraitDesire = 0
+local InkExplosionDesire = 0
 
 local AttackRange
 local BotTarget
+
+local LastInkSwellTime = DotaTime()
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	
 	-- The order to use abilities in
+	InkExplosionDesire = UseInkExplosion()
+	if InkExplosionDesire > 0 then
+		bot:Action_UseAbility(InkExplosion)
+		return
+	end
+	
 	SoulbindDesire, SoulbindTarget = UseSoulbind()
 	if SoulbindDesire > 0 then
 		bot:Action_UseAbilityOnEntity(Soulbind, SoulbindTarget)
@@ -64,6 +75,7 @@ function AbilityUsageThink()
 	InkSwellDesire, InkSwellTarget = UseInkSwell()
 	if InkSwellDesire > 0 then
 		bot:Action_UseAbilityOnEntity(InkSwell, InkSwellTarget)
+		LastInkSwellTime = DotaTime()
 		return
 	end
 	
@@ -86,7 +98,7 @@ function UseStrokeOfFate()
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(1)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(1), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(1), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
 				end
@@ -120,14 +132,9 @@ function UsePhantomsEmbrace()
 		if enemy:IsChanneling() then
 			return BOT_ACTION_DESIRE_HIGH, enemy
 		end
-	end
-	
-	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
-			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
-			end
+		
+		if enemy:HasModifier("modifier_grimstroke_soul_chain") then
+			return BOT_ACTION_DESIRE_HIGH, enemy
 		end
 	end
 	
@@ -145,6 +152,17 @@ function UsePhantomsEmbrace()
 		end
 	end
 	
+	if PAF.IsInTeamFight(bot) and Soulbind:IsFullyCastable() then return 0 end
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			end
+		end
+	end
+	
 	return 0
 end
 
@@ -155,30 +173,49 @@ function UseInkSwell()
 	local CR = InkSwell:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
-	local allies = nil
+	local AlliesWithinRange = bot:GetNearbyHeroes(CastRange, false, BOT_MODE_NONE)
+	local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
 	
-	if BotTarget ~= nil then
-		allies = BotTarget:GetNearbyHeroes(300, true, BOT_MODE_NONE)
-	end
-	
-	local closestally = nil
-	local closestdistance = 9999
-	
-	if allies ~= nil then
-		for v, ally in pairs(allies) do
-			if GetUnitToUnitDistance(ally, BotTarget) < closestdistance then
-				closestdistance = GetUnitToUnitDistance(ally, BotTarget)
-				closestally = ally
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
+				local AllyWithShortestAR = nil
+				local ShortestAR = 99999999
+				
+				for v, Ally in pairs(FilteredAllies) do
+					if Ally:GetAttackRange() < ShortestAR then
+						AllyWithShortestAR = Ally
+						ShortestAR = Ally:GetAttackRange()
+					end
+				end
+				
+				if AllyWithShortestAR ~= nil then
+					return BOT_ACTION_DESIRE_HIGH, AllyWithShortestAR
+				end
 			end
 		end
 	end
 	
-	if closestally ~= nil and PAF.IsEngaging(bot) then
-		return BOT_ACTION_DESIRE_HIGH, closestally
-	end
+	local EnemiesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH, bot
+		if #FilteredEnemies > 0
+		and bot:WasRecentlyDamagedByAnyHero(1) then
+			return BOT_ACTION_DESIRE_HIGH, bot
+		end
+	end
+	
+	for v, Ally in pairs(FilteredAllies) do
+		if Ally:GetHealth() < (Ally:GetMaxHealth() * 0.35) then
+			EnemiesWithinRange = Ally:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
+			FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+			
+			if #FilteredEnemies > 0
+			and Ally:WasRecentlyDamagedByAnyHero(1) then
+				return BOT_ACTION_DESIRE_HIGH, Ally
+			end
+		end
 	end
 	
 	return 0
@@ -192,10 +229,12 @@ function UseSoulbind()
 	local CR = PhantomsEmbrace:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
+	local Radius = Soulbind:GetSpecialValueInt("chain_latch_radius")
+	
 	if PAF.IsEngaging(bot) and BotTarget ~= nil then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				local TargetAllies = BotTarget:GetNearbyHeroes(600, false, BOT_MODE_NONE)
+				local TargetAllies = BotTarget:GetNearbyHeroes(Radius, false, BOT_MODE_NONE)
 				
 				if #TargetAllies >= 2 then
 					return BOT_ACTION_DESIRE_HIGH, BotTarget
@@ -217,6 +256,12 @@ function UseDarkPortrait()
 	local EnemiesWithinRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
+	for v, enemy in pairs(FilteredEnemies) do
+		if enemy:HasModifier("modifier_grimstroke_soul_chain") then
+			return BOT_ACTION_DESIRE_HIGH, enemy
+		end
+	end
+	
 	if PAF.IsEngaging(bot) then
 		if #FilteredEnemies > 0 then
 			local StrongestEnemy = GetStrongestAttackDamageUnit(FilteredEnemies)
@@ -230,4 +275,28 @@ function UseDarkPortrait()
 	end
 	
 	return 0
+end
+
+function UseInkExplosion()
+	if not InkExplosion:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	if InkExplosion:IsHidden() then return 0 end
+	
+	local Threshold = InkSwell:GetSpecialValueFloat("max_threshold_duration")
+	local Radius = InkSwell:GetSpecialValueInt("radius")
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if (DotaTime() - LastInkSwellTime) >= Threshold then
+				local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
+				for v, Ally in pairs(Allies) do
+					if Ally:HasModifier("modifier_grimstroke_spirit_walk_buff") then
+						if GetUnitToUnitDistance(Ally, BotTarget) <= Radius then
+							return BOT_ACTION_DESIRE_HIGH
+						end
+					end
+				end
+			end
+		end
+	end
 end

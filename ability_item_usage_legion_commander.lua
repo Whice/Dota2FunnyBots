@@ -123,9 +123,11 @@ function UsePressTheAttack()
 	
 	local WeakestAlly = PAF.GetWeakestUnit(FilteredAllies)
 	
-	if WeakestAlly:GetHealth() < (WeakestAlly:GetMaxHealth() * 0.4)
-	and WeakestAlly:WasRecentlyDamagedByAnyHero(1) then
-		return BOT_ACTION_DESIRE_HIGH, WeakestAlly
+	if WeakestAlly ~= nil then
+		if WeakestAlly:GetHealth() < (WeakestAlly:GetMaxHealth() * 0.4)
+		and WeakestAlly:WasRecentlyDamagedByAnyHero(1) then
+			return BOT_ACTION_DESIRE_HIGH, WeakestAlly
+		end
 	end
 	
 	if PAF.IsInTeamFight(bot) then

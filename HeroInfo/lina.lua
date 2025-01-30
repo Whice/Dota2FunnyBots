@@ -115,8 +115,8 @@ function X.GetHeroItemBuild()
 		"item_black_king_bar",
 		"item_blink",
 		"item_sphere",
-		"item_shivas_guard",
 		"item_ultimate_scepter_2",
+		"item_shivas_guard",
 		"item_travel_boots_2"
 		}
 	end

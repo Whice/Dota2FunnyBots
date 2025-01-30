@@ -6,21 +6,19 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 local WhirlingDeath = bot:GetAbilityByName("shredder_whirling_death")
 local TimberChain = bot:GetAbilityByName("shredder_timber_chain")
 local ReactiveArmor = bot:GetAbilityByName("shredder_reactive_armor")
-local Chakram = bot:GetAbilityByName("shredder_chakram")
+--local Chakram = bot:GetAbilityByName("shredder_chakram")
 
 local ReturnChakram = bot:GetAbilityByName("shredder_return_chakram")
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
 	
+	local Chakram = bot:GetAbilityInSlot(5)
+	
 	table.insert(abilities, WhirlingDeath:GetName())
 	table.insert(abilities, TimberChain:GetName())
 	table.insert(abilities, ReactiveArmor:GetName())
-	if bot:HasModifier("modifier_shredder_chakram_disarm") then
-		table.insert(abilities, ReturnChakram:GetName())
-	else
-		table.insert(abilities, Chakram:GetName())
-	end
+	table.insert(abilities, Chakram:GetName())
 	
 	local talents = {}
 	

@@ -353,7 +353,7 @@ function PAF.GetStrongestPowerUnit(units)
 	local strongestpower = 0
 	
 	for v, unit in pairs(units) do
-		if unit:GetRawOffensivePower() < strongestpower then
+		if unit:GetRawOffensivePower() > strongestpower then
 			strongestunit = unit
 			strongestpower = unit:GetRawOffensivePower()
 		end
@@ -590,6 +590,38 @@ function PAF.GetClosestTPLocation(bot, Unit, TravelBootsAvailable)
 	else
 		return nil
 	end
+end
+
+function PAF.GetXUnitsTowardsLocation(iLoc, tLoc, nUnits)
+    local direction = (tLoc - iLoc):Normalized()
+    return iLoc + direction * nUnits
+end
+
+function PAF.GetAllyHumanHeroes()
+	local AlliedHeroes = GetUnitList(UNIT_LIST_ALLIED_HEROES)
+	local HumanHeroes = {}
+	
+	for v, Ally in pairs(AlliedHeroes) do
+		if not Ally:IsBot() then
+			table.insert(HumanHeroes, Ally)
+		end
+	end
+	
+	return HumanHeroes
+end
+
+function PAF.GetLastHumanPing()
+	local LastPing = nil
+	local LastPingTime = -90
+	
+	for v, Ally in pairs(PAF.GetAllyHumanHeroes()) do
+		if Ally:GetMostRecentPing().time > LastPingTime then
+			LastPing = Ally:GetMostRecentPing()
+			lastPingTime = Ally:GetMostRecentPing().time
+		end
+	end
+	
+	return LastPing
 end
 
 return PAF

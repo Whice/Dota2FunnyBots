@@ -40,7 +40,7 @@ function AbilityUsageThink()
 	BotTarget = bot:GetTarget()
 	
 	-- The order to use abilities in
-	PhantasmDesire, PhantasmTarget = UsePhantasm()
+	PhantasmDesire = UsePhantasm()
 	if PhantasmDesire > 0 then
 		bot:Action_UseAbility(Phantasm)
 		return

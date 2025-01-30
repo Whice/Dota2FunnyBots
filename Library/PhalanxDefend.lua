@@ -6,6 +6,10 @@ local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
 
 local enemies
 
+local TopBuildings = {
+	bot
+}
+
 function NotNilOrDead(unit)
 	if unit == nil or unit:IsNull() then
 		return false
@@ -17,7 +21,74 @@ function NotNilOrDead(unit)
 end
 
 function PDefend.GetDefendDesire(bot, lane)
+	local Buildings
+	local TierThree = nil
+	if lane == LANE_TOP then
+		Buildings = {
+			GetTower(bot:GetTeam(), TOWER_TOP_1),
+			GetTower(bot:GetTeam(), TOWER_TOP_2),
+			GetTower(bot:GetTeam(), TOWER_TOP_3),
+			GetBarracks(bot:GetTeam(), BARRACKS_TOP_MELEE),
+			GetBarracks(bot:GetTeam(), BARRACKS_TOP_RANGED),
+		}
+		
+		TierThree = GetTower(bot:GetTeam(), TOWER_TOP_3)
+	elseif lane == LANE_MID then
+		Buildings = {
+			GetTower(bot:GetTeam(), TOWER_MID_1),
+			GetTower(bot:GetTeam(), TOWER_MID_2),
+			GetTower(bot:GetTeam(), TOWER_MID_3),
+			GetBarracks(bot:GetTeam(), BARRACKS_MID_MELEE),
+			GetBarracks(bot:GetTeam(), BARRACKS_MID_RANGED),
+		}
+		
+		TierThree = GetTower(bot:GetTeam(), TOWER_MID_3)
+	elseif lane == LANE_BOT then
+		Buildings = {
+			GetTower(bot:GetTeam(), TOWER_BOT_1),
+			GetTower(bot:GetTeam(), TOWER_BOT_2),
+			GetTower(bot:GetTeam(), TOWER_BOT_3),
+			GetBarracks(bot:GetTeam(), BARRACKS_BOT_MELEE),
+			GetBarracks(bot:GetTeam(), BARRACKS_BOT_RANGED),
+		}
+		
+		TierThree = GetTower(bot:GetTeam(), TOWER_BOT_3)
+	end
+	
+	local BaseBuildings = {
+		GetTower(GetTeam(), TOWER_BASE_1),
+		GetTower(GetTeam(), TOWER_BASE_1),
+		GetAncient(GetTeam())
+	}
+	
 	if not P.IsInLaningPhase() then
+		for v, Building in pairs(Buildings) do
+			if not Building:IsInvulnerable() then
+				for x, Human in pairs(PAF.GetAllyHumanHeroes()) do
+					local LastPing = Human:GetMostRecentPing()
+					if (GameTime() - LastPing.time) < 30
+					and LastPing.normal_ping == true
+					and GetUnitToLocationDistance(Building, LastPing.location) <= 300 then
+						return BOT_MODE_DESIRE_VERYHIGH
+					end
+				end
+			end
+		end
+		
+		for v, Building in pairs(BaseBuildings) do
+			if not Building:IsInvulnerable() then
+				for x, Human in pairs(PAF.GetAllyHumanHeroes()) do
+					local LastPing = Human:GetMostRecentPing()
+					if (GameTime() - LastPing.time) < 30
+					and LastPing.normal_ping == true
+					and GetUnitToLocationDistance(Building, LastPing.location) <= 300
+					and not NotNilOrDead(TierThree) then
+						return BOT_MODE_DESIRE_VERYHIGH
+					end
+				end
+			end
+		end
+		
 		local DefendDesire = GetDefendLaneDesire(lane)
 		
 		local LaneTierOne = nil

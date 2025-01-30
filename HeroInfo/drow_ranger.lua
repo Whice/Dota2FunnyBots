@@ -3,18 +3,18 @@ local bot = GetBot()
 local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
-local SpiritLance = bot:GetAbilityByName("phantom_lancer_spirit_lance")
-local DoppelGanger = bot:GetAbilityByName("phantom_lancer_doppelwalk")
-local PhantomRush = bot:GetAbilityByName("phantom_lancer_phantom_edge")
-local Juxtapose = bot:GetAbilityByName("phantom_lancer_juxtapose")
+local FrostArrows = bot:GetAbilityByName("drow_ranger_frost_arrows")
+local Gust = bot:GetAbilityByName("drow_ranger_wave_of_silence")
+local Multishot = bot:GetAbilityByName("drow_ranger_multishot")
+local Marksmanship = bot:GetAbilityByName("drow_ranger_marksmanship")
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
 	
-	table.insert(abilities, SpiritLance:GetName())
-	table.insert(abilities, DoppelGanger:GetName())
-	table.insert(abilities, PhantomRush:GetName())
-	table.insert(abilities, Juxtapose:GetName())
+	table.insert(abilities, FrostArrows:GetName())
+	table.insert(abilities, Gust:GetName())
+	table.insert(abilities, Multishot:GetName())
+	table.insert(abilities, Marksmanship:GetName())
 	
 	local talents = {}
 	
@@ -28,20 +28,20 @@ function X.GetHeroLevelPoints()
 	local SkillPoints = {
 	abilities[1], -- Level 1
 	abilities[3], -- Level 2
-	abilities[2], -- Level 3
-	abilities[3], -- Level 4
+	abilities[1], -- Level 3
+	abilities[2], -- Level 4
 	abilities[3], -- Level 5
 	abilities[4], -- Level 6
 	abilities[3], -- Level 7
-	abilities[2], -- Level 8
-	abilities[2], -- Level 9
+	abilities[3], -- Level 8
+	abilities[1], -- Level 9
 	talents[2],   -- Level 10
-	abilities[2], -- Level 11
+	abilities[1], -- Level 11
 	abilities[4], -- Level 12
-	abilities[1], -- Level 13
-	abilities[1], -- Level 14
+	abilities[2], -- Level 13
+	abilities[2], -- Level 14
 	talents[3],   -- Level 15
-	abilities[1], -- Level 16
+	abilities[2], -- Level 16
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
 	"NoLevel",    -- Level 19
@@ -66,24 +66,21 @@ function X.GetHeroItemBuild()
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
 		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
-		local SituationalItem2 = PRoles.ShouldBuySilverEdge("item_heart")
+		local SituationalItem2 = PRoles.ShouldBuySilverEdge("item_greater_crit")
 		local SituationalItem3 = PRoles.ShouldBuyMKB("item_butterfly")
 		
 		ItemBuild = { 
-		"item_quelling_blade",
-	
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
 	
-		"item_diffusal_blade",
+		"item_falcon_blade",
+		"item_dragon_lance",
 		SituationalItem1,
+		"item_hurricane_pike",
+		"item_black_king_bar",
 		SituationalItem2,
-		"item_skadi",
-		"item_ultimate_scepter_2",
-		"item_bloodthorn",
 		SituationalItem3,
-		"item_disperser",
 		}
 	end
 	

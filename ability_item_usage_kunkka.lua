@@ -28,7 +28,6 @@ local Tidebringer = bot:GetAbilityByName("kunkka_tidebringer")
 local XMarksTheSpot = bot:GetAbilityByName("kunkka_x_marks_the_spot")
 local Ghostship = bot:GetAbilityByName("kunkka_ghostship")
 local XMTSReturn = bot:GetAbilityByName("kunkka_return")
-local TorrentStorm = bot:GetAbilityByName("kunkka_torrent_storm")
 local TidalWave = bot:GetAbilityByName("kunkka_tidal_wave")
 
 local TorrentDesire = 0
@@ -36,7 +35,6 @@ local TidebringerDesire = 0
 local XMarksTheSpotDesire = 0
 local GhostshipDesire = 0
 local XMTSReturnDesire = 0
-local TorrentStormDesire = 0
 local TidalWaveDesire = 0
 
 -- Combo Desires
@@ -89,12 +87,6 @@ function AbilityUsageThink()
 			bot:ActionQueue_UseAbilityOnLocation(Torrent, TorrentComboTarget:GetExtrapolatedLocation(XMarksCastPoint))
 			return
 		end
-	end
-	
-	TorrentStormDesire, TorrentStormTarget = UseTorrentStorm()
-	if TorrentStormDesire > 0 then
-		bot:Action_UseAbilityOnLocation(TorrentStorm, TorrentStormTarget)
-		return
 	end
 	
 	TidalWaveDesire, TidalWaveTarget = UseTidalWave()
@@ -158,7 +150,7 @@ function UseTorrent()
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(ExtrapLoc)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(ExtrapLoc)
 				end
@@ -223,31 +215,6 @@ function UseGhostship()
 	return 0
 end
 
-function UseTorrentStorm()
-	if not TorrentStorm:IsFullyCastable() then return 0 end
-	if P.CantUseAbility(bot) then return 0 end
-	
-	local CR = TorrentStorm:GetCastRange()
-	local CastRange = PAF.GetProperCastRange(CR)
-	local Radius = TorrentStorm:GetSpecialValueInt("torrent_max_distance")
-	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
-	
-	if PAF.IsInTeamFight(bot) then
-		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
-		if (AoE.count >= 2) then
-			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
-		end
-	end
-	
-	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
-		return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
-	end
-	
-	return 0
-end
-
 function UseTidalWave()
 	if not TidalWave:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
@@ -262,7 +229,7 @@ function UseTidalWave()
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= (Distance / 2) then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PAF.GetFountainLocation(bot), CastRange)
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), CastRange)
 			end
 		end
 	end

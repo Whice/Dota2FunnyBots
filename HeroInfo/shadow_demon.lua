@@ -86,7 +86,6 @@ function X.GetHeroItemBuild()
 		"item_ultimate_scepter",
 		"item_blink",
 		"item_ultimate_scepter_2",
-		"item_octarine_core",
 		"item_boots_of_bearing",
 		}
 	end
@@ -104,7 +103,6 @@ function X.GetHeroItemBuild()
 		"item_ultimate_scepter",
 		"item_blink",
 		"item_ultimate_scepter_2",
-		"item_octarine_core",
 		"item_guardian_greaves",
 		}
 	end

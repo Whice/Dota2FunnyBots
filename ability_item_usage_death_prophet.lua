@@ -87,7 +87,7 @@ function UseSwarm()
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetLocation(), CastDistance)
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetLocation(), CastDistance)
 			end
 		end
 	end
@@ -99,7 +99,7 @@ function UseSwarm()
 	
 		for v, enemy in pairs(FilteredEnemies) do
 			if PAF.CanLastHitCreepAndHarass(bot, enemy, Radius, Damage, DAMAGE_TYPE_MAGICAL) then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(enemy:GetLocation(), CastDistance)
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), enemy:GetLocation(), CastDistance)
 			end
 		end
 	end
@@ -117,14 +117,14 @@ function UseSwarm()
 			
 			if AoECount >= 3
 			and (bot:GetMana() - Swarm:GetManaCost()) > manathreshold then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(AttackTarget:GetLocation(), CastDistance)
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), AttackTarget:GetLocation(), CastDistance)
 			end
 		end
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(AttackTarget:GetLocation(), CastDistance)
+			return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), AttackTarget:GetLocation(), CastDistance)
 		end
 	end
 	

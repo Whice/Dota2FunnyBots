@@ -103,7 +103,7 @@ function UseDoppelGanger()
 	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PAF.GetFountainLocation(bot), CastRange)
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), CastRange)
 	end
 	
 	if PAF.IsEngaging(bot) then

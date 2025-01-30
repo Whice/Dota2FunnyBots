@@ -159,7 +159,7 @@ function UseBlindingLight()
 	
 	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
 		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetXUnitsTowardsLocation(bot, (Radius / 2))
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(ClosestTarget:GetLocation(), bot:GetLocation(), (Radius / 2))
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then

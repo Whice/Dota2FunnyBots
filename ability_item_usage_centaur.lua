@@ -40,7 +40,7 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	
-	manathreshold = (bot:GetMaxMana() * 0.4)
+	manathreshold = (bot:GetMaxMana() * 0.75)
 	
 	-- The order to use abilities in
 	StampedeDesire = UseStampede()
@@ -122,8 +122,7 @@ function UseDoubleEdge()
 	
 	local CR = DoubleEdge:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
-	--local Radius = DoubleEdge:GetSpecialValueInt("radius")
-	local Radius = 220
+	local Radius = DoubleEdge:GetSpecialValueInt("radius")
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
@@ -138,21 +137,15 @@ function UseDoubleEdge()
 	
 	if AttackTarget ~= nil and not P.IsInLaningPhase() then
 		if AttackTarget:IsCreep() then
-			local NearbyCreeps = bot:GetNearbyCreeps((CastRange + Radius), true)
+			local NearbyCreeps = bot:GetNearbyCreeps(1600, true)
 			local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, Radius)
 			
-			if AoECount >= 3 and bot:GetHealth() > (bot:GetMaxHealth() * 0.55) then
-				return BOT_ACTION_DESIRE_HIGH
+			if AoECount >= 3 and bot:GetHealth() > (bot:GetMaxHealth() * 0.6) then
+				return BOT_ACTION_DESIRE_HIGH, AttackTarget
 			end
 		end
 		
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end

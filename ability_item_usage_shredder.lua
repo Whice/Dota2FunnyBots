@@ -347,7 +347,7 @@ function UseReturnChakram()
 		local EnemyIsInsideChakram = false
 		local CanKillEnemy = false
 		for v, Enemy in pairs(FilteredEnemies) do
-			if GetUnitToLocationDistance(Enemy, ChakramLoc) <= Radius then
+			if GetUnitToLocationDistance(Enemy, ChakramLoc) <= (Radius - 100) then
 				if not EnemyIsInsideChakram then
 					EnemyIsInsideChakram = true
 				end
@@ -417,7 +417,7 @@ function UseReturnSecondChakram()
 		local EnemyIsInsideChakram = false
 		local CanKillEnemy = false
 		for v, Enemy in pairs(FilteredEnemies) do
-			if GetUnitToLocationDistance(Enemy, SecondChakramLoc) <= Radius then
+			if GetUnitToLocationDistance(Enemy, SecondChakramLoc) <= (Radius - 100) then
 				if not EnemyIsInsideChakram then
 					EnemyIsInsideChakram = true
 				end
@@ -472,7 +472,8 @@ function UseFlamethrower()
 		end
 	end
 	
-	if AttackTarget:IsBuilding()
+	if AttackTarget ~= nil
+	and AttackTarget:IsBuilding()
 	and AttackTarget:GetTeam() ~= bot:GetTeam()
 	and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange
 	and bot:IsFacingLocation(BotTarget:GetLocation(), 10) then

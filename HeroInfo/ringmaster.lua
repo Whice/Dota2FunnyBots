@@ -3,18 +3,18 @@ local bot = GetBot()
 local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
-local RocketBarrage = bot:GetAbilityByName("gyrocopter_rocket_barrage")
-local HomingMissile = bot:GetAbilityByName("gyrocopter_homing_missile")
-local FlakCannon = bot:GetAbilityByName("gyrocopter_flak_cannon")
-local CallDown = bot:GetAbilityByName("gyrocopter_call_down")
+local TameTheBeasts = bot:GetAbilityByName("ringmaster_tame_the_beasts")
+local EscapeAct = bot:GetAbilityByName("ringmaster_the_box")
+local ImpalementArts = bot:GetAbilityByName("ringmaster_impalement")
+local WheelOfWonder = bot:GetAbilityByName("ringmaster_wheel")
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
 	
-	table.insert(abilities, RocketBarrage:GetName())
-	table.insert(abilities, HomingMissile:GetName())
-	table.insert(abilities, FlakCannon:GetName())
-	table.insert(abilities, CallDown:GetName())
+	table.insert(abilities, TameTheBeasts:GetName())
+	table.insert(abilities, EscapeAct:GetName())
+	table.insert(abilities, ImpalementArts:GetName())
+	table.insert(abilities, WheelOfWonder:GetName())
 	
 	local talents = {}
 	
@@ -26,17 +26,17 @@ function X.GetHeroLevelPoints()
 	end
 	
 	local SkillPoints = {
-	abilities[1], -- Level 1
-	abilities[3], -- Level 2
-	abilities[1], -- Level 3
-	abilities[3], -- Level 4
-	abilities[1], -- Level 5
+	abilities[3], -- Level 1
+	abilities[1], -- Level 2
+	abilities[3], -- Level 3
+	abilities[1], -- Level 4
+	abilities[3], -- Level 5
 	abilities[4], -- Level 6
-	abilities[1], -- Level 7
-	abilities[3], -- Level 8
-	abilities[3], -- Level 9
+	abilities[3], -- Level 7
+	abilities[2], -- Level 8
+	abilities[1], -- Level 9
 	talents[2],   -- Level 10
-	abilities[2], -- Level 11
+	abilities[1], -- Level 11
 	abilities[4], -- Level 12
 	abilities[2], -- Level 13
 	abilities[2], -- Level 14
@@ -45,7 +45,7 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
 	"NoLevel",    -- Level 19
-	talents[5],   -- Level 20
+	talents[6],   -- Level 20
 	"NoLevel",    -- Level 21
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
@@ -54,7 +54,7 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 26
 	talents[1],   -- Level 27
 	talents[3],   -- Level 28
-	talents[6],   -- Level 29
+	talents[5],   -- Level 29
 	talents[8]    -- Level 30
 	}
 	
@@ -63,41 +63,23 @@ end
 
 function X.GetHeroItemBuild()
 	local ItemBuild
-	
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySphere("item_satanic")
-		local SituationalItem2 = PRoles.ShouldBuyMKB("item_butterfly")
-		
-		ItemBuild = { 
-		"item_wraith_band",
-		"item_magic_wand",
-		"item_power_treads",
-	
-		"item_falcon_blade",
-		"item_lesser_crit",
-		"item_ultimate_scepter",
-		"item_black_king_bar",
-		SituationalItem1,
-		"item_ultimate_scepter_2",
-		"item_greater_crit",
-		SituationalItem2,
-		}
-	end
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
 		ItemBuild = { 
 		--"item_null_talisman",
 		"item_magic_wand",
 		"item_tranquil_boots",
-	
+		
 		"item_solar_crest",
 		"item_force_staff",
-		"item_lotus_orb",
-		"item_cyclone",
-		"item_aeon_disk",
+		"item_aether_lens",
+		"item_ultimate_scepter",
+		"item_sheepstick",
+		"item_ultimate_scepter_2",
 		"item_boots_of_bearing",
 		}
 	end
+	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
 		ItemBuild = { 
 		--"item_null_talisman",
@@ -106,10 +88,11 @@ function X.GetHeroItemBuild()
 		
 		"item_urn_of_shadows",
 		"item_glimmer_cape",
-		"item_spirit_vessel",
-		"item_lotus_orb",
 		"item_aether_lens",
-		"item_aeon_disk",
+		"item_spirit_vessel",
+		"item_ultimate_scepter",
+		"item_sheepstick",
+		"item_ultimate_scepter_2",
 		"item_guardian_greaves",
 		}
 	end

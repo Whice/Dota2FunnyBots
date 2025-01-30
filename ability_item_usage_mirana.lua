@@ -157,7 +157,7 @@ function UseSacredArrow()
 					return BOT_ACTION_DESIRE_HIGH, PredictedLoc
 				elseif GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 				and GetUnitToLocationDistance(bot, PredictedLoc) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PredictedLoc, CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PredictedLoc, CastRange)
 				end
 			end
 		end
@@ -176,7 +176,7 @@ function UseSacredArrow()
 					return BOT_ACTION_DESIRE_HIGH, PredictedLoc
 				elseif GetUnitToUnitDistance(bot, ClosestEnemy) <= CastRange
 				and GetUnitToLocationDistance(bot, PredictedLoc) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PredictedLoc, CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PredictedLoc, CastRange)
 				end
 			end
 		end

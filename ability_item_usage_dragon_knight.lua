@@ -80,11 +80,25 @@ function UseBreatheFire()
 	
 	local CR = BreatheFire:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local Radius = BreatheFire:GetSpecialValueInt("end_radius")
+	local Damage = BreatheFire:GetSpecialValueInt("damage")
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange and not PAF.IsMagicImmune(BotTarget) then
 				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			end
+		end
+	end
+	
+	if P.IsInLaningPhase()
+	and bot:GetActiveMode() == BOT_MODE_LANING then
+		local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	
+		for v, enemy in pairs(FilteredEnemies) do
+			if PAF.CanLastHitCreepAndHarass(bot, enemy, Radius, Damage, DAMAGE_TYPE_MAGICAL) then
+				return BOT_ACTION_DESIRE_HIGH, enemy:GetLocation()
 			end
 		end
 	end

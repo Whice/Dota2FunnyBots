@@ -42,6 +42,8 @@ local BotTarget
 local LastKineticFieldPos = Vector(-99999, -99999, -99999)
 local LastKineticFieldTime = 0
 
+local RetreatTime = 0
+
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
@@ -92,7 +94,7 @@ function UseStormFieldCombo()
 	local Radius = KineticField:GetSpecialValueInt("radius")
 	
 	if PAF.IsInTeamFight(bot) then
-		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
+		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), ComboCastRange, Radius/2, 0, 0)
 		if (AoE.count >= 2) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
 		end
@@ -190,13 +192,18 @@ function UseGlimpse()
 					
 					if BotTarget:GetHealth() <= OffensivePower then
 						if (DotaTime() - KineticFieldDuration) > LastKineticFieldTime
-						and GetUnitToLocationDistance(BotTarget, LastKineticFieldPos) > (KineticFieldRadius + 25) then
+						and GetUnitToLocationDistance(BotTarget, LastKineticFieldPos) > (KineticFieldRadius + 25)
+						and (DotaTime() - RetreatTime) >= 2 then
 							return BOT_ACTION_DESIRE_HIGH, BotTarget
 						end
 					end
+				else
+					RetreatTime = DotaTime()
 				end
 			end
 		end
+	else
+		RetreatTime = DotaTime()
 	end
 	
 	return 0

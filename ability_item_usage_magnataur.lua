@@ -191,7 +191,7 @@ function UseSkewer()
 					if PointLine.within == true
 					and PointLine.distance <= (Radius - 50)
 					and GetUnitToLocationDistance(bot, Fountain) > GetUnitToLocationDistance(BotTarget, Fountain) then
-						return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(Fountain, CastRange)
+						return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), Fountain, CastRange)
 					end
 				end
 			end
@@ -202,7 +202,7 @@ function UseSkewer()
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(Fountain, CastRange)
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), Fountain, CastRange)
 	end
 	
 	return 0

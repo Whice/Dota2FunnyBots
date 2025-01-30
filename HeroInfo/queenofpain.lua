@@ -35,12 +35,12 @@ function X.GetHeroLevelPoints()
 	abilities[3], -- Level 7
 	abilities[3], -- Level 8
 	abilities[2], -- Level 9
-	talents[1],   -- Level 10
+	talents[2],   -- Level 10
 	abilities[2], -- Level 11
 	abilities[4], -- Level 12
 	abilities[2], -- Level 13
 	abilities[1], -- Level 14
-	talents[3],   -- Level 15
+	talents[4],   -- Level 15
 	abilities[1], -- Level 16
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
@@ -50,12 +50,12 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[7],   -- Level 25
+	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[2],   -- Level 27
-	talents[4],   -- Level 28
+	talents[1],   -- Level 27
+	talents[3],   -- Level 28
 	talents[6],   -- Level 29
-	talents[8]    -- Level 30
+	talents[7]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -73,12 +73,11 @@ function X.GetHeroItemBuild()
 		--"item_bottle",
 		"item_power_treads",
 	
-		"item_witch_blade",
+		"item_dagon",
 		"item_kaya_and_sange",
 		SituationalItem1,
 		"item_black_king_bar",
-		"item_ultimate_scepter",
-		"item_devastator",
+		"item_dagon_5",
 		"item_ultimate_scepter_2",
 		"item_sheepstick",
 		}

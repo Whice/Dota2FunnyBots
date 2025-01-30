@@ -496,7 +496,7 @@ PIU.Use['item_tpscroll'] = function(item, bot, mode, extra_range)
 		
 		if FurthestBuilding ~= nil then
 			if GetUnitToUnitDistance(bot, FurthestBuilding) >= MinDistanceForTP then
-				local tpLoc = FurthestBuilding:GetXUnitsTowardsLocation(PAF.GetFountainLocation(bot), MaxDistanceFromBuilding)
+				local tpLoc = PIU.GetXUnitsTowardsLocation(FurthestBuilding:GetLocation(), PAF.GetFountainLocation(bot), MaxDistanceFromBuilding)
 				return BOT_ACTION_DESIRE_ABSOLUTE, tpLoc, 'point'
 			end
 		end
@@ -952,7 +952,7 @@ PIU.Use['item_blink'] = function(item, bot, mode, extra_range)
 	local FilteredEnemies = PAF.FilterTrueUnits(Enemies)
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PAF.GetFountainLocation(bot), nCastRange), 'point'
+		return BOT_ACTION_DESIRE_HIGH, PIU.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), nCastRange), 'point'
 	end
 	
 	local projectiles = bot:GetIncomingTrackingProjectiles()
@@ -978,7 +978,7 @@ PIU.Use['item_blink'] = function(item, bot, mode, extra_range)
 						local Skewer = bot:GetAbilityByName("magnataur_skewer")
 						if Skewer:IsFullyCastable() then
 							local Radius = Skewer:GetSpecialValueInt("skewer_radius")
-							return BOT_ACTION_DESIRE_HIGH, BotTarget:GetXUnitsTowardsLocation(PAF.GetFountainLocation(BotTarget), Radius), 'point'
+							return BOT_ACTION_DESIRE_HIGH, PIU.GetXUnitsTowardsLocation(BotTarget:GetLocation(), PAF.GetFountainLocation(BotTarget), Radius), 'point'
 						end
 					end
 					
@@ -1394,7 +1394,8 @@ PIU.Use['item_glimmer_cape'] = function(item, bot, mode, extra_range)
 			if not Ally:HasModifier("modifier_item_dustofappearance")
 			and not Ally:HasModifier("modifier_slardar_amplify_damage")
 			and not Ally:HasModifier("modifier_arc_warden_tempest_double")
-			and not Ally:HasModifier("modifier_item_glimmer_cape") then
+			and not Ally:IsInvisible()
+			and not Ally:HasModifier("modifier_bounty_hunter_track") then
 				return BOT_ACTION_DESIRE_ABSOLUTE, Ally, 'unit'
 			end
 		end
@@ -1495,44 +1496,38 @@ end
 
 --item_dagon
 PIU.Use['item_dagon'] = function(item, bot, mode, extra_range)
+	local CR = 700 + extra_range
+	local nCastRange = PAF.GetProperCastRange(CR)
 	
-	local nCastRange = 600 + extra_range;
-	local nDamage = 400;
+	local EnemiesWithinRange = bot:GetNearbyHeroes(nCastRange, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
-	if item:GetName() == "item_dagon_2" then 
-		nCastRange = 650;
-		nDamage = 500;
-	elseif item:GetName() == "item_dagon_3" then
-		nCastRange = 700;
-		nDamage = 600;
-	elseif item:GetName() == "item_dagon_4" then
-		nCastRange = 750;
-		nDamage = 700;
-	elseif item:GetName() == "item_dagon_5" then
-		nCastRange = 800;
-		nDamage = 800;
-	end
+	if PAF.IsEngaging(bot) then
+		local BotTarget = bot:GetTarget()
 	
-	if P.IsRetreating(bot) then
-		local enemies = bot:GetNearbyHeroes(nCastRange, true, BOT_MODE_NONE)
-		local target = P.GetWeakestEnemyHero(enemies)
-		if target ~= nil then
-			return BOT_ACTION_DESIRE_ABSOLUTE, target, 'unit';
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= nCastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				return BOT_ACTION_DESIRE_HIGH, BotTarget, 'unit'
+			end
 		end
 	end
 	
-	if P.IsGoingOnSomeone(bot)
-	then
-		local target = bot:GetTarget();
-		if P.IsValidTarget(target) 
-		   and P.CanCastOnNonMagicImmune(target) == true
-		   and P.IsInRange(target, bot, nCastRange) 
-		then
-			return BOT_ACTION_DESIRE_ABSOLUTE, target, 'unit';
+	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
+		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
+		return BOT_ACTION_DESIRE_ABSOLUTE, ClosestTarget, 'unit'
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		local AttackTarget = bot:GetAttackTarget()
+		
+		if PAF.IsRoshan(AttackTarget)
+		and GetUnitToUnitDistance(bot, AttackTarget) <= nCastRange then
+			return BOT_ACTION_DESIRE_ABSOLUTE, AttackTarget, 'unit'
 		end
 	end
 	
-	return BOT_ACTION_DESIRE_NONE;
+	return BOT_ACTION_DESIRE_NONE
 end
 
 --item_dagon_2
@@ -1669,20 +1664,20 @@ PIU.Use['item_force_staff'] = function(item, bot, mode, extra_range)
 				local bot_dist = GetUnitToLocationDistance(bot, loc);
 				local target_dist = GetUnitToLocationDistance(target, loc);
 				if target_dist > bot_dist + 50 
-					and ( target:IsFacingUnit(bot, 15) == true or target:GetAttackTarget() == bot )  
+					and ( target:IsFacingLocation(bot:GetLocation(), 15) == true or target:GetAttackTarget() == bot )  
 					and P.IsInRange(bot, target, eCastRange) == true  
 				then
 					return BOT_ACTION_DESIRE_ABSOLUTE, target, 'unit';
 				end
 			end
-			if item:GetName() == 'item_force_staff' and target:IsFacingUnit(bot, 15) then
+			if item:GetName() == 'item_force_staff' and target:IsFacingLocation(bot:GetLocation(), 15) then
 				return BOT_ACTION_DESIRE_ABSOLUTE, target, 'unit';
 			end
 		elseif P.IsValidTarget(target) == true 
 			and P.IsInRange(target, bot, bot:GetAttackRange() - 200) == false 
 			and P.IsInRange(target, bot, bot:GetAttackRange() + 300) == true 
 			and PIU.IsForceStafed(bot) == false
-			and bot:IsFacingUnit(target, 15)
+			and bot:IsFacingLocation(target:GetLocation(), 15)
 		then
 			local enemies = target:GetNearbyHeroes(1000, false, BOT_MODE_NONE);
 			local allies = target:GetNearbyHeroes(1000, true, BOT_MODE_NONE);
@@ -1778,7 +1773,42 @@ end
 
 --item_rod_of_atos
 PIU.Use['item_rod_of_atos'] = function(item, bot, mode, extra_range)
-	return PIU.Use['item_cyclone'](item, bot, mode, extra_range);
+	local nCastRange = 1100 + extra_range
+	
+	local EnemiesWithinRange = bot:GetNearbyHeroes(nCastRange, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	
+	for v, enemy in pairs(FilteredEnemies) do
+		if enemy:IsChanneling() then
+			return BOT_ACTION_DESIRE_ABSOLUTE, enemy, 'unit'
+		end
+	end
+	
+	if PAF.IsEngaging(bot) then
+		local BotTarget = bot:GetTarget()
+	
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= nCastRange then
+				return BOT_ACTION_DESIRE_ABSOLUTE, BotTarget, 'unit'
+			end
+		end
+	end
+	
+	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
+		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
+		return BOT_ACTION_DESIRE_ABSOLUTE, ClosestTarget, 'unit'
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		local AttackTarget = bot:GetAttackTarget()
+		
+		if PAF.IsRoshan(AttackTarget)
+		and GetUnitToUnitDistance(bot, AttackTarget) <= nCastRange then
+			return BOT_ACTION_DESIRE_ABSOLUTE, AttackTarget, 'unit'
+		end
+	end
+	
+	return BOT_ACTION_DESIRE_NONE
 end
 
 --item_nullifier

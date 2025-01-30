@@ -5,7 +5,8 @@ local bot = GetBot()
 local UrgentRetreat = false
 
 function GetDesire()
-	if bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_active") then
+	if bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_active")
+	or bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_respawn_time") then
 		return 0
 	end
 	

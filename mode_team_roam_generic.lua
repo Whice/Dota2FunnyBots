@@ -68,7 +68,15 @@ function GetDesire()
 		end
 	end
 	
+	if IsInWraithForm() then
+		return (BOT_MODE_DESIRE_ABSOLUTE * 1.2)
+	end
+	
 	if IsRuptured() then
+		return (BOT_MODE_DESIRE_ABSOLUTE * 1.1)
+	end
+	
+	if ShouldAttackCogs() then
 		return (BOT_MODE_DESIRE_ABSOLUTE * 1.1)
 	end
 	
@@ -96,7 +104,7 @@ function GetDesire()
 		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 		local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
 		
-		if WeakestEnemy ~= nil then
+		if WeakestEnemy ~= nil and WeakestEnemy:CanBeSeen() then
 			local NearbyTowers = WeakestEnemy:GetNearbyTowers(900, false)
 			
 			if #NearbyTowers <= 0 then
@@ -131,6 +139,17 @@ function GetDesire()
 end
 
 function Think()
+	if IsInWraithForm() then
+		local AttackRange = bot:GetAttackRange()
+		local EnemiesWithinRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+		local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
+		
+		if WeakestEnemy ~= nil then
+			bot:Action_AttackUnit(WeakestEnemy, true)
+		end
+	end
+	
 	if IsRuptured() then
 		local AttackRange = bot:GetAttackRange()
 		local EnemiesWithinRange = bot:GetNearbyHeroes(AttackRange, true, BOT_MODE_NONE)
@@ -142,6 +161,13 @@ function Think()
 		else
 			bot:Action_ClearActions(true)
 		end
+	end
+	
+	if ShouldAttackCogs()
+	and RoamTarget ~= nil
+	and RoamTarget:CanBeSeen() then
+		bot:Action_AttackUnit(RoamTarget, false)
+		return
 	end
 
 	if IsWinterWyvernArcticBurn then
@@ -272,6 +298,10 @@ function CanAttackSpecialUnit()
 			or string.find(Unit:GetUnitName(), "sentry_ward")
 			or string.find(Unit:GetUnitName(), "healing_ward")
 			or string.find(Unit:GetUnitName(), "weaver_swarm") then
+				if string.find(Unit:GetUnitName(), "observer_ward") or string.find(Unit:GetUnitName(), "sentry_ward") then
+					SearchRange = 1600
+				end
+				
 				if GetUnitToUnitDistance(bot, Unit) <= SearchRange
 				and not PAF.IsPhysicalImmune(Unit) then
 					RoamTarget = Unit
@@ -407,6 +437,43 @@ function GetSmokeTarget()
 	return ClosestSmokeTarget
 end
 
+function ShouldAttackCogs()
+	local EnemyWardList = GetUnitList(UNIT_LIST_ENEMIES)
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(bot:GetTarget()) then
+			if GetUnitToUnitDistance(bot, bot:GetTarget()) <= (bot:GetAttackRange() + 100) then
+				return false
+			end
+		end
+	end
+	
+	for v, Cog in pairs(EnemyWardList) do
+		if string.find(Cog:GetUnitName(), "rattletrap_cog") then
+			if GetUnitToUnitDistance(bot, Cog) <= 200 and bot:IsFacingLocation(Cog:GetLocation(), 75) then
+				RoamTarget = Cog
+				return true
+			end
+		end
+	end
+	
+	local AlliedWardList = GetUnitList(UNIT_LIST_ALLIES)
+	
+	for v, Cog in pairs(AlliedWardList) do
+		if string.find(Cog:GetUnitName(), "rattletrap_cog") then
+			if GetUnitToUnitDistance(bot, Cog) <= 200
+			and bot:IsFacingLocation(Cog:GetLocation(), 75)
+			and not PAF.IsEngaging(bot)
+			and bot:GetActiveMode() ~= BOT_MODE_ROAM then
+				RoamTarget = Cog
+				return true
+			end
+		end
+	end
+	
+	return false
+end
+
 function GetEnemiesWithoutArcticBurn()
 	local EnemiesWithinRange = bot:GetNearbyHeroes((bot:GetAttackRange()), true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
@@ -496,6 +563,19 @@ end
 
 function IsRuptured()
 	if bot:HasModifier("modifier_bloodseeker_rupture") then
+		return true
+	end
+	
+	return false
+end
+
+function IsInWraithForm()
+	local EnemiesWithinRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	
+	if (bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_active")
+	or bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_respawn_time"))
+	and #FilteredEnemies > 0 then
 		return true
 	end
 	

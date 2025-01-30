@@ -79,7 +79,7 @@ function GetDesire()
 		local Multishot = bot:GetAbilityByName("drow_ranger_multishot")
 		if Multishot:IsInAbilityPhase() or Multishot:IsChanneling() or bot:IsChanneling() then
 			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
+			return BOT_MODE_DESIRE_ABSOLUTE * 1.5
 		end
 	end
 	if bot:GetUnitName() == "npc_dota_hero_enigma" then
@@ -136,6 +136,13 @@ function GetDesire()
 		if FortunesEnd:IsInAbilityPhase() or FortunesEnd:IsChanneling() or bot:IsChanneling() then
 			desiremode = "AbilityChannel"
 			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
+		end
+	end
+	if bot:GetUnitName() == "npc_dota_hero_ringmaster" then
+		local TameTheBeasts = bot:GetAbilityByName("ringmaster_tame_the_beasts")
+		if TameTheBeasts:IsInAbilityPhase() or TameTheBeasts:IsChanneling() or bot:IsChanneling() then
+			desiremode = "AbilityChannel"
+			return BOT_MODE_DESIRE_ABSOLUTE * 1.5
 		end
 	end
 	

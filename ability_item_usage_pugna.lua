@@ -110,7 +110,7 @@ function UseNetherBlast()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if AttackTarget:IsBuilding() then
+		if AttackTarget:IsBuilding() and AttackTarget:GetTeam() ~= bot:GetTeam() then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 		

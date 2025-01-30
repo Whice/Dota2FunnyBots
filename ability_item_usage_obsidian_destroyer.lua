@@ -134,12 +134,21 @@ function UseAstralImprisonment()
 	
 	FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
 	
-	if PAF.IsInTeamFight(bot) then
-		for v, Ally in pairs(FilteredAllies) do
-			if Ally:GetHealth() < (Ally:GetMaxHealth() * 0.3) then
-				return BOT_ACTION_DESIRE_HIGH, Ally
-			end
+	local WeakestAlly = PAF.GetWeakestUnit(FilteredAllies)
+	
+	if WeakestAlly ~= nil then
+		local EnemiesNearAlly = WeakestAlly:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
+		
+		if WeakestAlly:GetHealth() <= (WeakestAlly:GetMaxHealth() * 0.3)
+		and WeakestAlly:WasRecentlyDamagedByAnyHero(1)
+		and #EnemiesNearAlly > 0 then
+			return BOT_ACTION_DESIRE_HIGH, WeakestAlly
 		end
+	end
+	
+	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
+		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
+		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
 	end
 	
 	for v, enemy in pairs(FilteredEnemies) do
@@ -148,17 +157,16 @@ function UseAstralImprisonment()
 		end
 	end
 	
-	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+	if PAF.IsInTeamFight(bot) then
+		local EnemiesWithinTeamFightRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+		local FilteredEnemiesTF = PAF.FilterUnitsForStun(EnemiesWithinTeamFightRange)
+		
+		if #FilteredEnemiesTF > 1 then
+			local StrongestEnemy = PAF.GetStrongestPowerUnit(FilteredEnemiesTF)
+			if StrongestEnemy ~= nil then
+				return BOT_ACTION_DESIRE_HIGH, StrongestEnemy
 			end
 		end
-	end
-	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
 	end
 	
 	return 0

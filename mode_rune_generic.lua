@@ -49,7 +49,7 @@ function GetDesire()
 			end
 		end
 		
-		if ClosestRune ~= nil then
+		if ClosestRune ~= nil and not HumanDangerPingedRune(GetRuneSpawnLocation(ClosestRune)) then
 			RuneToCheck = ClosestRune
 			return BOT_MODE_DESIRE_HIGH
 		end
@@ -58,7 +58,7 @@ function GetDesire()
 	if IsLaningSupport() then
 		if (bot:GetTeam() == TEAM_RADIANT and PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport")
 		or (bot:GetTeam() == TEAM_DIRE and PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport") then
-			if ShouldCheckRune(TopBounty) then
+			if ShouldCheckRune(TopBounty) and not HumanDangerPingedRune(TopBounty) then
 				RuneToCheck = TopBounty
 				return BOT_MODE_DESIRE_HIGH
 			end
@@ -66,7 +66,7 @@ function GetDesire()
 		
 		if (bot:GetTeam() == TEAM_RADIANT and PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport")
 		or (bot:GetTeam() == TEAM_DIRE and PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport") then
-			if ShouldCheckRune(BottomBounty) then
+			if ShouldCheckRune(BottomBounty) and not HumanDangerPingedRune(BottomBounty) then
 				RuneToCheck = BottomBounty
 				return BOT_MODE_DESIRE_HIGH
 			end
@@ -84,7 +84,7 @@ function GetDesire()
 		end
 	end
 	
-	if ClosestRune ~= nil and not IsAllyWithBottleNearby(ClosestRune) then
+	if ClosestRune ~= nil and not IsAllyWithBottleNearby(ClosestRune) and not HumanDangerPingedRune(RuneLoc) then
 		local DistanceToRune = GetUnitToLocationDistance(bot, GetRuneSpawnLocation(ClosestRune))
 		local DesireDistance = (3200 - DistanceToRune)
 		local RuneDesire = (RemapValClamped(DesireDistance, 0, 3200, 0.0, 1.0) * 2)
@@ -187,6 +187,19 @@ function IsAllyWithBottleNearby(Rune)
 		if Ally:FindItemSlot("item_bottle") ~= -1
 		and Ally ~= bot
 		and GetUnitToLocationDistance(Ally, GetRuneSpawnLocation(Rune)) <= 1200 then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function HumanDangerPingedRune(RuneLoc)
+	for v, Human in pairs(PAF.GetAllyHumanHeroes()) do
+		local LastPing = Human:GetMostRecentPing()
+		if (GameTime() - LastPing.time) < 30
+		and LastPing.normal_ping == false
+		and P.GetDistance(RuneLoc, LastPing.location) <= 400 then
 			return true
 		end
 	end
