@@ -1,1 +1,5 @@
 /.vscode*
+/.vs*
+/DotaLuaHelper/.vs*
+/DotaLuaHelper/DotaLuaHelper/x64*
+/resume.txt
