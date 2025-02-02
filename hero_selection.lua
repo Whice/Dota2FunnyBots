@@ -247,9 +247,6 @@ end
 
 -- Функция для выбора Наги Сирены, если есть свободный слот для бота в команде Dire
 function PickNagaSirenIfAvailable(tableIDs)
-	print("I want to choose naga!")
-	print("Type: "..tostring(type(globalVariables)))
-	print("isNagaNeedChoose: "..tostring(globalVariables.isNagaNeedChoose))
 	if globalVariables.isNagaNeedChoose then
 		globalVariables.isNagaNeedChoose = false
 		for _, playerID in ipairs(tableIDs) do
