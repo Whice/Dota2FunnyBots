@@ -1,4 +1,4 @@
-logic= {}
+logic = {}
 
 function FindItem(itemName)
     local bot = GetBot()
@@ -35,7 +35,20 @@ function GetFirstTower()
     end
     return tower
 end
+-- Функция для определения координат базы
+local function getBaseLocation(team)
+    if team == TEAM_RADIANT then
+        return Vector(-7000, -6500, 0) -- Координаты базы Radiant
+    else
+        return Vector(7000, 6500, 0) -- Координаты базы Dire
+    end
+end
 
+-- Функция для движения бота к базе
+function MoveToBase(bot)
+    local baseLocation = getBaseLocation(bot:GetTeam())
+    bot:Action_MoveToLocation(baseLocation)
+end
 -- Функция для перемещения бота к своей башне
 function MoveToTower()
     local bot = GetBot()
@@ -58,10 +71,14 @@ function MoveForwardOnLane()
     local laneNumber = GetAssignedLaneNumber()
     -- Получаем точку на передней линии для текущей линии бота
     -- local frontLocation = GetLaneFrontLocation(bot:GetTeam(), laneNumber, 0) -- 0 для передней линии
-    local frontLocation = GetLaneFrontLocation(bot:GetTeam(), laneNumber, 0)
-    if frontLocation then
+    local frontLocation = GetLaneFrontLocation(bot:GetTeam(), laneNumber, 200)
+    local frontLocationDistance = (frontLocation - bot:GetLocation()):Length2D()
+    if frontLocationDistance > 3000000 then
+        MoveToTower()
+    elseif frontLocation then
         -- Перемещаемся к точке на передней линии
         bot:Action_MoveToLocation(frontLocation)
+        bot:ActionImmediate_Chat("Иду на линию!", true)
     else
         print("Error: Failed to get lane front location")
     end
@@ -82,9 +99,11 @@ function GetWeakestCreep(laneCreeps)
     return weakestCreep
 end
 
+local botsAttackState ={}
 -- Функция для фарма на линии
 function FarmLane(dotaTime)
     local bot = GetBot()
+
     if dotaTime < 0 then
         return
     end
@@ -93,30 +112,40 @@ function FarmLane(dotaTime)
     local laneCreeps = bot:GetNearbyLaneCreeps(searchRadius, true)
     if laneCreeps == nil or #laneCreeps < 1 then
         MoveForwardOnLane()
-	elseif laneCreeps ~= nil then
+    elseif laneCreeps ~= nil then
         local botDamage = bot:GetAttackDamage()
         local targetCreep = GetWeakestCreep(laneCreeps)
 
         if targetCreep ~= nil then
             local creepHealth = targetCreep:GetHealth()
-            local creepHalfMaxHealth = targetCreep:GetMaxHealth()/2
+            local creepHalfMaxHealth = targetCreep:GetMaxHealth() / 2
             local distanceToCreep = GetUnitToUnitDistance(bot, targetCreep)
 
-            bot:ActionImmediate_Chat("Target creep distanceToCreep: " .. distanceToCreep, true)
             -- Если здоровье крипа меньше, чем на 1 атаку бота, атаковать его
-            if creepHealth <= botDamage*1.2 then
+            if false and creepHealth <= botDamage then
                 bot:Action_AttackUnit(targetCreep, true)
                 -- Если здоровье крипа меньше, чем на 2 атаки бота, приближаться к нему
-            elseif creepHealth <= creepHalfMaxHealth and distanceToCreep > bot:GetAttackRange() then
+            elseif false and creepHealth <= creepHalfMaxHealth and distanceToCreep > bot:GetAttackRange() then
                 bot:Action_MoveToUnit(targetCreep)
+                bot:ActionImmediate_Chat("Хочу атаковать!", true)
             else
+                bot:ActionImmediate_Chat("Смещаюсь назад!", true)
+                local backLocation = GetLaneFrontLocation(bot:GetTeam(), laneNumber, 200)
+                --MoveToBase(bot)
+                bot:Action_MoveToLocation(Vector(0, 0, 0))
+                if backLocation then
+                    -- Перемещаемся к точке на передней линии
+                    --bot:Action_MoveToLocation(backLocation)
+                else
+                    local randomX = bot:GetLocation().x + math.random(-20, 20)
+                    local randomY = bot:GetLocation().y + math.random(-20, 20)
+                    bot:Action_MoveToLocation(Vector(randomX, randomY, 0))
+                end
                 -- Перемещаться в случайные позиции в небольшом радиусе
-                local randomX = bot:GetLocation().x + math.random(-20, 20)
-                local randomY = bot:GetLocation().y + math.random(-20, 20)
-                bot:Action_MoveToLocation(Vector(randomX, randomY, 0))
+
             end
         else
-			Warning(" targetCreep == nil !")
+            Warning(" targetCreep == nil !")
         end
     end
 end

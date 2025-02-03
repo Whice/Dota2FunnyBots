@@ -93,9 +93,11 @@ end
 
 function ProcessState()
     if currentState == BehaviorState.MOVE_TO_TOWER then
-        MoveToTower()
+        MoveForwardOnLane()
     elseif currentState == BehaviorState.FARM_LANE then
-        FarmLane(dotaTime)
+        --FarmLane(dotaTime)
+		
+	bot:Action_MoveToLocation(Vector(0, 0, 0))
     end
 end
 
@@ -107,7 +109,9 @@ function CheckState()
             currentState = BehaviorState.FARM_LANE
         end
     elseif currentState == BehaviorState.FARM_LANE then
-        if firstTowerDistance > 5000 then
+		local frontLocation = GetLaneFrontLocation(bot:GetTeam(), laneNumber, 200)
+		local frontLocationDistance = (frontLocation - bot:GetLocation()):Length2D()
+        if frontLocationDistance > 1500 then
             currentState = BehaviorState.MOVE_TO_TOWER
         end
     end
