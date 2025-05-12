@@ -117,8 +117,17 @@ function UseBreatheFire()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
@@ -190,8 +199,15 @@ function UseElderDragonForm()
 			return BOT_ACTION_DESIRE_HIGH
 		end
 		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(attacktarget) then
-			return BOT_ACTION_DESIRE_HIGH
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(attacktarget)
+			and GetUnitToUnitDistance(bot, attacktarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, attacktarget
+			end
+		end
+		
+		if PAF.IsTormentor(attacktarget) then
+			return BOT_ACTION_DESIRE_HIGH, attacktarget
 		end
 	end
 	
@@ -216,6 +232,21 @@ function UseFireball()
 		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
 		if (AoE.count >= 2) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc;
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	

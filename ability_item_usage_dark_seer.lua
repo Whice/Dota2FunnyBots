@@ -108,7 +108,8 @@ function UseVacuum()
 	
 	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
 		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
-		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(ClosestTarget), CastRange)
+		local CastLoc = PAF.GetXUnitsTowardsLocation(ClosestTarget:GetLocation(), PAF.GetFountainLocation(ClosestTarget), Radius)
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), CastLoc, CastRange)
 	end
 	
 	if PAF.IsEngaging(bot) and not CanCastWallCombo() then
@@ -198,11 +199,15 @@ function UseIonShell()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH, bot
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH, bot
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, bot
 		end
 	end
 	

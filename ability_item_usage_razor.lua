@@ -101,6 +101,10 @@ function UsePlasmaField()
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
 		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
+		end
 	end
 	
 	return 0

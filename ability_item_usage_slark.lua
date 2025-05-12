@@ -99,6 +99,10 @@ function UseDarkPact()
 		if PAF.IsRoshan(AttackTarget) then
 			return BOT_ACTION_DESIRE_VERYHIGH
 		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		end
 	end
 	
 	return 0

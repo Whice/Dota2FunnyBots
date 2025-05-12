@@ -12,8 +12,12 @@ local MinTeamLevel = 5
 local FinishedLaning = false
 
 function GetDesire()
+	return 0
+end
+
+--[[function GetDesire()
 	if not FinishedLaning and P.IsPushing(bot) then
-		FinishedLaning = true -- Prevent bots from prematurely entering farm mode when they can still safely lane
+		FinishedLaning = true -- Prevent bots from prematurely entering assemble mode when they can still safely lane
 	end
 
 	if FinishedLaning then
@@ -35,7 +39,7 @@ function GetDesire()
 	end
 	
 	return 0
-end
+end]]--
 
 function Think()
 	local LaneFrontLocation = GetLaneFrontLocation(bot:GetTeam(), LaneToPush, 0)

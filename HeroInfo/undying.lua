@@ -63,22 +63,26 @@ end
 
 function X.GetHeroItemBuild()
 	local ItemBuild
-
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
+	
+	local SupportBoots = PRoles.GetSupportBoots(bot)
+	local SupportUtility = PRoles.GetSupportUtilityItem(bot)
+	
+	local CoreItems = {
 		"item_magic_wand",
-		"item_arcane_boots",
+		SupportBoots,
 		"item_holy_locket",
 		
-		"item_urn_of_shadows",
-		"item_glimmer_cape",
-		"item_spirit_vessel",
-		"item_lotus_orb",
+		SupportUtility,
+	}
+	
+	local LuxuryItems = {
+		"item_ultimate_scepter",
 		"item_sheepstick",
-		"item_guardian_greaves",
-		}
-	end
+		"item_aeon_disk",
+		"item_ultimate_scepter_2",
+	}
+	
+	ItemBuild = PRoles.CreateSupportBuild(bot, CoreItems, LuxuryItems, 3)
 	
 	return ItemBuild
 end

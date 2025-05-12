@@ -122,9 +122,16 @@ function UseSwarm()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), AttackTarget:GetLocation(), CastDistance)
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -196,18 +203,17 @@ function UseExorcism()
 		return BOT_ACTION_DESIRE_HIGH
 	end
 	
-	local attacktarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
 	
-	if attacktarget ~= nil then
-		if attacktarget:IsBuilding()
-		and attacktarget:GetTeam() ~= bot:GetTeam() then
-			return BOT_ACTION_DESIRE_HIGH
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
 		end
 		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(attacktarget) then
-				return BOT_ACTION_DESIRE_HIGH
-			end
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	

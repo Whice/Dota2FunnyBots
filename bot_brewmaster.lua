@@ -1,4 +1,5 @@
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
+local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
 
 local bot = GetBot()
 
@@ -100,7 +101,8 @@ function MinionThink(  hMinionUnit )
 		end
 		
 		if hMinionUnit:IsIllusion() then
-			hMinionUnit:Action_AttackUnit(AttackUnits(hMinionUnit), false)
+			PAF.IllusionTarget(hMinionUnit, bot)
+			return
 		end
 	end
 end

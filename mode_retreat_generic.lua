@@ -10,6 +10,12 @@ function GetDesire()
 		return 0
 	end
 	
+	if bot:GetUnitName() == "npc_dota_hero_tinker" then
+		if bot:DistanceFromFountain() <= 0 and bot:GetMana() < (bot:GetMaxMana() * 0.9) then
+			return 0.9
+		end
+	end
+	
 	local RetreatDesire = 0
 	
 	local BotHealth = bot:GetHealth()
@@ -40,7 +46,10 @@ function GetDesire()
 		return 0.9
 	end
 	
-	
+	if bot:GetUnitName() == "npc_dota_hero_huskar"
+	and bot:GetAbilityInSlot(2):IsTrained() then
+		HealthRetreatVal = RemapValClamped(HealthMissing, 0, BotMaxHealth, 0.0, HealthRetreatVal)
+	end
 	
 	RetreatDesire = HealthRetreatVal
 	

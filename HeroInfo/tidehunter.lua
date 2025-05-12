@@ -28,35 +28,35 @@ function X.GetHeroLevelPoints()
 	
 	local SkillPoints = {
 	abilities[1], -- Level 1
-	abilities[2], -- Level 2
-	abilities[1], -- Level 3
-	abilities[3], -- Level 4
-	abilities[1], -- Level 5
+	abilities[3], -- Level 2
+	abilities[3], -- Level 3
+	abilities[2], -- Level 4
+	abilities[3], -- Level 5
 	abilities[4], -- Level 6
-	abilities[1], -- Level 7
+	abilities[3], -- Level 7
 	abilities[2], -- Level 8
 	abilities[2], -- Level 9
 	talents[1],   -- Level 10
 	abilities[2], -- Level 11
 	abilities[4], -- Level 12
-	abilities[3], -- Level 13
-	abilities[3], -- Level 14
-	talents[3],   -- Level 15
-	abilities[3], -- Level 16
+	abilities[1], -- Level 13
+	abilities[1], -- Level 14
+	talents[4],   -- Level 15
+	abilities[1], -- Level 16
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
 	"NoLevel",    -- Level 19
-	talents[6],   -- Level 20
+	talents[5],   -- Level 20
 	"NoLevel",    -- Level 21
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[7],   -- Level 25
+	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
 	talents[2],   -- Level 27
-	talents[4],   -- Level 28
-	talents[5],   -- Level 29
-	talents[8]    -- Level 30
+	talents[3],   -- Level 28
+	talents[6],   -- Level 29
+	talents[7]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -75,11 +75,12 @@ function X.GetHeroItemBuild()
 		"item_soul_ring",
 		
 		"item_pipe",
-		"item_eternal_shroud",
 		"item_blink",
-		"item_sange_and_yasha",
-		"item_assault",
+		"item_ultimate_scepter",
+		"item_octarine_core",
+		"item_shivas_guard",
 		"item_ultimate_scepter_2",
+		"item_sheepstick",
 		"item_overwhelming_blink",
 		}
 	end

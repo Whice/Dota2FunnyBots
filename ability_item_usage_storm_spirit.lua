@@ -50,8 +50,13 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ElectricVortexDesire, ElectricVortexTarget = UseElectricVortex()
 	if ElectricVortexDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ElectricVortex, ElectricVortexTarget)
-		return
+		if bot:HasScepter() then
+			bot:Action_UseAbility(ElectricVortex)
+			return
+		else
+			bot:Action_UseAbilityOnEntity(ElectricVortex, ElectricVortexTarget)
+			return
+		end
 	end
 	
 	OverloadDesire = UseOverload()
@@ -60,9 +65,9 @@ function AbilityUsageThink()
 		return
 	end
 	
-	StaticRemnantDesire = UseStaticRemnant()
+	StaticRemnantDesire, StaticRemnantTarget = UseStaticRemnant()
 	if StaticRemnantDesire > 0 then
-		bot:Action_UseAbility(StaticRemnant)
+		bot:Action_UseAbilityOnLocation(StaticRemnant, StaticRemnantTarget)
 		return
 	end
 	
@@ -79,37 +84,42 @@ function UseStaticRemnant()
 	
 	local CastRange = StaticRemnant:GetSpecialValueInt("static_remnant_radius")
 	
+	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if not bot:HasModifier("modifier_storm_spirit_overload") and AttackTarget ~= nil and AttackTarget:IsHero() and GetUnitToUnitDistance(bot, AttackTarget) <= (AttackRange + 50) then
-		return BOT_ACTION_DESIRE_ABSOLUTE
+	if not bot:HasModifier("modifier_storm_spirit_overload")
+	and AttackTarget ~= nil
+	and AttackTarget:IsHero()
+	and GetUnitToUnitDistance(bot, AttackTarget) <= (AttackRange + 50)
+	and Overload:IsTrained() then
+		return BOT_ACTION_DESIRE_ABSOLUTE, AttackTarget:GetLocation()
 	end
 	
-	local enemies = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local trueenemies = PAF.FilterTrueUnits(enemies)
-	local nonimmuneenemies = {}
-	
-	for v, enemy in pairs(trueenemies) do
-		if P.IsNotImmune(enemy) then
-			table.insert(nonimmuneenemies, enemy)
-		end
+	if #FilteredEnemies >= 1 then
+		return BOT_ACTION_DESIRE_ABSOLUTE, FilteredEnemies[1]:GetLocation()
 	end
 	
-	if #nonimmuneenemies >= 1 then
-		return BOT_ACTION_DESIRE_ABSOLUTE
-	end
-	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		local neutrals = bot:GetNearbyNeutralCreeps(CastRange + 200)
+	if bot:GetActiveMode() == BOT_MODE_FARM and not P.IsInLaningPhase() then
+		local neutrals = bot:GetNearbyCreeps((CastRange + 200), true)
 		
 		if #neutrals >= 1 and (bot:GetMana() - StaticRemnant:GetManaCost()) > manathreshold then
-			return BOT_ACTION_DESIRE_ABSOLUTE
+			return BOT_ACTION_DESIRE_ABSOLUTE, neutrals[1]:GetLocation()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_ABSOLUTE
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -180,22 +190,23 @@ function UseBallLightning()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local enemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
-	local AttackTarget = P.GetWeakestEnemyHero(enemies)
+	local FilteredEnemies = PAF.FilterTrueUnits(enemies)
 	
-	if bot:GetHealth() <= (bot:GetMaxHealth() * 0.35) and P.IsRetreating(bot) then
-		if team == TEAM_RADIANT and GetUnitToLocationDistance(bot, RadiantBase) > 800 then
-			return BOT_ACTION_DESIRE_HIGH, RadiantBase
-		elseif team == TEAM_DIRE and GetUnitToLocationDistance(bot, DireBase) > 800 then
-			return BOT_ACTION_DESIRE_HIGH, DireBase
-		end
+	if bot:GetHealth() <= (bot:GetMaxHealth() * 0.35)
+	and P.IsRetreating(bot)
+	and #FilteredEnemies > 0 then
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), 1600)
 	end
 	
-	if AttackTarget ~= nil and not AttackTarget:IsAttackImmune() and not P.IsRetreating(bot) and bot:GetActiveMode() == BOT_MODE_ATTACK then
-		if GetUnitToUnitDistance(bot, AttackTarget) <= 1400 and GetUnitToUnitDistance(bot, AttackTarget) >= 400 then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetExtrapolatedLocation(1)
-		end
-		if not bot:HasModifier("modifier_storm_spirit_overload") then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetExtrapolatedLocation(1)
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1600
+			and not PAF.IsMagicImmune(BotTarget) then
+				if GetUnitToUnitDistance(bot, BotTarget) > AttackRange
+				or not bot:HasModifier("modifier_storm_spirit_overload") then
+					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
+				end
+			end
 		end
 	end
 	

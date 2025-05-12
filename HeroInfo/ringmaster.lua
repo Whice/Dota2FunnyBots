@@ -3,13 +3,15 @@ local bot = GetBot()
 local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
-local TameTheBeasts = bot:GetAbilityByName("ringmaster_tame_the_beasts")
+--local TameTheBeasts = bot:GetAbilityByName("ringmaster_tame_the_beasts")
 local EscapeAct = bot:GetAbilityByName("ringmaster_the_box")
 local ImpalementArts = bot:GetAbilityByName("ringmaster_impalement")
 local WheelOfWonder = bot:GetAbilityByName("ringmaster_wheel")
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
+	
+	local TameTheBeasts = bot:GetAbilityInSlot(0)
 	
 	table.insert(abilities, TameTheBeasts:GetName())
 	table.insert(abilities, EscapeAct:GetName())
@@ -63,39 +65,26 @@ end
 
 function X.GetHeroItemBuild()
 	local ItemBuild
-
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
-		"item_magic_wand",
-		"item_tranquil_boots",
-		
-		"item_solar_crest",
-		"item_force_staff",
-		"item_aether_lens",
-		"item_ultimate_scepter",
-		"item_sheepstick",
-		"item_ultimate_scepter_2",
-		"item_boots_of_bearing",
-		}
-	end
 	
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
+	local SupportBoots = PRoles.GetSupportBoots(bot)
+	local SupportUtility = PRoles.GetSupportUtilityItem(bot)
+	
+	local CoreItems = {
 		"item_magic_wand",
-		"item_arcane_boots",
+		SupportBoots,
 		
-		"item_urn_of_shadows",
-		"item_glimmer_cape",
+		SupportUtility,
 		"item_aether_lens",
-		"item_spirit_vessel",
+	}
+	
+	local LuxuryItems = {
+		"item_cyclone",
 		"item_ultimate_scepter",
 		"item_sheepstick",
 		"item_ultimate_scepter_2",
-		"item_guardian_greaves",
-		}
-	end
+	}
+	
+	ItemBuild = PRoles.CreateSupportBuild(bot, CoreItems, LuxuryItems, 2)
 	
 	return ItemBuild
 end

@@ -107,7 +107,13 @@ function UseDeathPulse()
 				end
 			end
 			
-			if PAF.IsRoshan(AttackTarget) then
+			if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+				if PAF.IsRoshan(AttackTarget) then
+					return BOT_ACTION_DESIRE_VERYHIGH
+				end
+			end
+			
+			if PAF.IsTormentor(AttackTarget) then
 				return BOT_ACTION_DESIRE_HIGH
 			end
 		end

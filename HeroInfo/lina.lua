@@ -78,7 +78,7 @@ function X.GetHeroLevelPoints()
 		abilities[4], -- Level 12
 		abilities[1], -- Level 13
 		abilities[1], -- Level 14
-		talents[4],   -- Level 15
+		talents[3],   -- Level 15
 		abilities[1], -- Level 16
 		"NoLevel",    -- Level 17
 		abilities[4], -- Level 18
@@ -91,7 +91,7 @@ function X.GetHeroLevelPoints()
 		talents[8],   -- Level 25
 		"NoLevel",    -- Level 26
 		talents[2],   -- Level 27
-		talents[3],   -- Level 28
+		talents[4],   -- Level 28
 		talents[5],   -- Level 29
 		talents[7]    -- Level 30
 		}
@@ -104,39 +104,45 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_sheepstick")
+		
 		ItemBuild = { 
+		"item_bottle",
 		"item_null_talisman",
 		"item_magic_wand",
-		"item_boots",
-		
 		"item_travel_boots",
-		"item_aether_lens",
+		
 		"item_ultimate_scepter",
-		"item_black_king_bar",
+		"item_aether_lens",
 		"item_blink",
-		"item_sphere",
+		"item_black_king_bar",
+		"item_yasha_and_kaya",
 		"item_ultimate_scepter_2",
-		"item_shivas_guard",
-		"item_travel_boots_2"
+		SituationalItem1,
+		"item_arcane_blink",
+		"item_travel_boots_2",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySphere("item_satanic")
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_revenants_brooch")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_greater_crit")
 		
 		ItemBuild = { 
 		"item_null_talisman",
 		"item_magic_wand",
-		"item_boots",
+		"item_arcane_boots",
 		
+		"item_maelstrom",
 		"item_travel_boots",
-		"item_gungir",
+		"item_dragon_lance",
+		"item_mjollnir",
 		"item_black_king_bar",
 		SituationalItem1,
-		"item_silver_edge",
-		"item_greater_crit",
-		"item_ultimate_scepter_2",
-		"item_travel_boots_2"
+		
+		"item_hurricane_pike",
+		SituationalItem2,
+		"item_travel_boots_2",
 		}
 	end
 	

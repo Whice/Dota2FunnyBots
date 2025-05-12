@@ -6,7 +6,7 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 local TimeWalk = bot:GetAbilityByName("faceless_void_time_walk")
 local TimeDilation = bot:GetAbilityByName("faceless_void_time_dilation")
 local TimeLock = bot:GetAbilityByName("faceless_void_time_lock")
-local Chronosphere = bot:GetAbilityByName("faceless_void_chronosphere")
+local Chronosphere = bot:GetAbilityInSlot(5)
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
@@ -74,13 +74,14 @@ function X.GetHeroItemBuild()
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
-	
-		"item_maelstrom",
-		"item_sange_and_yasha",
+		"item_mask_of_madness",
+		
 		"item_mjollnir",
 		"item_black_king_bar",
+		
 		SituationalItem1,
 		SituationalItem2,
+		"item_nullifier",
 		}
 	end
 	

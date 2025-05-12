@@ -27,16 +27,16 @@ function X.GetHeroLevelPoints()
 	
 	local SkillPoints = {
 	abilities[2], -- Level 1
-	abilities[1], -- Level 2
+	abilities[3], -- Level 2
 	abilities[1], -- Level 3
-	abilities[3], -- Level 4
+	abilities[2], -- Level 4
 	abilities[2], -- Level 5
 	abilities[4], -- Level 6
-	abilities[1], -- Level 7
+	abilities[2], -- Level 7
 	abilities[1], -- Level 8
-	abilities[2], -- Level 9
-	talents[2],   -- Level 10
-	abilities[2], -- Level 11
+	abilities[1], -- Level 9
+	talents[1],   -- Level 10
+	abilities[1], -- Level 11
 	abilities[4], -- Level 12
 	abilities[3], -- Level 13
 	abilities[3], -- Level 14
@@ -52,7 +52,7 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 24
 	talents[7],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[1],   -- Level 27
+	talents[2],   -- Level 27
 	talents[4],   -- Level 28
 	talents[5],   -- Level 29
 	talents[8]    -- Level 30
@@ -66,39 +66,38 @@ function X.GetHeroItemBuild()
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
 		local CoreItem = PRoles.GetAOEItem()
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
 		
 		ItemBuild = { 
-		"item_quelling_blade",
-	
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
 		"item_soul_ring",
 		
-		CoreItem,
-		"item_bloodthorn",
+		"item_orchid",
 		"item_black_king_bar",
-		"item_heavens_halberd",
+		"item_bloodthorn",
+		SituationalItem1,
+		CoreItem,
 		"item_assault",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
-		local SituationalItem1 = PRoles.ShouldBuySphere("item_harpoon")
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
 		
 		ItemBuild = { 
-		"item_quelling_blade",
-	
+		"item_bottle",
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
-		"item_soul_ring",
 		
-		"item_bloodthorn",
+		"item_orchid",
 		"item_black_king_bar",
-		"item_nullifier",
+		"item_bloodthorn",
 		SituationalItem1,
-		"item_sheepstick",
+		"item_revenants_brooch",
+		"item_butterfly",
 		}
 	end
 	

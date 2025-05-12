@@ -29,10 +29,17 @@ local ImpalementArts = bot:GetAbilityByName("ringmaster_impalement")
 local WheelOfWonder = bot:GetAbilityByName("ringmaster_wheel")
 local Spotlight = bot:GetAbilityByName("ringmaster_spotlight")
 
--- Souvenirs
+-- Souvenirs (Carny Classics)
 local FunhouseMirror = bot:GetAbilityByName("ringmaster_funhouse_mirror")
 local StrongmanTonic = bot:GetAbilityByName("ringmaster_strongman_tonic")
 local WhoopeeCushion = bot:GetAbilityByName("ringmaster_whoopee_cushion")
+
+-- Souvenirs (Sideshow Secrets)
+local CrystalBall = bot:GetAbilityByName("ringmaster_crystal_ball")
+local Unicycle = bot:GetAbilityByName("ringmaster_summon_unicycle")
+local WeightedPie = bot:GetAbilityByName("ringmaster_weighted_pie")
+
+-- modifier_ringmaster_unicycle_movement
 
 local TameTheBeastsDesire = 0
 local EscapeActDesire = 0
@@ -44,8 +51,14 @@ local FunhouseMirrorDesire = 0
 local StrongmanTonicDesire = 0
 local WhoopeeCushionDesire = 0
 
+local CrystalBallDesire = 0
+local UnicycleDesire = 0
+local WeightedPieDesire = 0
+
 local AttackRange
 local BotTarget
+
+local LastRoshanCheck = -90
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
@@ -53,11 +66,31 @@ function AbilityUsageThink()
 	
 	local DarkSouvenir = bot:GetAbilityInSlot(3)
 	
+	if bot:HasModifier("modifier_ringmaster_unicycle_movement") then
+		return
+	end
+	
 	-- The order to use abilities in
 	EscapeActDesire, EscapeActTarget = UseEscapeAct()
 	if EscapeActDesire > 0 then
 		bot:Action_UseAbilityOnEntity(EscapeAct, EscapeActTarget)
 		return
+	end
+	
+	if DarkSouvenir == WeightedPie then
+		WeightedPieDesire, WeightedPieTarget = UseWeightedPie()
+		if WeightedPieDesire > 0 then
+			bot:Action_UseAbilityOnEntity(WeightedPie, WeightedPieTarget)
+			return
+		end
+	end
+	
+	if DarkSouvenir == Unicycle then
+		UnicycleDesire = UseUnicycle()
+		if UnicycleDesire > 0 then
+			bot:Action_UseAbility(Unicycle)
+			return
+		end
 	end
 	
 	WheelOfWonderDesire, WheelOfWonderTarget = UseWheelOfWonder()
@@ -94,16 +127,24 @@ function AbilityUsageThink()
 		end
 	end
 	
-	TameTheBeastsDesire, TameTheBeastsTarget = UseTameTheBeasts()
+	--[[TameTheBeastsDesire, TameTheBeastsTarget = UseTameTheBeasts()
 	if TameTheBeastsDesire > 0 then
 		bot:Action_UseAbilityOnLocation(TameTheBeasts, TameTheBeastsTarget)
 		return
-	end
+	end]]--
 	
 	if DarkSouvenir == WhoopeeCushion then
 		WhoopeeCushionDesire = UseWhoopeeCushion()
 		if WhoopeeCushionDesire > 0 then
 			bot:Action_UseAbility(WhoopeeCushion)
+			return
+		end
+	end
+	
+	if DarkSouvenir == CrystalBall then
+		CrystalBallDesire, CrystalBallTarget = UseCrystalBall()
+		if CrystalBallDesire > 0 then
+			bot:Action_UseAbilityOnLocation(CrystalBall, CrystalBallTarget)
 			return
 		end
 	end
@@ -121,7 +162,7 @@ function UseTameTheBeasts()
 	
 	for v, enemy in pairs(FilteredEnemies) do
 		if enemy:IsChanneling() then
-			return BOT_ACTION_DESIRE_HIGH, enemy
+			return BOT_ACTION_DESIRE_HIGH, enemy:GetLocation()
 		end
 	end
 	
@@ -179,12 +220,12 @@ function UseEscapeAct()
 		end
 	end
 	
-	for v, Ally in pairs(FilteredAllies) do
+	--[[for v, Ally in pairs(FilteredAllies) do
 		if PAF.IsDisabled(Ally)
 		or PAF.IsTaunted(Ally) then
 			return BOT_ACTION_DESIRE_ABSOLUTE, Ally
 		end
-	end
+	end]]--
 	
 	return 0
 end
@@ -213,9 +254,12 @@ function UseImpalementArts()
 	
 	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
 		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
-		if not IsEnemyCreepBetweenMeAndTarget(ClosestTarget, Width)
-		and not ClosestTarget:HasModifier("modifier_ringmaster_impalement_bleed") then
-			return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetLocation()
+		
+		if ClosestTarget ~= nil then
+			if not IsEnemyCreepBetweenMeAndTarget(ClosestTarget, Width)
+			and not ClosestTarget:HasModifier("modifier_ringmaster_impalement_bleed") then
+				return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetLocation()
+			end
 		end
 	end
 	
@@ -266,20 +310,14 @@ function UseFunhouseMirror()
 	--if FunhouseMirror:IsHidden() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local projectiles = bot:GetIncomingTrackingProjectiles()
 	
-	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= (AttackRange + 150) then
-				return BOT_ACTION_DESIRE_HIGH
-			end
+	for v, proj in pairs(projectiles) do
+		if GetUnitToLocationDistance(bot, proj.location) <= 200
+		and proj.is_dodgeable
+		and proj.is_attack == false then
+			return BOT_ACTION_DESIRE_ABSOLUTE
 		end
-	end
-	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH
 	end
 	
 	return 0
@@ -321,6 +359,110 @@ function UseWhoopeeCushion()
 		if #FilteredEnemies > 0 then
 			if bot:IsFacingLocation(PAF.GetFountainLocation(bot), 20) then
 				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
+	end
+	
+	return 0
+end
+
+function UseCrystalBall()
+	if not CrystalBall:IsFullyCastable() then return 0 end
+	--if CrystalBall:IsHidden() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local RadiantLoc = Vector(3104.000000, -2976.000000, 13.998047)
+	local DireLoc = Vector(-3104.000000, 2464.000000, 13.998047)
+	local RoshanPitLoc = DireLoc
+	
+	if GetTimeOfDay() >= 0.25 and GetTimeOfDay() < 0.75 then
+		RoshanPitLoc = RadiantLoc
+	elseif GetTimeOfDay() >= 0.75 or GetTimeOfDay() < 0.25 then
+		RoshanPitLoc = DireLoc
+	end
+	
+	if DotaTime() >= (20 * 60) then
+		local RoshanKillTime = DotaTime() - GetRoshanKillTime()
+		
+		if RoshanKillTime >= 480 then
+			local EnemyIDs = GetTeamPlayers(GetOpposingTeam())
+			local MissingEnemies = 0
+			
+			for v, EID in pairs(EnemyIDs) do
+				if IsHeroAlive(EID) then
+					local LSI = GetHeroLastSeenInfo(EID)
+					if LSI ~= nil then
+						local nLSI = LSI[1]
+							
+						if nLSI ~= nil then
+							if nLSI.time_since_seen >= 7 then
+								MissingEnemies = (MissingEnemies + 1)
+							end
+						end
+					end
+				end
+			end
+			
+			if (DotaTime() - LastRoshanCheck >= 120)
+			and MissingEnemies >= 4
+			and bot:GetActiveMode() ~= BOT_MODE_ROSHAN
+			and bot:GetActiveMode() ~= BOT_MODE_WARD then
+				LastRoshanCheck = DotaTime()
+				bot:ActionImmediate_Chat("Checking Roshan", false)
+				return BOT_ACTION_DESIRE_HIGH, RoshanPitLoc
+			end
+		end
+	end
+	
+	return 0
+end
+
+function UseUnicycle()
+	if not Unicycle:IsFullyCastable() then return 0 end
+	--if Unicycle:IsHidden() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	if P.IsRetreating(bot) then
+		local EnemiesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+		
+		if #FilteredEnemies > 0 then
+			if bot:IsFacingLocation(PAF.GetFountainLocation(bot), 20) then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
+	end
+	
+	return 0
+end
+
+function UseWeightedPie()
+	if not WeightedPie:IsFullyCastable() then return 0 end
+	--if WeightedPie:IsHidden() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local CR = WeightedPie:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
+	
+	local EnemiesWithinRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	
+	if PAF.IsInTeamFight(bot) then
+		local StrongestEnemy = PAF.GetStrongestPowerUnit(FilteredEnemies)
+		
+		if StrongestEnemy ~= nil then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			end
+		end
+	end
+	
+	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
+		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
+		
+		if ClosestTarget ~= nil then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_HIGH, ClosestTarget
 			end
 		end
 	end

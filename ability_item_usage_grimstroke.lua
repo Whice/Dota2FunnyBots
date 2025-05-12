@@ -106,12 +106,18 @@ function UseStrokeOfFate()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -264,7 +270,7 @@ function UseDarkPortrait()
 	
 	if PAF.IsEngaging(bot) then
 		if #FilteredEnemies > 0 then
-			local StrongestEnemy = GetStrongestAttackDamageUnit(FilteredEnemies)
+			local StrongestEnemy = PAF.GetStrongestAttackDamageUnit(FilteredEnemies)
 			
 			if StrongestEnemy ~= nil then
 				if GetUnitToUnitDistance(bot, StrongestEnemy) <= CastRange then

@@ -112,6 +112,10 @@ function UseAcidSpray()
 				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 			end
 		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+		end
 	end
 	
 	return 0
@@ -146,6 +150,14 @@ function UseChemicalRage()
 		end
 	end
 	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
+		end
+	end
+	
 	return 0
 end
 
@@ -156,7 +168,7 @@ function UseUnstableConcoctionThrow()
 	
 	local CastRange = UnstableConcoctionThrow:GetCastRange()
 	
-	if (DotaTime() - UCTime) > 5 then
+	if (DotaTime() - UCTime) > 3 then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			return BOT_ACTION_DESIRE_HIGH, BotTarget
 		else -- If desperate to throw
@@ -171,7 +183,7 @@ function UseUnstableConcoctionThrow()
 	end
 	
 	if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-		if (DotaTime() - UCTime) >= 2 and GetUnitToUnitDistance(bot, BotTarget) > (CastRange - 150) then
+		if (DotaTime() - UCTime) >= 2 and GetUnitToUnitDistance(bot, BotTarget) > (CastRange - 200) then
 			return BOT_ACTION_DESIRE_HIGH, BotTarget
 		end
 	end

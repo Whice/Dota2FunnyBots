@@ -120,7 +120,10 @@ function UseSpellShield()
 	local projectiles = bot:GetIncomingTrackingProjectiles()
 	
 	for v, proj in pairs(projectiles) do
-		if GetUnitToLocationDistance(bot, proj.location) <= 300 and proj.is_attack == false then
+		if GetUnitToLocationDistance(bot, proj.location) <= 300
+		and proj.is_attack == false
+		and proj.caster ~= nil
+		and proj.caster:GetTeam() ~= bot:GetTeam() then
 			return BOT_ACTION_DESIRE_HIGH
 		end
 	end

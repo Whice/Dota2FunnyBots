@@ -6,10 +6,6 @@ local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
 
 local enemies
 
-local TopBuildings = {
-	bot
-}
-
 function NotNilOrDead(unit)
 	if unit == nil or unit:IsNull() then
 		return false
@@ -133,10 +129,12 @@ function PDefend.GetDefendDesire(bot, lane)
 			end
 		end
 		
-		if DefendDesire > 0.1 then
-			if not NotNilOrDead(LaneTierTwo) then
-				return BOT_MODE_DESIRE_VERYHIGH
-			end
+		if not NotNilOrDead(LaneTierThree) then
+			return Clamp((DefendDesire * 5), 0.0, 0.9)
+		end
+		
+		if not NotNilOrDead(LaneTierTwo) then
+			return Clamp((DefendDesire * 3), 0.0, 0.9)
 		end
 		
 		if NotNilOrDead(LaneTierOne) and ShouldGoDefend(bot, lane) then
@@ -145,43 +143,63 @@ function PDefend.GetDefendDesire(bot, lane)
 			return Clamp((DefendDesire * 2), 0.0, 0.9)
 		end
 	else
+		if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+			if bot:HasModifier("modifier_rune_doubledamage")
+			or bot:HasModifier("modifier_rune_haste")
+			or bot:HasModifier("modifier_rune_invis")
+			or bot:HasModifier("modifier_rune_arcane") then
+				local DefendDesire = GetDefendLaneDesire(lane)
+				
+				if lane ~= LANE_MID then
+					return Clamp(DefendDesire, 0.0, 0.9)
+				end
+			end
+		end
+		
 		return 0
 	end
 end
 
 function ShouldGoDefend(bot, lane)
-	local Enemies = {}
-	for v, enemy in pairs(GetUnitList(UNIT_LIST_ENEMY_HEROES)) do
-		local distance = GetUnitToUnitDistance(PAF.GetFurthestBuildingOnLane(lane), enemy)
-		local lanefrontloc = GetLaneFrontLocation(bot:GetTeam(), lane, 0)
-		
-		if distance <= 2400
-		and GetUnitToLocationDistance(PAF.GetFurthestBuildingOnLane(lane), lanefrontloc) <= 2400
-		and not PAF.IsPossibleIllusion(enemy)
-		and not P.IsMeepoClone(enemy) then
-			table.insert(Enemies, enemy)
+	local Enemies = 0
+	
+	local EnemyIDs = GetTeamPlayers(GetOpposingTeam())
+	for v, EID in pairs(EnemyIDs) do
+		if IsHeroAlive(EID) then
+			local LSI = GetHeroLastSeenInfo(EID)
+			if LSI ~= nil then
+				local nLSI = LSI[1]
+				--print(nLSI.location)
+					
+				if nLSI ~= nil then
+					if GetUnitToLocationDistance(GetCurrentBuilding(bot, lane), nLSI.location) <= 1600
+					and nLSI.time_since_seen <= 5 then
+						Enemies = (Enemies + 1)
+					end
+				end
+			end
 		end
 	end
 	
-	if #Enemies == 1 then
+	if Enemies == 1 then
 		if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" 
 		or PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
 			return true
 		end
-	elseif #Enemies == 2 then
+	elseif Enemies == 2 then
 		if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane"
 		or PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport"
 		or PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
 			return true
 		end
-	elseif #Enemies == 3 then
+	elseif Enemies == 3 then
 		if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane"
 		or PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport"
 		or PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane"
 		or PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
 			return true
 		end
-	elseif #Enemies == 4 then
+	elseif Enemies >= 4 then
 		return true
 	end
 	

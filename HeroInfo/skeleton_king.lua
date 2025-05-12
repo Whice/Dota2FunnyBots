@@ -4,7 +4,7 @@ local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
 local HellfireBlast = bot:GetAbilityByName("skeleton_king_hellfire_blast")
-local BoneGuard = bot:GetAbilityByName("skeleton_king_bone_guard")
+local BoneGuard = bot:GetAbilityInSlot(1)
 local MortalStrike = bot:GetAbilityByName("skeleton_king_mortal_strike")
 local Reincarnation = bot:GetAbilityByName("skeleton_king_reincarnation")
 
@@ -26,21 +26,21 @@ function X.GetHeroLevelPoints()
 	end
 	
 	local SkillPoints = {
-	abilities[2], -- Level 1
-	abilities[1], -- Level 2
+	abilities[1], -- Level 1
+	abilities[2], -- Level 2
 	abilities[3], -- Level 3
-	abilities[2], -- Level 4
-	abilities[2], -- Level 5
-	abilities[3], -- Level 6
-	abilities[2], -- Level 7
-	abilities[4], -- Level 8
-	abilities[3], -- Level 9
-	talents[2],   -- Level 10
-	abilities[3], -- Level 11
+	abilities[3], -- Level 4
+	abilities[3], -- Level 5
+	abilities[4], -- Level 6
+	abilities[3], -- Level 7
+	abilities[2], -- Level 8
+	abilities[2], -- Level 9
+	abilities[2], -- Level 10
+	talents[1],   -- Level 11
 	abilities[4], -- Level 12
 	abilities[1], -- Level 13
 	abilities[1], -- Level 14
-	talents[3],   -- Level 15
+	talents[4],   -- Level 15
 	abilities[1], -- Level 16
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
@@ -52,8 +52,8 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 24
 	talents[7],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[1],   -- Level 27
-	talents[4],   -- Level 28
+	talents[2],   -- Level 27
+	talents[3],   -- Level 28
 	talents[6],   -- Level 29
 	talents[8]    -- Level 30
 	}
@@ -65,7 +65,8 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuyMKB("item_bloodthorn")
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_bloodthorn")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_abyssal_blade")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -74,19 +75,18 @@ function X.GetHeroItemBuild()
 		"item_magic_wand",
 		"item_phase_boots",
 	
-		"item_armlet",
 		"item_radiance",
 		"item_blink",
-		"item_ultimate_scepter_2",
 		"item_black_king_bar",
 		SituationalItem1,
-		"item_overwhelming_blink",
+		"item_ultimate_scepter_2",
+		SituationalItem2,
+		"item_swift_blink",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
 		local CoreItem = PRoles.GetAOEItem()
-		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_desolator")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -94,15 +94,13 @@ function X.GetHeroItemBuild()
 		"item_bracer",
 		"item_magic_wand",
 		"item_phase_boots",
-		"item_hand_of_midas",
 		
-		CoreItem,
-		SituationalItem1,
+		"item_radiance",
 		"item_blink",
-		"item_heavens_halberd",
+		"item_black_king_bar",
 		"item_assault",
-		"item_ultimate_scepter_2",
-		"item_overwhelming_blink",
+		CoreItem,
+		"item_swift_blink",
 		}
 	end
 	

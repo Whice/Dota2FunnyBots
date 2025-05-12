@@ -63,7 +63,7 @@ function AbilityUsageThink()
 	
 	ForceOfNatureDesire, ForceOfNatureTarget = UseForceOfNature()
 	if ForceOfNatureDesire > 0 then
-		bot:Action_UseAbilityOnLocation(ForceOfNature, ForceOfNatureTarget)
+		bot:Action_UseAbilityOnTree(ForceOfNature, ForceOfNatureTarget)
 		return
 	end
 	
@@ -129,6 +129,26 @@ function UseForceOfNature()
 	
 	local CR = ForceOfNature:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	
+	local Trees = bot:GetNearbyTrees(CastRange)
+	
+	if PAF.IsEngaging(bot) and #Trees >= 1 then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
+				return BOT_ACTION_DESIRE_HIGH, Trees[1]
+			end
+		end
+	end
+	
+	return 0
+end
+
+--[[function UseForceOfNature()
+	if not ForceOfNature:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local CR = ForceOfNature:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
 	local Radius = ForceOfNature:GetSpecialValueInt("area_of_effect")
 	local MaxTreants = ForceOfNature:GetSpecialValueInt("max_treants")
 	
@@ -143,7 +163,7 @@ function UseForceOfNature()
 	end
 	
 	return 0
-end
+end]]--
 
 function UseWrathOfNature()
 	if not WrathOfNature:IsFullyCastable() then return 0 end

@@ -106,12 +106,18 @@ function UseFireblast()
 		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -134,6 +140,21 @@ function UseIgnite()
 		end
 	end
 	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		end
+	end
+	
 	return 0
 end
 
@@ -141,42 +162,42 @@ function UseBloodlust()
 	if not Bloodlust:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = Bloodlust:GetCastRange()
-	local Cooldown = Bloodlust:GetSpecialValueInt("AbilityCooldown")
+	local CR = Bloodlust:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
 	
-	if not bot:HasModifier("modifier_ogre_magi_bloodlust") then
-		return BOT_ACTION_DESIRE_HIGH, bot
-	end
-	
-	if bot:HasModifier("modifier_ogre_magi_bloodlust") then
-		local mIndex = bot:GetModifierByName("modifier_ogre_magi_bloodlust")
-		if bot:GetModifierRemainingDuration(mIndex) <= Cooldown then
-			return BOT_ACTION_DESIRE_HIGH, bot
+	if P.IsDefending(bot) then
+		local NearbyTowers = bot:GetNearbyTowers(1200, false)
+		
+		for v, Tower in pairs(NearbyTowers) do
+			if PAF.IsValidBuildingTarget(Tower) then
+				if not Tower:HasModifier("modifier_ogre_magi_bloodlust") then
+					return BOT_ACTION_DESIRE_HIGH, Tower
+				end
+			end
 		end
 	end
 	
-	local allies = bot:GetNearbyHeroes(CastRange + 500, false, BOT_MODE_NONE)
-	local filteredallies = {}
+	local Allies = bot:GetNearbyHeroes(1600, false, BOT_MODE_NONE)
+	local FilteredAllies = {}
 	
-	for v, ally in pairs(allies) do
+	for v, ally in pairs(Allies) do
 		if not ally:HasModifier("modifier_ogre_magi_bloodlust") and not PAF.IsPossibleIllusion(ally) then
-			table.insert(filteredallies, ally)
+			table.insert(FilteredAllies, ally)
 		end
 	end
 	
-	local target = PAF.GetStrongestAttackDamageUnit(filteredallies)
+	local HighestDPSAlly = nil
+	local HighestDPS = 0
 	
-	if target ~= nil then
-		return BOT_ACTION_DESIRE_HIGH, target
+	for v, Ally in pairs(FilteredAllies) do
+		if PAF.GetAttackDPS(Ally) > HighestDPS then
+			HighestDPSAlly = Ally
+			HighestDPS = PAF.GetAttackDPS(Ally)
+		end
 	end
 	
-	local towers = bot:GetNearbyTowers(CastRange + 100, false)
-	local enemies = bot:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
-	
-	for v, tower in pairs(towers) do
-		if #enemies >= 1 and not tower:HasModifier("modifier_ogre_magi_bloodlust") then
-			return BOT_ACTION_DESIRE_HIGH, tower
-		end
+	if HighestDPSAlly ~= nil then
+		return BOT_ACTION_DESIRE_HIGH, HighestDPSAlly
 	end
 	
 	return 0
@@ -252,12 +273,18 @@ function UseUnrefinedFireblast()
 		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	

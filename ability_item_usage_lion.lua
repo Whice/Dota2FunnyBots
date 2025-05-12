@@ -78,7 +78,8 @@ function UseImpale()
 	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
 	
 	for v, enemy in pairs(FilteredEnemies) do
-		if enemy:IsChanneling() then
+		if enemy:IsChanneling()
+		and not Voodoo:IsFullyCastable() then
 			return BOT_ACTION_DESIRE_HIGH, enemy:GetLocation()
 		end
 	end
@@ -97,7 +98,9 @@ function UseImpale()
 		end
 	end
 	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
+	if P.IsRetreating(bot)
+	and #EnemiesWithinRange > 0
+	and not Voodoo:IsFullyCastable() then
 		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
 		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetLocation()
 	end
@@ -106,7 +109,9 @@ function UseImpale()
 		local AttackTarget = bot:GetAttackTarget()
 		
 		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange
+		and not PAF.IsDisabled(AttackTarget)
+		and not Voodoo:IsFullyCastable() then
 			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
 		end
 	end
@@ -130,7 +135,7 @@ function UseVoodoo()
 		end
 	end
 	
-	if PAF.IsEngaging(bot) then
+	--[[if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget)
@@ -138,7 +143,7 @@ function UseVoodoo()
 				return BOT_ACTION_DESIRE_HIGH, BotTarget
 			end
 		end
-	end
+	end]]--
 	
 	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
 		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
@@ -149,7 +154,8 @@ function UseVoodoo()
 		local AttackTarget = bot:GetAttackTarget()
 		
 		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange
+		and not PAF.IsDisabled(AttackTarget) then
 			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
 		end
 	end

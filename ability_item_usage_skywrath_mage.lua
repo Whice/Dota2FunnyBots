@@ -85,7 +85,14 @@ function UseArcaneBolt()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
@@ -110,6 +117,7 @@ function UseConcussiveShot()
 	
 	return 0
 end
+
 function UseAncientSeal()
 	if not AncientSeal:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
@@ -129,7 +137,14 @@ function UseAncientSeal()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
@@ -156,7 +171,14 @@ function UseMysticFlare()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end

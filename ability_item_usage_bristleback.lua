@@ -45,6 +45,12 @@ function AbilityUsageThink()
 	manathreshold = (bot:GetMaxMana() * 0.4)
 	
 	-- The order to use abilities in
+	WarpathDesire = UseWarpath()
+	if WarpathDesire > 0 then
+		bot:Action_UseAbility(Warpath)
+		return
+	end
+	
 	if bot:HasScepter() then
 		BristlebackDesire, BristlebackTarget = UseBristleback()
 		if BristlebackDesire > 0 then
@@ -133,9 +139,31 @@ function UseQuillSpray()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
+		end
+	end
+	
+	return 0
+end
+
+function UseWarpath()
+	if not Warpath:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	if PAF.IsInTeamFight(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= (AttackRange + 150) then
+				return BOT_ACTION_DESIRE_HIGH
+			end
 		end
 	end
 	
@@ -153,6 +181,21 @@ function UseBristleback()
 		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
 		if (AoE.count >= 1) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	

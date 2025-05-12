@@ -7,6 +7,7 @@ if bot:IsInvulnerable() or not bot:IsHero() or bot:IsIllusion() then return end
 
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
+local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
 
 local ability_item_usage_generic = dofile( GetScriptDirectory().."/ability_item_usage_generic" )
 
@@ -147,16 +148,16 @@ function UseShadowraze1()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+	--if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		local AttackTarget = bot:GetAttackTarget()
 		
-		if PAF.IsRoshan(AttackTarget) then
+		if PAF.IsRoshan(AttackTarget) or PAF.IsTormentor(AttackTarget) then
 			if bot:IsFacingLocation(AttackTarget:GetLocation(), 10)
 			and GetUnitToUnitDistance(bot, AttackTarget) < (CastRange + Radius) then
 				return BOT_ACTION_DESIRE_VERYHIGH
 			end
 		end
-	end
+	--end
 	
 	return 0
 end
@@ -214,17 +215,17 @@ function UseShadowraze2()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+	--if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		local AttackTarget = bot:GetAttackTarget()
 		
-		if PAF.IsRoshan(AttackTarget) then
+		if PAF.IsRoshan(AttackTarget) or PAF.IsTormentor(AttackTarget) then
 			if bot:IsFacingLocation(AttackTarget:GetLocation(), 10)
 			and GetUnitToUnitDistance(bot, AttackTarget) > (CastRange - Radius)
 			and GetUnitToUnitDistance(bot, AttackTarget) < (CastRange + Radius) then
 				return BOT_ACTION_DESIRE_VERYHIGH
 			end
 		end
-	end
+	--end
 	
 	return 0
 end
@@ -282,17 +283,17 @@ function UseShadowraze3()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+	--if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		local AttackTarget = bot:GetAttackTarget()
 		
-		if PAF.IsRoshan(AttackTarget) then
+		if PAF.IsRoshan(AttackTarget) or PAF.IsTormentor(AttackTarget) then
 			if bot:IsFacingLocation(AttackTarget:GetLocation(), 10)
 			and GetUnitToUnitDistance(bot, AttackTarget) > (CastRange - Radius)
 			and GetUnitToUnitDistance(bot, AttackTarget) < (CastRange + Radius) then
 				return BOT_ACTION_DESIRE_VERYHIGH
 			end
 		end
-	end
+	---end
 	
 	return 0
 end
@@ -300,6 +301,13 @@ end
 function UseFeastOfSouls()
 	if not FeastOfSouls:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
+	
+	local MaxSouls = Necromastery:GetSpecialValueInt("necromastery_max_souls")
+	local Souls = bot:GetModifierStackCount(bot:GetModifierByName("modifier_nevermore_necromastery"))
+	
+	if Souls < MaxSouls then
+		return 0
+	end
 	
 	local CastRange = AttackRange
 	local Duration = FeastOfSouls:GetSpecialValueInt("duration")
@@ -339,7 +347,7 @@ function UseRequiem()
 	local MaxSouls = Necromastery:GetSpecialValueInt("necromastery_max_souls")
 	local Souls = bot:GetModifierStackCount(bot:GetModifierByName("modifier_nevermore_necromastery"))
 	
-	local enemies = bot:GetNearbyHeroes((CastRange - 200), true, BOT_MODE_NONE)
+	local enemies = bot:GetNearbyHeroes((CastRange * 0.75), true, BOT_MODE_NONE)
 	local trueenemies = PAF.FilterUnitsForStun(enemies)
 	
 	if #trueenemies > 1 and (Souls >= (MaxSouls * 0.5)) and not P.IsRetreating(bot) then
@@ -351,12 +359,42 @@ end
 
 function CanDoMorePhysicalDamage(RazeDamage)
 	if BotTarget == nil then return false end
+	
+	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		return false -- Since our Mid SF will be building magic, he should always try to cast Raze
+	end
+
+	if bot:FindItemSlot("item_lesser_crit") >= 0 then
+		return true
+	end
+	
+	if bot:FindItemSlot("item_greater_crit") >= 0 then
+		return true
+	end
+	
+	return false
+end
+
+--[[function CanDoMorePhysicalDamage(RazeDamage)
+	if BotTarget == nil then return false end
+	
+	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		return false -- Since our Mid SF will be building magic, he should always try to cast Raze
+	end
 
 	local AttackDamage = bot:GetAttackDamage()
 	local StackDamage = Shadowraze1:GetSpecialValueInt("stack_bonus_damage")
 	
-	local EstimatedAttackDamage = AttackDamage
-	local EstimatedMagicDamage = (RazeDamage + (StackDamage * 2))
+	local EstimatedAttackDamage = PAF.GetAttackDPS(bot)
+	local EstimatedMagicDamage = ((RazeDamage * 3) + (StackDamage * 3))
+	
+	if bot:FindItemSlot("item_lesser_crit") >= 0 then
+		EstimatedAttackDamage = (EstimatedAttackDamage * 1.18)
+	end
+	
+	if bot:FindItemSlot("item_greater_crit") >= 0 then
+		EstimatedAttackDamage = (EstimatedAttackDamage * 1.375)
+	end
 	
 	local PhysicalDamage = BotTarget:GetActualIncomingDamage(EstimatedAttackDamage, DAMAGE_TYPE_PHYSICAL)
 	local MagicalDamage = BotTarget:GetActualIncomingDamage(EstimatedMagicDamage, DAMAGE_TYPE_MAGICAL)
@@ -366,4 +404,4 @@ function CanDoMorePhysicalDamage(RazeDamage)
 	else
 		return false
 	end
-end
+end]]--

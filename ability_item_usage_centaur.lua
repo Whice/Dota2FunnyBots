@@ -148,6 +148,10 @@ function UseDoubleEdge()
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		end
 	end
 	
 	return 0

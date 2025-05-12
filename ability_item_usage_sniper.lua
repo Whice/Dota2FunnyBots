@@ -38,6 +38,7 @@ local AttackRange
 local BotTarget
 
 local LastShrapnelLoc = Vector(-99999, -99999, -99999)
+local LastFarmShrapnelTime = -90
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
@@ -79,6 +80,8 @@ function UseShrapnel()
 	local Radius = Shrapnel:GetSpecialValueInt("radius")
 	local CastPoint = Shrapnel:GetCastPoint()
 	local DamageDelay = Shrapnel:GetSpecialValueFloat("damage_delay")
+	local FarmDuration = Shrapnel:GetSpecialValueInt("AbilityChargeRestoreTime")
+	--local FarmDuration = Shrapnel:GetSpecialValueInt("duration")
 	
 	local ShouldCastShrapnel = false
 	local target = nil
@@ -91,12 +94,31 @@ function UseShrapnel()
 		end
 	end
 	
-	if target == nil and bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			target = AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+		end
+		
+		if bot:GetActiveMode() == BOT_MODE_FARM then
+			if AttackTarget:IsCreep() then
+				local NearbyCreeps = bot:GetNearbyCreeps(CastRange, true)
+				local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, Radius)
+				
+				if AoECount >= 3
+				and (bot:GetMana() - Shrapnel:GetManaCost()) > (bot:GetMaxMana() * 0.5)
+				and (DotaTime() - LastFarmShrapnelTime) >= FarmDuration then
+					LastFarmShrapnelTime = DotaTime()
+					return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+				end
+			end
 		end
 	end
 	
@@ -136,11 +158,17 @@ function UseTakeAim()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	
@@ -154,7 +182,7 @@ function UseAssassinate()
 	
 	local CastRange = Assassinate:GetCastRange()
 	local CastPoint = Assassinate:GetCastPoint()
-	local Damage = Assassinate:GetAbilityDamage()
+	local Damage = Assassinate:GetSpecialValueInt("damage")
 	
 	local Enemies = GetUnitList(UNIT_LIST_ENEMY_HEROES)
 	local FilteredEnemies = PAF.FilterTrueUnits(Enemies)

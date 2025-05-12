@@ -74,8 +74,6 @@ function UseSplitShot()
 		if SplitShot:GetToggleState() == true then
 			return BOT_ACTION_DESIRE_HIGH
 		end
-		
-		return 0
 	else
 		local AttackTarget = bot:GetAttackTarget()
 		
@@ -103,12 +101,10 @@ function UseSplitShot()
 					end
 				end
 			end
-			
-			if SplitShot:GetToggleState() == true then
-				return BOT_ACTION_DESIRE_HIGH
-			end
-			
-			return 0
+		end
+		
+		if SplitShot:GetToggleState() == true then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	

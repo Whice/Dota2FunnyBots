@@ -25,7 +25,7 @@ end
 
 local ThunderStrike = bot:GetAbilityByName("disruptor_thunder_strike")
 local Glimpse = bot:GetAbilityByName("disruptor_glimpse")
-local KineticField = bot:GetAbilityByName("disruptor_kinetic_field")
+local KineticField = bot:GetAbilityInSlot(2)
 local StaticStorm = bot:GetAbilityByName("disruptor_static_storm")
 
 local ThunderStrikeDesire = 0
@@ -135,10 +135,16 @@ function UseThunderStrike()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	

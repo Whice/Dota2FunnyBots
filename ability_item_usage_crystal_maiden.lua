@@ -31,6 +31,7 @@ local CrystalClone = bot:GetAbilityByName("crystal_maiden_crystal_clone")
 
 local CrystalNovaDesire = 0
 local FrostbiteDesire = 0
+local ArcaneAuraDesire = 0
 local FreezingFieldDesire = 0
 local CrystalCloneDesire = 0
 
@@ -42,6 +43,12 @@ function AbilityUsageThink()
 	BotTarget = bot:GetTarget()
 	
 	-- The order to use abilities in
+	ArcaneAuraDesire = UseArcaneAura()
+	if ArcaneAuraDesire > 0 then
+		bot:Action_UseAbility(ArcaneAura)
+		return
+	end
+	
 	CrystalCloneDesire = UseCrystalClone()
 	if CrystalCloneDesire > 0 then
 		bot:Action_UseAbility(CrystalClone)
@@ -89,12 +96,18 @@ function UseCrystalNova()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -132,12 +145,34 @@ function UseFrostbite()
 		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		end
+	end
+	
+	return 0
+end
+
+function UseArcaneAura()
+	if not ArcaneAura:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	if PAF.IsInTeamFight(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200
+			and bot:GetMana() > (bot:GetMaxMana() * 0.6) then
+				return BOT_ACTION_DESIRE_HIGH
+			end
 		end
 	end
 	

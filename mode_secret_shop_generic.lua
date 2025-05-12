@@ -11,12 +11,12 @@ local WisdomRuneSpawned = false
 local ClosestAllyToWisdomRune
 
 local TeamTormentor
-local RT = Vector( -8122, -1218, 256 )
-local DT = Vector( 8127, 1025, 256 )
+local RT = Vector( 7485.211426, -7855.174316, 256.000000 )
+local DT = Vector( -7238.975098, 7932.957031, 256.000000 )
 
 local TeamWisdomRune
-local RWR = Vector( -8126, -320, 256 )
-local DWR = Vector( 8319, 266, 256 )
+local RWR = Vector( -8088.000000, 408.000183, 280.742340 )
+local DWR = Vector( 8340.000000, -1008.000000, 280.742340 )
 
 local LastTormentorTime = 0
 local LastWisdomRuneTime = 0
@@ -27,10 +27,14 @@ local LastMessageTime = DotaTime()
 function GetDesire()
 	if bot:GetTeam() == TEAM_RADIANT then
 		TeamWisdomRune = RWR
-		TeamTormentor = RT
 	elseif bot:GetTeam() == TEAM_DIRE then
 		TeamWisdomRune = DWR
+	end
+	
+	if GetTimeOfDay() >= 0.25 and GetTimeOfDay() < 0.75 then
 		TeamTormentor = DT
+	elseif GetTimeOfDay() >= 0.75 or GetTimeOfDay() < 0.25 then
+		TeamTormentor = RT
 	end
 	
 	CheckWisdomRuneAvailability()
@@ -40,7 +44,7 @@ function GetDesire()
 		if GetUnitToLocationDistance(ClosestAllyToWisdomRune, TeamWisdomRune) > 200 then
 			TeamWisdomTimer = DotaTime()
 		else
-			if (DotaTime() - TeamWisdomTimer) > 1 then
+			if (DotaTime() - TeamWisdomTimer) >= 4 then
 				WisdomRuneSpawned = false
 			end
 		end
@@ -52,11 +56,11 @@ function GetDesire()
 		end
 	end
 	
-	ShouldKillTormentor = IsTormentorAlive()
+	--[[ShouldKillTormentor = IsTormentorAlive()
 	
 	if ShouldKillTormentor then
 		return 0.81
-	end
+	end]]--
 	
 	return BOT_MODE_DESIRE_NONE
 end
@@ -77,7 +81,7 @@ function Think()
 		end
 	end
 
-	if ShouldKillTormentor then
+	--[[if ShouldKillTormentor then
 		if GetUnitToLocationDistance(bot, TeamTormentor) > 700 then
 			bot:Action_MoveToLocation(TeamTormentor)
 			return
@@ -101,7 +105,7 @@ function Think()
 			end
 		end
 		return
-	end
+	end]]--
 end
 
 function OnEnd()
@@ -165,7 +169,7 @@ function IsTeamSuitableToTormentor()
 	local AliveAllies = 0
 	
 	for v, ally in pairs(FilteredAllies) do
-		if ally:IsAlive() and GetUnitToLocationDistance(ally, TeamTormentor) <= 7000 then
+		if ally:IsAlive() and GetUnitToLocationDistance(ally, TeamTormentor) <= 11200 then
 			AliveAllies = (AliveAllies + 1)
 		end
 	end

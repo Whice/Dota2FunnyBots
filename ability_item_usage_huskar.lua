@@ -119,7 +119,9 @@ function UseBurningSpear()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if (AttackTarget ~= nil and AttackTarget:IsHero()) or bot:GetActiveMode() == BOT_MODE_FARM then
+	if (AttackTarget ~= nil and AttackTarget:IsHero())
+	or bot:GetActiveMode() == BOT_MODE_FARM
+	or PAF.IsTormentor(AttackTarget) then
 		if BurningSpear:GetAutoCastState() == false then
 			BurningSpear:ToggleAutoCast()
 		end

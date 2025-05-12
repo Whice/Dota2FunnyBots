@@ -5,7 +5,7 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
 local IceShards = bot:GetAbilityByName("tusk_ice_shards")
 local Snowball = bot:GetAbilityByName("tusk_snowball")
-local TagTeam = bot:GetAbilityByName("tusk_tag_team")
+local TagTeam = bot:GetAbilityInSlot(2)
 local WalrusPunch = bot:GetAbilityByName("tusk_walrus_punch")
 local LaunchSnowball = bot:GetAbilityByName("tusk_launch_snowball")
 
@@ -64,21 +64,25 @@ end
 
 function X.GetHeroItemBuild()
 	local ItemBuild
-
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
-		"item_magic_wand",
-		"item_tranquil_boots",
 	
-		"item_solar_crest",
+	local SupportBoots = PRoles.GetSupportBoots(bot)
+	local SupportUtility = PRoles.GetSupportUtilityItem(bot)
+		
+	local CoreItems = {
+		"item_magic_wand",
+		SupportBoots,
+		
 		"item_blink",
-		"item_force_staff",
+		SupportUtility,
+	}
+		
+	local LuxuryItems = {
+		"item_overwhelming_blink",
+		"item_cyclone",
 		"item_black_king_bar",
-		"item_lotus_orb",
-		"item_boots_of_bearing",
-		}
-	end
+	}
+		
+	ItemBuild = PRoles.CreateSupportBuild(bot, CoreItems, LuxuryItems, 2)
 	
 	return ItemBuild
 end

@@ -23,15 +23,15 @@ function ItemUsageThink()
 	ability_item_usage_generic.ItemUsageThink();
 end
 
-local PoisonTouch = bot:GetAbilityByName("dazzle_poison_touch")
-local ShallowGrave = bot:GetAbilityByName("dazzle_shallow_grave")
-local ShadowWave = bot:GetAbilityByName("dazzle_shadow_wave")
-local BadJuju = bot:GetAbilityByName("dazzle_bad_juju")
+local PoisonTouch = bot:GetAbilityInSlot(0)
+local ShallowGrave = bot:GetAbilityInSlot(1)
+local ShadowWave = bot:GetAbilityInSlot(2)
+local NothlProjection = bot:GetAbilityInSlot(5)
 
 local PoisonTouchDesire = 0
 local ShallowGraveDesire = 0
 local ShadowWaveDesire = 0
-local BadJujuDesire = 0
+local NothlProjectionDesire = 0
 
 local AttackRange
 local BotTarget
@@ -40,7 +40,19 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	
+	if bot:GetAbilityInSlot(5):GetName() == "dazzle_nothl_projection_end" then
+		bot:ActionImmediate_Chat("I'm a clone", true)
+	end
+	
 	-- The order to use abilities in
+	if bot:GetAbilityInSlot(5):GetName() ~= "dazzle_nothl_projection_end" then
+		NothlProjectionDesire, NothlProjectionTarget = UseNothlProjection()
+		if NothlProjectionDesire > 0 then
+			bot:Action_UseAbilityOnLocation(NothlProjection, NothlProjectionTarget)
+			return
+		end
+	end
+	
 	ShallowGraveDesire, ShallowGraveTarget = UseShallowGrave()
 	if ShallowGraveDesire > 0 then
 		bot:Action_UseAbilityOnEntity(ShallowGrave, ShallowGraveTarget)
@@ -56,12 +68,6 @@ function AbilityUsageThink()
 	ShadowWaveDesire, ShadowWaveTarget = UseShadowWave()
 	if ShadowWaveDesire > 0 then
 		bot:Action_UseAbilityOnEntity(ShadowWave, ShadowWaveTarget)
-		return
-	end
-	
-	BadJujuDesire = UseBadJuju()
-	if BadJujuDesire > 0 then
-		bot:Action_UseAbility(BadJuju)
 		return
 	end
 end
@@ -146,6 +152,24 @@ function UseShadowWave()
 	if WeakestAlly ~= nil then
 		if WeakestAlly:GetHealth() <= (WeakestAlly:GetMaxHealth() * 0.8) then
 			return BOT_ACTION_DESIRE_VERYHIGH, WeakestAlly
+		end
+	end
+	
+	return 0
+end
+
+function UseNothlProjection()
+	if not NothlProjection:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local CR = NothlProjection:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
+	
+	if PAF.IsInTeamFight(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			end
 		end
 	end
 	

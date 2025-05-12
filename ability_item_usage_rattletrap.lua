@@ -117,12 +117,17 @@ function UseBatteryAssault()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= Radius then
-			return BOT_ACTION_DESIRE_VERYHIGH
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	
@@ -193,8 +198,8 @@ function UseRocketFlare()
 		end
 	end
 	
-	local RadiantLoc = Vector(7871, -7803, 13)
-	local DireLoc = Vector(-7782, 7626, 13)
+	local RadiantLoc = Vector(3104.000000, -2976.000000, 13.998047)
+	local DireLoc = Vector(-3104.000000, 2464.000000, 13.998047)
 	local RoshanPitLoc = DireLoc
 	
 	if GetTimeOfDay() >= 0.25 and GetTimeOfDay() < 0.75 then

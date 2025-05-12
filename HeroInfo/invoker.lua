@@ -30,11 +30,11 @@ function X.GetHeroLevelPoints()
 	abilities[3], -- Level 3
 	abilities[1], -- Level 4
 	abilities[3], -- Level 5
-	abilities[2], -- Level 6
+	abilities[1], -- Level 6
 	abilities[3], -- Level 7
 	abilities[1], -- Level 8
 	abilities[3], -- Level 9
-	abilities[1], -- Level 10
+	abilities[2], -- Level 10
 	abilities[3], -- Level 11
 	abilities[2], -- Level 12
 	abilities[3], -- Level 13
@@ -44,14 +44,14 @@ function X.GetHeroLevelPoints()
 	abilities[2], -- Level 17
 	abilities[2], -- Level 18
 	abilities[1], -- Level 19
-	talents[1],   -- Level 20
+	talents[2],   -- Level 20
 	talents[3],   -- Level 21
-	abilities[1], -- Level 22
+	talents[5],   -- Level 22
 	abilities[1], -- Level 23
-	talents[5],   -- Level 24
+	abilities[1], -- Level 24
 	talents[7],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[2],   -- Level 27
+	talents[1],   -- Level 27
 	talents[4],   -- Level 28
 	talents[6],   -- Level 29
 	talents[8]    -- Level 30
@@ -67,17 +67,22 @@ function X.GetHeroItemBuild()
 		local SituationalItem1 = PRoles.ShouldBuySphere("item_shivas_guard")
 		
 		ItemBuild = { 
+		"item_bottle",
 		"item_null_talisman",
 		"item_magic_wand",
 		"item_boots",
 		
 		"item_hand_of_midas",
+		"item_rod_of_atos",
 		"item_travel_boots",
-		SituationalItem1,
+		
+		"item_ultimate_scepter",
 		"item_black_king_bar",
-		"item_octarine_core",
+		"item_gungir",
 		"item_sheepstick",
-		"item_bloodthorn",
+		"item_octarine_core",
+		"item_ultimate_scepter_2",
+		"item_sphere",
 		}
 	end
 	

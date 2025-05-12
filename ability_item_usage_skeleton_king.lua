@@ -24,7 +24,7 @@ function ItemUsageThink()
 end
 
 local HellfireBlast = bot:GetAbilityByName("skeleton_king_hellfire_blast")
-local BoneGuard = bot:GetAbilityByName("skeleton_king_bone_guard")
+local BoneGuard = bot:GetAbilityInSlot(1)
 local MortalStrike = bot:GetAbilityByName("skeleton_king_mortal_strike")
 local Reincarnation = bot:GetAbilityByName("skeleton_king_reincarnation")
 
@@ -53,11 +53,11 @@ function AbilityUsageThink()
 		return
 	end
 	
-	BoneGuardDesire = UseBoneGuard()
+	--[[BoneGuardDesire = UseBoneGuard()
 	if BoneGuardDesire > 0 then
 		bot:Action_UseAbility(BoneGuard)
 		return
-	end
+	end]]--
 end
 
 function UseHellfireBlast()

@@ -92,12 +92,18 @@ function UseIceVortex()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -120,12 +126,18 @@ function UseColdFeet()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -138,31 +150,39 @@ function UseChillingTouch()
 	
 	local CastRange = ChillingTouch:GetCastRange()
 	
-	local enemies = bot:GetNearbyHeroes(CastRange + 100, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterTrueUnits(enemies)
-	local target = PAF.GetWeakestUnit(FilteredEnemies)
-	
-	if P.IsInLaningPhase() then
-		if target ~= nil then
-			return BOT_ACTION_DESIRE_HIGH, target
+	if bot:HasScepter() then
+		if ChillingTouch:GetAutoCastState() == false then
+			ChillingTouch:ToggleAutoCast()
+		else
+			return 0
 		end
-	end
-	
-	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
-			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+	else
+		local enemies = bot:GetNearbyHeroes(CastRange + 100, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(enemies)
+		local target = PAF.GetWeakestUnit(FilteredEnemies)
+		
+		if P.IsInLaningPhase() then
+			if target ~= nil then
+				return BOT_ACTION_DESIRE_HIGH, target
 			end
 		end
-	end
-	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsEngaging(bot) then
+			if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+				if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+				and not PAF.IsMagicImmune(BotTarget) then
+					return BOT_ACTION_DESIRE_HIGH, BotTarget
+				end
+			end
+		end
+		
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			local AttackTarget = bot:GetAttackTarget()
+			
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
 		end
 	end
 	

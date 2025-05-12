@@ -165,7 +165,7 @@ function UseEmpower()
 		end
 	end
 	
-	local target = PAF.GetStrongestAttackDamageUnit(filteredallies)
+	local target = PAF.GetStrongestDPSUnit(filteredallies)
 	
 	if target ~= nil then
 		return BOT_ACTION_DESIRE_HIGH, target

@@ -82,7 +82,9 @@ function AbilityUsageThink()
 	end
 	
 	-- Prepare Tornado combo
-	if not P.IsInLaningPhase() then
+	if not P.IsInLaningPhase()
+	and Quas:IsTrained()
+	and Wex:IsTrained() then
 		if Tornado:IsFullyCastable() and not IsActiveAbility(Tornado) and Invoke:IsFullyCastable() then
 			InvokeSpell(Tornado)
 		end
@@ -441,6 +443,10 @@ function UseAlacrity()
 			end
 		end
 		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, StrongestAlly
+		end
+		
 		if AttackTarget:IsBuilding() and AttackTarget:GetTeam() ~= bot:GetTeam() then
 			local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, false)
 			
@@ -567,7 +573,16 @@ function UseForgeSpirit()
 	if not Quas:IsTrained() then return 0 end
 	if not Exort:IsTrained() then return 0 end
 	
-	local MaxForgedSpiritCount = ForgeSpirit:GetSpecialValueInt("spirit_count")
+	local MaxForgedSpiritCount = 1
+	
+	if Quas:GetLevel() >= 4 and Exort:GetLevel() >= 4 then
+		MaxForgedSpiritCount = 2
+	end
+	
+	if Quas:GetLevel() >= 8 and Exort:GetLevel() >= 8 then
+		MaxForgedSpiritCount = 3
+	end
+	
 	local CreepsWithinRange = bot:GetNearbyCreeps(1600, false)
 	local ForgedSpiritCount = 0
 	
@@ -585,7 +600,7 @@ function UseForgeSpirit()
 		local AttackTarget = bot:GetAttackTarget()
 		
 		if AttackTarget ~= nil then
-			if bot:GetActiveMode() == BOT_MODE_FARM
+			if (bot:GetActiveMode() == BOT_MODE_FARM and not P.IsInLaningPhase())
 			or bot:GetActiveMode() == BOT_MODE_PUSH_TOP
 			or bot:GetActiveMode() == BOT_MODE_PUSH_MID
 			or bot:GetActiveMode() == BOT_MODE_PUSH_BOT then

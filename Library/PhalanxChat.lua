@@ -6,8 +6,8 @@ local ChattedStartMessage = false
 local ChattedLosingKillDiffMessage = false
 local LastMissingPing = 0
 
-local PatchVersion = "7.37e"
-local LastUpdatedVersion = "January 22nd, 2025"
+local PatchVersion = "7.38c"
+local LastUpdatedVersion = "May 4th, 2025"
 
 PChat["KillstreakPhrases"] = {"ez", ")", "?", "???", "xd", "XD"}
 PChat["LosingKillDifferencePhrases"] = {"end", "END", "go throne", "gg team", "AFK"}

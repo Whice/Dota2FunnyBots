@@ -8,13 +8,6 @@ local EnchantTotem = bot:GetAbilityByName("earthshaker_enchant_totem")
 local Aftershock = bot:GetAbilityByName("earthshaker_aftershock")
 local EchoSlam = bot:GetAbilityByName("earthshaker_echo_slam")
 
-local FissureDesire = 0
-local EnchantTotemDesire = 0
-local EchoSlamDesire = 0
-
-local AttackRange
-local manathreshold
-
 function X.GetHeroLevelPoints()
 	local abilities = {}
 	
@@ -33,22 +26,22 @@ function X.GetHeroLevelPoints()
 	end
 	
 	local SkillPoints = {
-	abilities[1], -- Level 1
-	abilities[2], -- Level 2
-	abilities[3], -- Level 3
+	abilities[2], -- Level 1
+	abilities[3], -- Level 2
+	abilities[2], -- Level 3
 	abilities[1], -- Level 4
-	abilities[1], -- Level 5
+	abilities[3], -- Level 5
 	abilities[4], -- Level 6
-	abilities[1], -- Level 7
+	abilities[3], -- Level 7
 	abilities[3], -- Level 8
-	abilities[3], -- Level 9
-	talents[2],   -- Level 10
-	abilities[3], -- Level 11
+	abilities[2], -- Level 9
+	talents[1],   -- Level 10
+	abilities[2], -- Level 11
 	abilities[4], -- Level 12
-	abilities[2], -- Level 13
-	abilities[2], -- Level 14
+	abilities[1], -- Level 13
+	abilities[1], -- Level 14
 	talents[4],   -- Level 15
-	abilities[2], -- Level 16
+	abilities[1], -- Level 16
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
 	"NoLevel",    -- Level 19
@@ -57,12 +50,12 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[7],   -- Level 25
+	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[1],   -- Level 27
+	talents[2],   -- Level 27
 	talents[3],   -- Level 28
 	talents[5],   -- Level 29
-	talents[8]    -- Level 30
+	talents[7]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -71,18 +64,42 @@ end
 function X.GetHeroItemBuild()
 	local ItemBuild
 
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
-		"item_magic_wand",
-		"item_tranquil_boots",
+	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		local SituationalItem2 = PRoles.ShouldBuySphere("item_sheepstick")
 		
-		"item_solar_crest",
+		ItemBuild = { 
+		"item_bottle",
+		"item_bracer",
+		"item_magic_wand",
+		"item_phase_boots",
+		
 		"item_blink",
-		"item_force_staff",
-		"item_cyclone",
 		"item_black_king_bar",
-		"item_boots_of_bearing",
+		"item_ultimate_scepter",
+		"item_octarine_core",
+		SituationalItem1,
+		"item_ultimate_scepter_2",
+		SituationalItem2,
+		}
+	end
+	
+	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
+		local CoreItem = PRoles.GetAOEItem()
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		
+		ItemBuild = { 
+		"item_bracer",
+		"item_magic_wand",
+		"item_phase_boots",
+		
+		"item_blink",
+		"item_black_king_bar",
+		"item_ultimate_scepter",
+		"item_octarine_core",
+		CoreItem,
+		"item_ultimate_scepter_2",
+		SituationalItem1,
 		}
 	end
 	

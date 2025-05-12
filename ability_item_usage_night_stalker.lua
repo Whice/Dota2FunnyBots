@@ -68,8 +68,13 @@ function AbilityUsageThink()
 	
 	VoidDesire, VoidTarget = UseVoid()
 	if VoidDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Void, VoidTarget)
-		return
+		if Void:GetLevel() >= 5 then
+			bot:Action_UseAbilityOnLocation(Void, VoidTarget:GetLocation())
+			return
+		else
+			bot:Action_UseAbilityOnEntity(Void, VoidTarget)
+			return
+		end
 	end
 end
 

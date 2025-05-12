@@ -75,8 +75,10 @@ function X.GetHeroItemBuild()
 		"item_dragon_lance",
 		"item_desolator",
 		"item_blink",
-		"item_black_king_bar",
 		SituationalItem1,
+		"item_hurricane_pike",
+		"item_black_king_bar",
+		
 		"item_swift_blink",
 		}
 	end
@@ -85,6 +87,7 @@ function X.GetHeroItemBuild()
 		local SituationalItem1 = PRoles.ShouldBuyMKB("item_greater_crit")
 		
 		ItemBuild = { 
+		"item_bottle",
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
@@ -92,8 +95,10 @@ function X.GetHeroItemBuild()
 		"item_dragon_lance",
 		"item_desolator",
 		"item_blink",
-		"item_black_king_bar",
 		SituationalItem1,
+		"item_hurricane_pike",
+		"item_black_king_bar",
+		
 		"item_swift_blink",
 		}
 	end

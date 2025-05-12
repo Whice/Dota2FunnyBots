@@ -18,7 +18,7 @@ if bot:GetUnitName() == 'npc_dota_hero_monkey_king' then
 	end
 end
 
-if bot:IsInvulnerable() or bot:IsHero() == false or bot:IsIllusion()
+if bot:IsInvulnerable() or bot:IsHero() == false or bot:IsIllusion() or bot:GetAbilityInSlot(5):GetName() == "dazzle_nothl_projection_end"
 then
 	return
 end
@@ -47,6 +47,7 @@ local unitName = bot:GetUnitName();
 bot.buildBFury = false;
 bot.buildVanguard = false;
 bot.buildHoly = false;
+bot.buildWitchBlade = false;
 
 for i=1, math.ceil(#bot.itemToBuy/2) do
 	if bot.itemToBuy[i] == "item_bfury" or bot.itemToBuy[#bot.itemToBuy-i+1] == "item_bfury" then
@@ -60,6 +61,9 @@ for i=1, math.ceil(#bot.itemToBuy/2) do
 	end
 	if bot.itemToBuy[i] == "item_holy_locket" or bot.itemToBuy[#bot.itemToBuy-i+1] == "item_holy_locket" then
 		bot.buildHoly = true;
+	end
+	if bot.itemToBuy[i] == "item_witch_blade" or bot.itemToBuy[#bot.itemToBuy-i+1] == "item_witch_blade" then
+		bot.buildWitchBlade = true;
 	end
 end
 
@@ -75,9 +79,10 @@ local courier = nil;
 local t3AlreadyDamaged = false;
 local t3Check = -90;
 
+local StartTime = DotaTime()
+
 --General item purchase logic
 local function GeneralPurchase()
-
 	--Cache all needed item properties when the last item to buy not equal to current item component to buy
 	if lastItemToBuy ~= bot.currentComponentToBuy then
 		lastItemToBuy = bot.currentComponentToBuy;
@@ -162,21 +167,28 @@ local declarePosition = false
 local listset = false
 
 function ItemPurchaseThink()  
-	--PChat.ChatModule()
+	if bot:GetAbilityInSlot(5):GetName() == "dazzle_nothl_projection_end" then
+		return
+	end
+	
+	-- Failsafe if bot scripts are reloaded
+	if DotaTime() > -87 then
+		if (DotaTime() - StartTime) < 3 then
+			return
+		end
+	end
 
-	if buystartingitems == false then
+	if buystartingitems == false and DotaTime() < 0 then
 		if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
 			if bot:GetUnitName() == "npc_dota_hero_medusa" then
 				bot:ActionImmediate_PurchaseItem("item_magic_stick")
-				bot:ActionImmediate_PurchaseItem("item_branches")
-				bot:ActionImmediate_PurchaseItem("item_branches")
-				bot:ActionImmediate_PurchaseItem("item_recipe_magic_wand")
+				bot:ActionImmediate_PurchaseItem("item_circlet")
 			else
 				bot:ActionImmediate_PurchaseItem("item_tango")
 				bot:ActionImmediate_PurchaseItem("item_flask")
 				bot:ActionImmediate_PurchaseItem("item_circlet")
-				bot:ActionImmediate_PurchaseItem("item_branches")
-				bot:ActionImmediate_PurchaseItem("item_branches")
+				--bot:ActionImmediate_PurchaseItem("item_branches")
+				--bot:ActionImmediate_PurchaseItem("item_branches")
 			end
 			
 			buystartingitems = true
@@ -185,9 +197,10 @@ function ItemPurchaseThink()
 		if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
 			bot:ActionImmediate_PurchaseItem("item_tango")
 			bot:ActionImmediate_PurchaseItem("item_flask")
-			bot:ActionImmediate_PurchaseItem("item_circlet")
-			bot:ActionImmediate_PurchaseItem("item_branches")
-			bot:ActionImmediate_PurchaseItem("item_branches")
+			bot:ActionImmediate_PurchaseItem("item_faerie_fire")
+			--bot:ActionImmediate_PurchaseItem("item_circlet")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
 			
 			buystartingitems = true
 		end
@@ -195,9 +208,10 @@ function ItemPurchaseThink()
 		if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
 			bot:ActionImmediate_PurchaseItem("item_tango")
 			bot:ActionImmediate_PurchaseItem("item_tango")
+			bot:ActionImmediate_PurchaseItem("item_faerie_fire")
 			bot:ActionImmediate_PurchaseItem("item_circlet")
-			bot:ActionImmediate_PurchaseItem("item_branches")
-			bot:ActionImmediate_PurchaseItem("item_branches")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
 			
 			buystartingitems = true
 		end
@@ -207,8 +221,10 @@ function ItemPurchaseThink()
 			bot:ActionImmediate_PurchaseItem("item_tango")
 			bot:ActionImmediate_PurchaseItem("item_flask")
 			bot:ActionImmediate_PurchaseItem("item_blood_grenade")
-			bot:ActionImmediate_PurchaseItem("item_branches")
-			bot:ActionImmediate_PurchaseItem("item_branches")
+			bot:ActionImmediate_PurchaseItem("item_enchanted_mango")
+			bot:ActionImmediate_PurchaseItem("item_enchanted_mango")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
 			
 			buystartingitems = true
 		end 
@@ -218,8 +234,10 @@ function ItemPurchaseThink()
 			bot:ActionImmediate_PurchaseItem("item_tango")
 			bot:ActionImmediate_PurchaseItem("item_flask")
 			bot:ActionImmediate_PurchaseItem("item_blood_grenade")
-			bot:ActionImmediate_PurchaseItem("item_branches")
-			bot:ActionImmediate_PurchaseItem("item_branches")
+			bot:ActionImmediate_PurchaseItem("item_enchanted_mango")
+			bot:ActionImmediate_PurchaseItem("item_enchanted_mango")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
+			--bot:ActionImmediate_PurchaseItem("item_branches")
 			
 			buystartingitems = true
 		end
@@ -230,7 +248,9 @@ function ItemPurchaseThink()
 		return;
 	end
 	
-	if listset == false and HeroInfoFile.GetHeroItemBuild() ~= nil then
+	if listset == false
+	and HeroInfoFile.GetHeroItemBuild() ~= nil
+	and DotaTime() >= -75 then
 		for i=1, math.ceil(#HeroInfoFile.GetHeroItemBuild()/2) do
 			bot.itemToBuy[i] = HeroInfoFile.GetHeroItemBuild()[#HeroInfoFile.GetHeroItemBuild()-i+1]; 
 			bot.itemToBuy[#HeroInfoFile.GetHeroItemBuild()-i+1] = HeroInfoFile.GetHeroItemBuild()[i];
@@ -300,23 +320,25 @@ function ItemPurchaseThink()
 	end
 	
 	-- Wards
-	if (PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport") then
-		if GetItemStockCount( "item_ward_observer" ) > 0
-		and bot:GetGold() >= GetItemCost( "item_ward_observer" ) 
-		and PItems.GetItemCharges(bot, "item_ward_observer") < 2
-		and bot:GetCourierValue() == 0 
-		and (DotaTime() < 0 or DotaTime() >= (10 * 60)) then
-			bot:ActionImmediate_PurchaseItem("item_ward_observer")
+	if bot:GetDifficulty() ~= DIFFICULTY_PASSIVE then
+		if (PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport") then
+			if GetItemStockCount( "item_ward_observer" ) > 0
+			and bot:GetGold() >= GetItemCost( "item_ward_observer" ) 
+			and PItems.GetItemCharges(bot, "item_ward_observer") < 2
+			and bot:GetCourierValue() == 0 
+			and (DotaTime() < 0 or DotaTime() >= (10 * 60)) then
+				bot:ActionImmediate_PurchaseItem("item_ward_observer")
+			end
 		end
-	end
-	
-	if (PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport") then
-		if GetItemStockCount( "item_ward_sentry" ) > 0
-		and bot:GetGold() >= GetItemCost( "item_ward_sentry" ) 
-		and PItems.GetItemCharges(bot, "item_ward_sentry") < 2
-		and bot:GetCourierValue() == 0
-		and not P.IsInLaningPhase() then
-			bot:ActionImmediate_PurchaseItem("item_ward_sentry")
+		
+		if (PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport") then
+			if GetItemStockCount( "item_ward_sentry" ) > 0
+			and bot:GetGold() >= GetItemCost( "item_ward_sentry" ) 
+			and PItems.GetItemCharges(bot, "item_ward_sentry") < 2
+			and bot:GetCourierValue() == 0
+			and not P.IsInLaningPhase() then
+				bot:ActionImmediate_PurchaseItem("item_ward_sentry")
+			end
 		end
 	end
 	
@@ -340,10 +362,13 @@ function ItemPurchaseThink()
 		bot:ActionImmediate_PurchaseItem("item_tome_of_knowledge"); 
 	end
 	
-	if shardpurchased == false and GetItemStockCount( "item_aghanims_shard" ) > 0 and bot:GetGold() >= GetItemCost( "item_aghanims_shard" ) then
-		shardpurchased = true
-		bot.shard = true
-		bot:ActionImmediate_PurchaseItem("item_aghanims_shard")
+	if PRoles.GetPRole(bot, bot:GetUnitName()) ~= "SoftSupport"
+	and PRoles.GetPRole(bot, bot:GetUnitName()) ~= "HardSupport" then
+		if shardpurchased == false and GetItemStockCount( "item_aghanims_shard" ) > 0 and bot:GetGold() >= GetItemCost( "item_aghanims_shard" ) then
+			shardpurchased = true
+			bot.shard = true
+			bot:ActionImmediate_PurchaseItem("item_aghanims_shard")
+		end
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane"
@@ -381,8 +406,13 @@ function ItemPurchaseThink()
 							slotToSell = itemSlot;
 							break;
 						end
-					elseif item == "item_hand_of_midas" then
-						if #bot.itemToBuy <= 2 then
+					elseif item == "item_orb_of_venom" then
+						if bot.buildWitchBlade == false then
+							slotToSell = itemSlot;
+							break;
+						end
+					elseif item == "item_hand_of_midas" or item == "item_falcon_blade" then
+						if #bot.itemToBuy <= 3 then
 							slotToSell = itemSlot;
 							break;
 						end

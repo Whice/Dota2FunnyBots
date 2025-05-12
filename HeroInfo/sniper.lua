@@ -27,22 +27,22 @@ function X.GetHeroLevelPoints()
 	end
 	
 	local SkillPoints = {
-	abilities[2], -- Level 1
-	abilities[1], -- Level 2
+	abilities[1], -- Level 1
+	abilities[2], -- Level 2
 	abilities[1], -- Level 3
-	abilities[3], -- Level 4
+	abilities[2], -- Level 4
 	abilities[1], -- Level 5
 	abilities[4], -- Level 6
 	abilities[1], -- Level 7
-	abilities[3], -- Level 8
-	abilities[3], -- Level 9
+	abilities[2], -- Level 8
+	abilities[2], -- Level 9
 	talents[2],   -- Level 10
 	abilities[3], -- Level 11
 	abilities[4], -- Level 12
-	abilities[2], -- Level 13
-	abilities[2], -- Level 14
+	abilities[3], -- Level 13
+	abilities[3], -- Level 14
 	talents[3],   -- Level 15
-	abilities[2], -- Level 16
+	abilities[3], -- Level 16
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
 	"NoLevel",    -- Level 19
@@ -51,12 +51,12 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[8],   -- Level 25
+	talents[7],   -- Level 25
 	"NoLevel",    -- Level 26
 	talents[1],   -- Level 27
 	talents[4],   -- Level 28
 	talents[5],   -- Level 29
-	talents[7]    -- Level 30
+	talents[8]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -66,36 +66,40 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
-		local SituationalItem2 = PRoles.ShouldBuyMKB("item_skadi")
+		local SituationalItem1 = PRoles.ShouldBuyMKB("item_revenants_brooch")
+		local SituationalItem2 = PRoles.ShouldBuySilverEdge("item_greater_crit")
 		
 		ItemBuild = { 
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
 	
-		"item_dragon_lance",
 		"item_maelstrom",
-		"item_black_king_bar",
+		"item_dragon_lance",
+		"item_mjollnir",
 		"item_hurricane_pike",
-		SituationalItem1,
-		SituationalItem2,
+		"item_black_king_bar",
+		"item_revenants_brooch",
+		"item_skadi",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
 		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_skadi")
 		
 		ItemBuild = { 
+		"item_bottle",
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
 	
-		"item_dragon_lance",
 		"item_maelstrom",
-		"item_black_king_bar",
+		"item_dragon_lance",
+		"item_mjollnir",
 		"item_hurricane_pike",
-		SituationalItem1,
+		"item_black_king_bar",
+		"item_revenants_brooch",
 		"item_monkey_king_bar",
 		}
 	end

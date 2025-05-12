@@ -65,52 +65,21 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySphere("item_satanic")
-		local SituationalItem2 = PRoles.ShouldBuyMKB("item_butterfly")
+		local SituationalItem1 = PRoles.ShouldBuyMKB("item_butterfly")
 		
 		ItemBuild = { 
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
-	
 		"item_falcon_blade",
+		
 		"item_lesser_crit",
 		"item_ultimate_scepter",
 		"item_black_king_bar",
-		SituationalItem1,
-		"item_ultimate_scepter_2",
 		"item_greater_crit",
-		SituationalItem2,
-		}
-	end
-
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
-		"item_magic_wand",
-		"item_tranquil_boots",
-	
-		"item_solar_crest",
-		"item_force_staff",
-		"item_lotus_orb",
-		"item_cyclone",
-		"item_aeon_disk",
-		"item_boots_of_bearing",
-		}
-	end
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
-		"item_magic_wand",
-		"item_arcane_boots",
-		
-		"item_urn_of_shadows",
-		"item_glimmer_cape",
-		"item_spirit_vessel",
-		"item_lotus_orb",
-		"item_aether_lens",
-		"item_aeon_disk",
-		"item_guardian_greaves",
+		"item_satanic",
+		"item_ultimate_scepter_2",
+		SituationalItem1,
 		}
 	end
 	

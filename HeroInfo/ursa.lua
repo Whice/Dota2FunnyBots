@@ -50,12 +50,12 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[8],   -- Level 25
+	talents[7],   -- Level 25
 	"NoLevel",    -- Level 26
 	talents[2],   -- Level 27
 	talents[4],   -- Level 28
 	talents[5],   -- Level 29
-	talents[7]    -- Level 30
+	talents[8]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -66,7 +66,8 @@ function X.GetHeroItemBuild()
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
 		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_abyssal_blade")
-		local SituationalItem2 = PRoles.ShouldBuyMKB("item_butterfly")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_nullifier")
+		local SituationalItem3 = PRoles.ShouldBuySphere("item_satanic")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -74,12 +75,14 @@ function X.GetHeroItemBuild()
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_phase_boots",
+		"item_cornucopia",
 	
 		"item_bfury",
 		"item_blink",
 		"item_black_king_bar",
 		SituationalItem1,
 		SituationalItem2,
+		SituationalItem3,
 		"item_swift_blink",
 		}
 	end

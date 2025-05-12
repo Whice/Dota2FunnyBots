@@ -127,11 +127,11 @@ function UseHaunt()
 	
 	for v, ally in pairs(FilteredAllies) do
 		if PAF.IsInTeamFight(ally) then
-			local enemies = ally:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
+			local enemies = ally:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
 			local FilteredEnemies = PAF.FilterTrueUnits(enemies)
 			local target = PAF.GetWeakestUnit(enemies)
 			
-			if target ~= nil and not P.IsRetreating(bot) and not PAF.IsEngaging(bot) and GetUnitToUnitDistance(bot, target) > 1600 then
+			if target ~= nil and not P.IsRetreating(bot) and not PAF.IsEngaging(bot) and GetUnitToUnitDistance(bot, target) > SpectralDagger:GetCastRange() then
 				return BOT_ACTION_DESIRE_HIGH
 			end
 		end
@@ -165,7 +165,7 @@ function UseShadowStep()
 	end
 	
 	if PAF.IsEngaging(bot) then
-		if GetUnitToUnitDistance(bot, BotTarget) > 1000 then
+		if GetUnitToUnitDistance(bot, BotTarget) > SpectralDagger:GetCastRange() then
 			return BOT_ACTION_DESIRE_HIGH, BotTarget
 		end
 	end

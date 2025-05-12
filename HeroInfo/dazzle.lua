@@ -6,7 +6,7 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 local PoisonTouch = bot:GetAbilityByName("dazzle_poison_touch")
 local ShallowGrave = bot:GetAbilityByName("dazzle_shallow_grave")
 local ShadowWave = bot:GetAbilityByName("dazzle_shadow_wave")
-local BadJuju = bot:GetAbilityByName("dazzle_bad_juju")
+local NothlProjection = bot:GetAbilityInSlot(5)
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
@@ -14,7 +14,7 @@ function X.GetHeroLevelPoints()
 	table.insert(abilities, PoisonTouch:GetName())
 	table.insert(abilities, ShallowGrave:GetName())
 	table.insert(abilities, ShadowWave:GetName())
-	table.insert(abilities, BadJuju:GetName())
+	table.insert(abilities, NothlProjection:GetName())
 	
 	local talents = {}
 	
@@ -64,36 +64,25 @@ end
 function X.GetHeroItemBuild()
 	local ItemBuild
 	
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
+	local SupportBoots = PRoles.GetSupportBoots(bot)
+	local SupportUtility = PRoles.GetSupportUtilityItem(bot)
+	
+	local CoreItems = {
 		"item_magic_wand",
-		"item_tranquil_boots",
+		SupportBoots,
 		
-		"item_solar_crest",
+		SupportUtility,
+	}
+	
+	local LuxuryItems = {
 		"item_aether_lens",
-		"item_force_staff",
+		"item_ultimate_scepter",
 		"item_octarine_core",
-		"item_aeon_disk",
-		"item_boots_of_bearing",
-		}
-	end
-
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
-		"item_magic_wand",
-		"item_arcane_boots",
-		
-		"item_urn_of_shadows",
-		"item_glimmer_cape",
-		"item_spirit_vessel",
-		"item_aether_lens",
-		"item_octarine_core",
-		"item_aeon_disk",
-		"item_guardian_greaves",
-		}
-	end
+		"item_sheepstick",
+		"item_ultimate_scepter_2",
+	}
+	
+	ItemBuild = PRoles.CreateSupportBuild(bot, CoreItems, LuxuryItems, 2)
 	
 	return ItemBuild
 end

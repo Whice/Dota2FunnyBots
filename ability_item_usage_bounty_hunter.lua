@@ -95,8 +95,15 @@ function UseShurikenToss()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
@@ -108,22 +115,8 @@ function UseJinada()
 	if not Jinada:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	if Jinada:GetAutoCastState() == true then
-		Jinada:ToggleAutoCast()
-	end
-	
-	local LaneRange = 350
-	
-	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= 350 then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
-			end
-		end
-	end
-	
 	if P.IsInLaningPhase() then
-		local EnemiesWithinRange = bot:GetNearbyHeroes(LaneRange, true, BOT_MODE_NONE)
+		local EnemiesWithinRange = bot:GetNearbyHeroes(300, true, BOT_MODE_NONE)
 		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 		
 		local WeakestUnit = PAF.GetWeakestUnit(FilteredEnemies)
@@ -131,6 +124,26 @@ function UseJinada()
 		if WeakestUnit ~= nil then
 			return BOT_ACTION_DESIRE_HIGH, WeakestUnit
 		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if PAF.IsValidHeroTarget(AttackTarget)
+	or PAF.IsRoshan(AttackTarget)
+	or PAF.IsTormentor(AttackTarget)
+	or bot:GetActiveMode() == BOT_MODE_FARM
+	or bot:GetActiveMode() == BOT_MODE_LANING then
+		if Jinada:GetAutoCastState() == false then
+			Jinada:ToggleAutoCast()
+			return 0
+		else
+			return 0
+		end
+	end
+	
+	if Jinada:GetAutoCastState() == true then
+		Jinada:ToggleAutoCast()
+		return 0
 	end
 	
 	return 0
@@ -162,12 +175,22 @@ function UseTrack()
 	local CR = Track:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+				if not BotTarget:HasModifier("modifier_bounty_hunter_track") then
+					return BOT_ACTION_DESIRE_HIGH, BotTarget
+				end
+			end
+		end
+	end
+	
 	if not P.IsRetreating(bot) then
 		local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
 		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 		
 		for v, Enemy in pairs(FilteredEnemies) do
-			if not Enemy:HasModifier("modifier_bounty_hunter_track_effect") then
+			if not Enemy:HasModifier("modifier_bounty_hunter_track") then
 				return BOT_ACTION_DESIRE_HIGH, Enemy
 			end
 		end

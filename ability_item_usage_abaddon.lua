@@ -88,6 +88,14 @@ function UseDeathCoil()
 		end
 	end
 	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		end
+	end
+	
 	return 0
 end
 
@@ -105,6 +113,16 @@ function UseAphoticShield()
 		and Ally:WasRecentlyDamagedByAnyHero(2)
 		and not Ally:HasModifier("modifier_abaddon_aphotic_shield") then
 			return BOT_ACTION_DESIRE_HIGH, Ally
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if PAF.IsTormentor(AttackTarget) then
+			if not Ally:HasModifier("modifier_abaddon_aphotic_shield") then
+				return BOT_ACTION_DESIRE_HIGH, bot
+			end
 		end
 	end
 	

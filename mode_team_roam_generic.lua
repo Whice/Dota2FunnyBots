@@ -22,6 +22,15 @@ local IsWinterWyvernArcticBurn = false
 local IsBatRiderLasso = false
 local IsWeaverShukuchi = false
 
+local RearmDesireTime = -90
+local RearmChannelTime
+local MultishotDesireTime = -90
+local MultishotChannelTime
+local MultishotLoc = Vector(0,0,0)
+local TameTheBeastsDesireTime = -90
+local TameTheBeastsChannelTime
+local TameTheBeastsLoc = Vector(0,0,0)
+
 local GankTarget = nil
 local ShukuchiTarget = nil
 
@@ -66,6 +75,18 @@ function GetDesire()
 		if (DotaTime() - EngageTime) > 2 then
 			Engaged = false
 		end
+	end
+	
+	if ShouldTinkerRearm() == true then
+		return (BOT_MODE_DESIRE_ABSOLUTE * 1.5)
+	end
+	
+	--[[if ShouldDrowMultishot() == true then
+		return (BOT_MODE_DESIRE_ABSOLUTE * 1.5)
+	end]]--
+	
+	if ShouldRingmasterTame() == true then
+		return (BOT_MODE_DESIRE_ABSOLUTE * 1.5)
 	end
 	
 	if IsInWraithForm() then
@@ -114,6 +135,10 @@ function GetDesire()
 		end
 	end
 	
+	if ShouldDenyTower() == true then
+		return BOT_MODE_DESIRE_VERYHIGH
+	end
+	
 	SuitableToAttackSpecialUnit = CanAttackSpecialUnit()
 	if SuitableToAttackSpecialUnit then
 		return 0.98
@@ -139,6 +164,42 @@ function GetDesire()
 end
 
 function Think()
+	if ShouldTinkerRearm() then
+		if (DotaTime() - RearmDesireTime) < 0.2 then
+			bot:Action_ClearActions(false)
+		else
+			if bot:GetUnitName() == "npc_dota_hero_tinker" and not bot:IsChanneling() then
+				local Rearm = bot:GetAbilityByName("tinker_rearm")
+				
+				bot:ActionQueue_UseAbility(Rearm)
+			end
+		end
+	end
+	
+	--[[if ShouldDrowMultishot() then
+		if (DotaTime() - MultishotDesireTime) < 0.2 then
+			bot:Action_ClearActions(false)
+		else
+			if bot:GetUnitName() == "npc_dota_hero_drow_ranger" and not bot:IsChanneling() then
+				local Multishot = bot:GetAbilityByName("drow_ranger_multishot")
+				
+				bot:ActionQueue_UseAbilityOnLocation(Multishot, MultishotLoc)
+			end
+		end
+	end]]--
+	
+	if ShouldRingmasterTame() then
+		if (DotaTime() - TameTheBeastsDesireTime) < 0.2 then
+			bot:Action_ClearActions(false)
+		else
+			if bot:GetUnitName() == "npc_dota_hero_ringmaster" and not bot:IsChanneling() then
+				local TameTheBeasts = bot:GetAbilityByName("ringmaster_tame_the_beasts")
+				
+				bot:ActionQueue_UseAbilityOnLocation(TameTheBeasts, TameTheBeastsLoc)
+			end
+		end
+	end
+	
 	if IsInWraithForm() then
 		local AttackRange = bot:GetAttackRange()
 		local EnemiesWithinRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
@@ -199,6 +260,11 @@ function Think()
 			bot:Action_AttackUnit(ShukuchiTarget, false)
 			return
 		end
+	end
+	
+	if ShouldDenyTower() then
+		bot:Action_AttackUnit(RoamTarget, false)
+		return
 	end
 	
 	--[[if bot:HasModifier("modifier_smoke_of_deceit")
@@ -474,6 +540,167 @@ function ShouldAttackCogs()
 	return false
 end
 
+function ShouldTinkerRearm()
+	if bot:GetUnitName() == "npc_dota_hero_tinker" then
+		
+		local Laser = bot:GetAbilityByName("tinker_laser")
+		local MarchOfTheMachines = bot:GetAbilityByName("tinker_march_of_the_machines")
+		local DefenseMatrix = bot:GetAbilityByName("tinker_defense_matrix")
+		local KeenConveyance = bot:GetAbilityByName("tinker_keen_teleport")
+		local Rearm = bot:GetAbilityByName("tinker_rearm")
+		
+		local RearmChannelTime = Rearm:GetChannelTime()
+		if (DotaTime() - RearmDesireTime) < (0.2 + RearmChannelTime) then
+			return true
+		end
+		
+		if not Rearm:IsFullyCastable() then return 0 end
+		if P.CantUseAbility(bot) then return 0 end
+		
+		if (P.IsRetreating(bot) and bot:DistanceFromFountain() <= 0) or not PAF.IsEngaging(bot) then
+			if not Laser:IsFullyCastable()
+			or not MarchOfTheMachines:IsFullyCastable()
+			or not DefenseMatrix:IsFullyCastable()
+			or not KeenConveyance:IsFullyCastable() then
+				RearmDesireTime = DotaTime()
+				return true
+			end
+		end
+		
+		if PAF.IsInTeamFight(bot) then
+			if not Laser:IsFullyCastable()
+			and not MarchOfTheMachines:IsFullyCastable()
+			and not DefenseMatrix:IsFullyCastable() then
+				RearmDesireTime = DotaTime()
+				return true
+			end
+		elseif PAF.IsEngaging(bot) then
+			if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+				if GetUnitToUnitDistance(bot, BotTarget) <= 1600 then
+					local AlliesWithinRange = bot:GetNearbyHeroes(1600, false, BOT_MODE_NONE)
+					local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
+					local CombinedOffensivePower = (PAF.CombineOffensivePower(FilteredAllies, false) / 2)
+					
+					if CombinedOffensivePower < BotTarget:GetHealth() then
+						if not Laser:IsFullyCastable()
+						and not MarchOfTheMachines:IsFullyCastable()
+						and not DefenseMatrix:IsFullyCastable() then
+							RearmDesireTime = DotaTime()
+							return true
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	return false
+end
+
+function ShouldDrowMultishot()
+	if bot:GetUnitName() == "npc_dota_hero_drow_ranger" then
+		
+		local Multishot = bot:GetAbilityByName("drow_ranger_multishot")
+		
+		--local MultishotChannelTime = Multishot:GetChannelTime()
+		local MultishotChannelTime = 1.75
+		if (DotaTime() - MultishotDesireTime) < (0.2 + MultishotChannelTime) then
+			return true
+		end
+		
+		if not Multishot:IsFullyCastable() then return 0 end
+		if P.CantUseAbility(bot) then return 0 end
+		
+		local AttackRange = bot:GetAttackRange()
+		local BotTarget = bot:GetTarget()
+		local Radius = 250
+		
+		if PAF.IsEngaging(bot) then
+			if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+				if GetUnitToUnitDistance(bot, BotTarget) <= (AttackRange + 50) then
+					MultishotDesireTime = DotaTime()
+					MultishotLoc = BotTarget:GetLocation()
+					return true
+				end
+			end
+		end
+		
+		local AttackTarget = bot:GetAttackTarget()
+		
+		if AttackTarget ~= nil and not P.IsInLaningPhase() then
+			if AttackTarget:IsCreep() then
+				local NearbyCreeps = bot:GetNearbyCreeps(1600, true)
+				local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, Radius)
+				
+				if AoECount >= 3 and bot:GetMana() > (bot:GetMaxMana() * 0.6) then
+					MultishotDesireTime = DotaTime()
+					MultishotLoc = AttackTarget:GetLocation()
+					return true
+				end
+			end
+			
+			if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
+				MultishotDesireTime = DotaTime()
+				MultishotLoc = AttackTarget:GetLocation()
+				return true
+			end
+		end
+	end
+	
+	return false
+end
+
+function ShouldRingmasterTame()
+	if bot:GetUnitName() == "npc_dota_hero_ringmaster" then
+		
+		local TameTheBeasts = bot:GetAbilityByName("ringmaster_tame_the_beasts")
+		
+		local TameTheBeastsChannelTime = TameTheBeasts:GetChannelTime()
+		if (DotaTime() - TameTheBeastsDesireTime) < (0.2 + TameTheBeastsChannelTime) then
+			return true
+		end
+		
+		if not TameTheBeasts:IsFullyCastable() then return 0 end
+		if P.CantUseAbility(bot) then return 0 end
+		
+		local CR = TameTheBeasts:GetCastRange()
+		local CastRange = PAF.GetProperCastRange(CR)
+		local BotTarget = bot:GetTarget()
+		
+		local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+		
+		for v, enemy in pairs(FilteredEnemies) do
+			if enemy:IsChanneling() then
+				TameTheBeastsDesireTime = DotaTime()
+				TameTheBeastsLoc = enemy:GetLocation()
+				return true
+			end
+		end
+		
+		if PAF.IsEngaging(bot) then
+			if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+				if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+				and not PAF.IsMagicImmune(BotTarget)
+				and PAF.IsDisabled(BotTarget) or BotTarget:GetCurrentMovementSpeed() <= 300 then
+					TameTheBeastsDesireTime = DotaTime()
+					TameTheBeastsLoc = BotTarget:GetLocation()
+					return true
+				end
+			end
+		end
+		
+		if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
+			local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
+			TameTheBeastsDesireTime = DotaTime()
+			TameTheBeastsLoc = ClosestTarget:GetLocation()
+			return true
+		end
+	end
+	
+	return false
+end
+
 function GetEnemiesWithoutArcticBurn()
 	local EnemiesWithinRange = bot:GetNearbyHeroes((bot:GetAttackRange()), true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
@@ -537,6 +764,25 @@ function IsWeaverCastingShukuchi()
 			return true
 		end
 	end
+end
+
+function ShouldDenyTower()
+	local NearbyTowers = bot:GetNearbyTowers(1600, false)
+	
+	for v, Tower in pairs(NearbyTowers) do
+		if Tower ~= GetTower(bot:GetTeam(), TOWER_TOP_3)
+		and Tower ~= GetTower(bot:GetTeam(), TOWER_MID_3)
+		and Tower ~= GetTower(bot:GetTeam(), TOWER_BOT_3)
+		and Tower ~= GetTower(bot:GetTeam(), TOWER_BASE_1)
+		and Tower ~= GetTower(bot:GetTeam(), TOWER_BASE_2) then
+			if Tower:GetHealth() < (Tower:GetMaxHealth() * 0.1) then
+				RoamTarget = Tower
+				return true
+			end
+		end
+	end
+	
+	return false
 end
 
 function GetClosestLastKnownLocation()
@@ -664,6 +910,7 @@ function ItemUsage()
 	   or bot:HasModifier('modifier_teleporting') == true
 	   or bot:HasModifier('modifier_doom_bringer_doom') == true
 	   or bot:HasModifier('modifier_phantom_lancer_phantom_edge_boost') == true
+	   or bot:HasModifier("modifier_ringmaster_unicycle_movement")
 	   or ( bot:IsInvisible() == true and not bot:HasModifier("modifier_phantom_assassin_blur_active") == true )
     then 
 		return	BOT_ACTION_DESIRE_NONE 

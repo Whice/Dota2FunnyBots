@@ -25,7 +25,7 @@ end
 
 local IceShards = bot:GetAbilityByName("tusk_ice_shards")
 local Snowball = bot:GetAbilityByName("tusk_snowball")
-local TagTeam = bot:GetAbilityByName("tusk_tag_team")
+local TagTeam = bot:GetAbilityInSlot(2)
 local WalrusPunch = bot:GetAbilityByName("tusk_walrus_punch")
 local LaunchSnowball = bot:GetAbilityByName("tusk_launch_snowball")
 
@@ -56,9 +56,9 @@ function AbilityUsageThink()
 		return
 	end
 	
-	TagTeamDesire = UseTagTeam()
+	TagTeamDesire, TagTeamTarget = UseTagTeam()
 	if TagTeamDesire > 0 then
-		bot:Action_UseAbility(TagTeam)
+		bot:Action_UseAbilityOnEntity(TagTeam, TagTeamTarget)
 		return
 	end
 	
@@ -119,6 +119,43 @@ function UseTagTeam()
 	if not TagTeam:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
+	local CR = TagTeam:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
+				local NearbyAllies = bot:GetNearbyHeroes(CastRange, false, BOT_MODE_NONE)
+				local FilteredAllies = PAF.FilterTrueUnits(NearbyAllies)
+				
+				if #FilteredAllies > 1 then
+					local HighestDPSHero = nil
+					local HighestDPS = 0
+					
+					for v, Ally in pairs(FilteredAllies) do
+						if Ally ~= bot then
+							if PAF.GetAttackDPS(Ally) > HighestDPS then
+								HighestDPS = PAF.GetAttackDPS(Ally)
+								HighestDPSHero = Ally
+							end
+						end
+					end
+					
+					if HighestDPSHero ~= nil then
+						return BOT_ACTION_DESIRE_HIGH, HighestDPSHero
+					end
+				end
+			end
+		end
+	end
+	
+	return 0
+end
+
+--[[function UseTagTeam()
+	if not TagTeam:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
 	local Radius = TagTeam:GetSpecialValueInt("radius")
 	
 	if PAF.IsEngaging(bot) then
@@ -130,7 +167,7 @@ function UseTagTeam()
 	end
 	
 	return 0
-end
+end]]--
 
 function UseWalrusPunch()
 	if not WalrusPunch:IsFullyCastable() then return 0 end

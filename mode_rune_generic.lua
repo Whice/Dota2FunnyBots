@@ -1,8 +1,11 @@
-if GetBot():IsInvulnerable() or not GetBot():IsHero() or not string.find(GetBot():GetUnitName(), "hero") or GetBot():IsIllusion() then
+if GetBot():IsInvulnerable() or not GetBot():IsHero() or not string.find(GetBot():GetUnitName(), "hero") or GetBot():IsIllusion() or GetBot():GetAbilityInSlot(5):GetName() == "dazzle_nothl_projection_end" then
 	return
 end
 
 local bot = GetBot()
+
+bot.bottlerune = -1
+bot.bottletime = DotaTime()
 
 local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
@@ -18,19 +21,34 @@ local AllRunes = {BottomBounty, TopRiver, TopBounty, BottomRiver}
 
 local RuneToCheck = nil
 
-local Radiant15Pos = Vector( 1283.432861, -4635.932617, 256.000000 )
-local Radiant2Pos = Vector( -1914.282593, 67.686188, 128.000000 )
-local Radiant34Pos = Vector( -3421.025635, 516.299316, 256.000000 )
-local Dire1Pos = Vector( -1832.766724, 3072.584961, 256.000000 )
-local Dire5Pos = Vector( -1056.839233, 3136.392578, 256.000000 )
-local Dire2Pos = Vector( 1150.164185, -317.183716, 128.000000 )
-local Dire34Pos = Vector( 2722.729980, -1398.364258, 256.000000 )
+local Radiant15Pos = Vector( 882.005676, -3405.705811, 256.000000 )
+local Radiant2Pos = Vector( -1949.124634, 35.398315, 128.000000 )
+local Radiant34Pos = Vector( -3390.762451, 509.760101, 256.000000 )
+local Dire1Pos = Vector( -531.203918, 2566.890625, 256.000000 )
+local Dire5Pos = Vector( -1523.219727, 2829.976074, 256.00000 )
+local Dire2Pos = Vector( 1194.727051, -343.333069, 128.000000 )
+local Dire34Pos = Vector( 2827.352051, -1295.797363, 256.00000 )
+
+local CheckDist = 3200
 
 function GetDesire()
+	if bot:FindItemSlot("item_bottle") >= 0 and not P.IsInLaningPhase() then
+		CheckDist = 6400
+	end
+	
 	if RuneToCheck ~= nil and not IsAllyWithBottleNearby(RuneToCheck) then
 		if GetUnitToLocationDistance(bot, GetRuneSpawnLocation(RuneToCheck)) <= 50 then
+			if bot:FindItemSlot("item_bottle") >= 0 and bot.bottlerune <= 0 then
+				bot.bottlerune = GetRuneType(RuneToCheck)
+				bot.bottletime = DotaTime()
+			end
+			
 			return BOT_MODE_DESIRE_VERYLOW
 		end
+		
+		--[[if GetUnitToLocationDistance(bot, GetRuneSpawnLocation(RuneToCheck)) <= 400 then
+			return 0.96
+		end]]--
 	end
 
 	if ShouldMoveToPregameLoc() or ShouldMoveToStartBounty() then
@@ -39,7 +57,7 @@ function GetDesire()
 	
 	if AreWaterRunesActive() then
 		local ClosestRune = nil
-		local ClosestDistance = 3200
+		local ClosestDistance = CheckDist
 		for v, Rune in pairs(RiverRunes) do
 			if GetUnitToLocationDistance(bot, GetRuneSpawnLocation(Rune)) <= ClosestDistance then
 				if ShouldCheckRune(Rune) then
@@ -74,7 +92,7 @@ function GetDesire()
 	end
 	
 	local ClosestRune = nil
-	local ClosestDistance = 3200
+	local ClosestDistance = CheckDist
 	for v, Rune in pairs(AllRunes) do
 		if GetUnitToLocationDistance(bot, GetRuneSpawnLocation(Rune)) <= ClosestDistance then
 			if ShouldCheckRune(Rune) then
@@ -86,12 +104,13 @@ function GetDesire()
 	
 	if ClosestRune ~= nil and not IsAllyWithBottleNearby(ClosestRune) and not HumanDangerPingedRune(RuneLoc) then
 		local DistanceToRune = GetUnitToLocationDistance(bot, GetRuneSpawnLocation(ClosestRune))
-		local DesireDistance = (3200 - DistanceToRune)
-		local RuneDesire = (RemapValClamped(DesireDistance, 0, 3200, 0.0, 1.0) * 2)
+		local DesireDistance = (CheckDist - DistanceToRune)
+		local RuneDesire = (RemapValClamped(DesireDistance, 0, CheckDist, 0.0, 1.0) * 2.0)
 		
 		RuneToCheck = ClosestRune
 		return Clamp(RuneDesire, 0.0, 0.9)
 	end
+	
 	return BOT_MODE_DESIRE_NONE
 end
 
@@ -186,7 +205,7 @@ function IsAllyWithBottleNearby(Rune)
 	for v, Ally in pairs(FilteredAllies) do
 		if Ally:FindItemSlot("item_bottle") ~= -1
 		and Ally ~= bot
-		and GetUnitToLocationDistance(Ally, GetRuneSpawnLocation(Rune)) <= 1200 then
+		and GetUnitToLocationDistance(Ally, GetRuneSpawnLocation(Rune)) <= 1600 then
 			return true
 		end
 	end

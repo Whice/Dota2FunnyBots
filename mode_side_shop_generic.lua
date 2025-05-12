@@ -145,8 +145,15 @@ function GetDesire()
 			return BOT_MODE_DESIRE_ABSOLUTE * 1.5
 		end
 	end
+	if bot:GetUnitName() == "npc_dota_hero_tinker" then
+		local Rearm = bot:GetAbilityByName("tinker_rearm")
+		if Rearm:IsInAbilityPhase() or Rearm:IsChanneling() or bot:IsChanneling() then
+			desiremode = "AbilityChannel"
+			return BOT_MODE_DESIRE_ABSOLUTE * 1.5
+		end
+	end
 	
-	if P.IsInLaningPhase() then
+	--[[if P.IsInLaningPhase() then
 		if IsSuitableToLastHit()
 		and not PAF.IsEngaging(bot)
 		and not P.IsRetreating(bot) then
@@ -177,7 +184,7 @@ function GetDesire()
 			desiremode = "LH"
 			return BOT_MODE_DESIRE_ABSOLUTE * 1.12
 		end
-	end
+	end]]--
 	
 	local Courier = GetCourier(bot.courierID)
 	if bot:GetCourierValue() >= 25

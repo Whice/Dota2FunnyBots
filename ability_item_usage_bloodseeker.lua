@@ -27,10 +27,12 @@ local Bloodrage = bot:GetAbilityByName("bloodseeker_bloodrage")
 local BloodBath = bot:GetAbilityByName("bloodseeker_blood_bath")
 local Thirst = bot:GetAbilityByName("bloodseeker_thirst")
 local Rupture = bot:GetAbilityByName("bloodseeker_rupture")
+--local BloodMist = bot:GetAbilityByName("bloodseeker_blood_mist")
 
 local BloodrageDesire = 0
 local BloodBathDesire = 0
 local RuptureDesire = 0
+--local BloodMistDesire = 0
 
 local AttackRange
 local BotTarget
@@ -43,6 +45,12 @@ function AbilityUsageThink()
 	RuptureDesire, RuptureTarget = UseRupture()
 	if RuptureDesire > 0 then
 		bot:Action_UseAbilityOnEntity(Rupture, RuptureTarget)
+		return
+	end
+	
+	ThirstDesire = UseThirst()
+	if ThirstDesire > 0 then
+		bot:Action_UseAbility(Thirst)
 		return
 	end
 	
@@ -77,12 +85,18 @@ function UseBloodrage()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, bot
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, bot
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, bot
 		end
 	end
 	
@@ -114,12 +128,33 @@ function UseBloodBath()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+		end
+	end
+	
+	return 0
+end
+
+function UseThirst()
+	if not Thirst:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	if PAF.IsInTeamFight(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
+				return BOT_ACTION_DESIRE_HIGH
+			end
 		end
 	end
 	
@@ -150,6 +185,29 @@ function UseRupture()
 	
 	if PAF.IsEngaging(bot) and WeakestEnemy ~= nil then
 		return BOT_ACTION_DESIRE_HIGH, WeakestEnemy
+	end
+	
+	return 0
+end
+
+function UseBloodMist()
+	if not BloodMist:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
+				if BloodMist:GetToggleState() == false then
+					return BOT_ACTION_DESIRE_HIGH
+				else
+					return 0
+				end
+			end
+		end
+	end
+	
+	if BloodMist:GetToggleState() == true then
+		return BOT_ACTION_DESIRE_HIGH
 	end
 	
 	return 0

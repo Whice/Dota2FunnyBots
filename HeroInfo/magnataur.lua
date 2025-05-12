@@ -45,7 +45,7 @@ function X.GetHeroLevelPoints()
 		abilities[1], -- Level 14
 		talents[4],   -- Level 15
 		abilities[1], -- Level 16
-		"NoLevel",    -- Level 17
+		abilities[1], -- Level 17
 		abilities[4], -- Level 18
 		"NoLevel",    -- Level 19
 		talents[6],   -- Level 20
@@ -68,19 +68,19 @@ function X.GetHeroLevelPoints()
 		abilities[3], -- Level 2
 		abilities[1], -- Level 3
 		abilities[2], -- Level 4
-		abilities[2], -- Level 5
+		abilities[1], -- Level 5
 		abilities[4], -- Level 6
-		abilities[2], -- Level 7
+		abilities[1], -- Level 7
 		abilities[2], -- Level 8
 		abilities[1], -- Level 9
 		talents[1],   -- Level 10
-		abilities[1], -- Level 11
+		abilities[2], -- Level 11
 		abilities[4], -- Level 12
-		abilities[3], -- Level 13
+		abilities[2], -- Level 13
 		abilities[3], -- Level 14
 		talents[3],   -- Level 15
 		abilities[3], -- Level 16
-		"NoLevel",    -- Level 17
+		abilities[3], -- Level 17
 		abilities[4], -- Level 18
 		"NoLevel",    -- Level 19
 		talents[6],   -- Level 20
@@ -108,6 +108,7 @@ function X.GetHeroItemBuild()
 		local SituationalItem2 = PRoles.ShouldBuySphere("item_shivas_guard")
 		
 		ItemBuild = { 
+		"item_bottle",
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
@@ -126,14 +127,15 @@ function X.GetHeroItemBuild()
 		local CoreItem = PRoles.GetAOEItem()
 		
 		ItemBuild = { 
-		"item_wraith_band",
+		"item_bracer",
 		"item_magic_wand",
 		"item_power_treads",
 		
 		"item_blink",
-		CoreItem,
-		"item_harpoon",
+		"item_kaya",
+		"item_yasha_and_kaya",
 		"item_black_king_bar",
+		CoreItem,
 		"item_ultimate_scepter_2",
 		"item_octarine_core",
 		"item_arcane_blink",

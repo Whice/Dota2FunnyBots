@@ -27,13 +27,14 @@ local DualBreath = bot:GetAbilityByName("jakiro_dual_breath")
 local IcePath = bot:GetAbilityByName("jakiro_ice_path")
 local LiquidFire = bot:GetAbilityByName("jakiro_liquid_fire")
 local Macropyre = bot:GetAbilityByName("jakiro_macropyre")
---local LiquidIce = bot:GetAbilityByName("jakiro_liquid_ice")
+local LiquidIce = bot:GetAbilityByName("jakiro_liquid_ice")
 
 local DualBreathDesire = 0
 local IcePathDesire = 0
 local LiquidFireDesire = 0
+local LiquidIceDesire = 0
 local MacropyreDesire = 0
---local LiquidIceDesire = 0
+local LiquidIceDesire = 0
 
 local AttackRange
 local BotTarget
@@ -61,11 +62,11 @@ function AbilityUsageThink()
 		return
 	end
 	
-	--[[LiquidIceDesire, LiquidIceTarget = UseLiquidIce()
+	LiquidIceDesire, LiquidIceTarget = UseLiquidIce()
 	if LiquidIceDesire > 0 then
 		bot:Action_UseAbilityOnEntity(LiquidIce, LiquidIceTarget)
 		return
-	end]]--
+	end
 	
 	LiquidFireDesire, LiquidFireTarget = UseLiquidFire()
 	if LiquidFireDesire > 0 then
@@ -87,6 +88,21 @@ function UseDualBreath()
 			and not PAF.IsMagicImmune(BotTarget) then
 				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
 			end
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -128,12 +144,18 @@ function UseIcePath()
 		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetLocation()
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -147,17 +169,22 @@ function UseLiquidFire()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if AttackTarget:IsHero() and not PAF.IsMagicImmune(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		if AttackTarget:IsHero()
+		or AttackTarget:IsBuilding()
+		or PAF.IsRoshan(AttackTarget)
+		or PAF.IsTormentor(AttackTarget) then
+			if LiquidFire:GetAutoCastState() == false then
+				LiquidFire:ToggleAutoCast()
+				return 0
+			else
+				return 0
+			end
 		end
-		
-		if AttackTarget:IsBuilding() then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
-		end
-		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
-		end
+	end
+	
+	if LiquidFire:GetAutoCastState() == true then
+		LiquidFire:ToggleAutoCast()
+		return 0
 	end
 	
 	return 0
@@ -182,25 +209,28 @@ function UseMacropyre()
 	return 0
 end
 
---[[function UseLiquidIce()
+function UseLiquidIce()
 	if not LiquidIce:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if AttackTarget:IsHero() and not PAF.IsMagicImmune(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
-		end
-		
-		if AttackTarget:IsBuilding() then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
-		end
-		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		if AttackTarget:IsHero()
+		or AttackTarget:IsBuilding()
+		or PAF.IsRoshan(AttackTarget)
+		or PAF.IsTormentor(AttackTarget) then
+			if LiquidIce:GetAutoCastState() == false then
+				LiquidIce:ToggleAutoCast()
+				return 0
+			else
+				return 0
+			end
 		end
 	end
 	
-	return 0
-end]]--
+	if LiquidIce:GetAutoCastState() == true then
+		LiquidIce:ToggleAutoCast()
+		return 0
+	end
+end

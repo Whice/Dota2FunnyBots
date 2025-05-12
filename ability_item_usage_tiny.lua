@@ -124,6 +124,7 @@ function UseToss()
 	
 	local CR = Toss:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local GrabRadius = Toss:GetSpecialValueInt("grab_radius")
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then

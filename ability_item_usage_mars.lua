@@ -103,12 +103,18 @@ function UseSpear()
 		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetExtrapolatedLocation(0.5)
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetExtrapolatedLocation(0.5)
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -159,10 +165,16 @@ function UseGodsRebuke()
 			end
 		end
 		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then	
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if AttackTarget ~= nil then
+			if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+				if PAF.IsRoshan(AttackTarget)
+				and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+					return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+				end
+			end
+			
+			if PAF.IsTormentor(AttackTarget) then
+				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 			end
 		end
 	end

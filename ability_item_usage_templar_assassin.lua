@@ -123,6 +123,10 @@ function UseMeld()
 			return BOT_ACTION_DESIRE_HIGH
 		end
 		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
+		end
+		
 		if AttackTarget:IsCreep() then
 			if bot:GetActiveMode() == BOT_MODE_FARM and (bot:GetMana() - Meld:GetManaCost()) > manathreshold then
 				return BOT_ACTION_DESIRE_HIGH

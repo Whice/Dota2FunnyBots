@@ -123,12 +123,18 @@ function UseRealityRift()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -139,34 +145,44 @@ function UsePhantasm()
 	if not Phantasm:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local enemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
-	local tableTrueEnemies = PAF.FilterTrueUnits(enemies)
+	local ManaThreshold = 0
 	
-	if PAF.IsEngaging(bot) and #tableTrueEnemies > 0 then
-		if bot:FindItemSlot("item_armlet") >= 0 then
-			if bot:HasModifier("modifier_item_armlet_unholy_strength") then
-				return BOT_ACTION_DESIRE_HIGH
-			end
-		else
-			return BOT_ACTION_DESIRE_HIGH
-		end
+	if ChaosBolt:IsFullyCastable() then
+		ManaThreshold = (ManaThreshold + ChaosBolt:GetManaCost())
+	end
+		
+	if RealityRift:IsFullyCastable() then
+		ManaThreshold = (ManaThreshold + RealityRift:GetManaCost())
 	end
 	
-	--[[if not P.IsInLaningPhase() then
-		local attacktarget = bot:GetAttackTarget()
+	ManaThreshold = (ManaThreshold + Phantasm:GetManaCost())
 	
-		if attacktarget ~= nil then
-			if attacktarget:IsBuilding() then
-				return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1600
+			and bot:GetMana() >= ManaThreshold then
+				if bot:FindItemSlot("item_armlet") >= 0 then
+					if bot:HasModifier("modifier_item_armlet_unholy_strength") then
+						return BOT_ACTION_DESIRE_HIGH
+					end
+				else
+					return BOT_ACTION_DESIRE_HIGH
+				end
 			end
 		end
-	end]]--
+	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		local AttackTarget = bot:GetAttackTarget()
 		
 		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
+			if bot:FindItemSlot("item_armlet") >= 0 then
+				if bot:HasModifier("modifier_item_armlet_unholy_strength") then
+					return BOT_ACTION_DESIRE_HIGH
+				end
+			else
+				return BOT_ACTION_DESIRE_HIGH
+			end
 		end
 	end
 	

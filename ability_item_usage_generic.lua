@@ -59,6 +59,10 @@ local bbtime = {}
 bbtime['lastbbtime'] = -90;
 
 function CourierUsageThink()
+	if bot:GetAbilityInSlot(5):GetName() == "dazzle_nothl_projection_end" then
+		return
+	end
+	
 	if P.pIDInc < #pIDs + 1 and DotaTime() > -60 then
 		if IsPlayerBot(pIDs[P.pIDInc]) == true then
 			local currID = pIDs[P.pIDInc];
@@ -150,7 +154,13 @@ function ItemUsageThink()
 end
 
 function BuybackUsageThink() 
-	if bot:IsInvulnerable() or not bot:IsHero() or bot:IsIllusion() or P.IsMeepoClone(bot) or bot:HasModifier("modifier_arc_warden_tempest_double") or ShouldBuyBack() == false then
+	if bot:IsInvulnerable()
+	or not bot:IsHero()
+	or bot:IsIllusion()
+	or P.IsMeepoClone(bot)
+	or bot:HasModifier("modifier_arc_warden_tempest_double")
+	or bot:GetAbilityInSlot(5):GetName() == "dazzle_nothl_projection_end"
+	or ShouldBuyBack() == false then
 		return;
 	end
 	
@@ -160,6 +170,12 @@ function BuybackUsageThink()
 	
 	if not bot:HasBuyback() then
 		return;
+	end
+	
+	if bot:GetUnitName() == "npc_dota_hero_vengefulspirit" then
+		if bot.StrongIllusion ~= nil then
+			return
+		end
 	end
 
 	if not bot:IsAlive() then
@@ -188,8 +204,15 @@ function BuybackUsageThink()
 end
 
 local PointLevel = 1
+if DotaTime() > -90 then
+	PointLevel = bot:GetLevel()
+end
 
 function AbilityLevelUpThink()
+	if bot:GetAbilityInSlot(5):GetName() == "dazzle_nothl_projection_end" then
+		return
+	end
+	
 	local HumanOnTeam = false
 	for v, Ally in pairs(GetTeamPlayers(bot:GetTeam())) do
 		if not IsPlayerBot(Ally) then
@@ -201,15 +224,54 @@ function AbilityLevelUpThink()
 		UseGlyph()
 	end
 	
-	if bot:GetUnitName() == "npc_dota_life_stealer"
+	if bot:GetUnitName() == "npc_dota_hero_life_stealer"
 	and bot:HasModifier("modifier_life_stealer_infest") then
 		return
+	end
+	
+	if bot:GetUnitName() == "npc_dota_hero_morphling"
+	and bot:GetAbilityInSlot(0):GetName() ~= "morphling_waveform" then
+		return
+	end
+	
+	if bot:GetUnitName() == "npc_dota_hero_jakiro" then
+		if bot:GetAbilityInSlot(1):GetName() ~= "jakiro_ice_path" then
+			return
+		end
+	end
+	
+	if bot:GetUnitName() == "npc_dota_hero_shredder" then
+		if bot:GetAbilityInSlot(5):GetName() ~= "shredder_chakram" then
+			return
+		end
+	end
+	
+	if bot:GetUnitName() == "npc_dota_hero_ringmaster" then
+		if bot:GetAbilityInSlot(0):GetName() ~= "ringmaster_tame_the_beasts" then
+			return
+		end
 	end
 
 	local BotLevel = bot:GetLevel()
 	local SkillPoints = HeroInfoFile.GetHeroLevelPoints()
 	
 	if bot:GetAbilityPoints() > 0 and BotLevel <= 30 then
+		if bot:GetUnitName() == "npc_dota_hero_ogre_magi" then
+			if bot:GetLevel() == 2 then
+				bot:ActionImmediate_LevelAbility(bot:GetAbilityInSlot(1):GetName())
+				bot:ActionImmediate_LevelAbility(bot:GetAbilityInSlot(0):GetName())
+				bot:ActionImmediate_LevelAbility(bot:GetAbilityInSlot(1):GetName())
+				PointLevel = 2
+				return
+			end
+			
+			if bot:GetLevel() == 16 then
+				bot:ActionImmediate_LevelAbility(bot:GetAbilityInSlot(5):GetName())
+				PointLevel = 16
+				return
+			end
+		end
+		
 		if SkillPoints[PointLevel] == "NoLevel" then
 			PointLevel = (PointLevel + 1)
 		else

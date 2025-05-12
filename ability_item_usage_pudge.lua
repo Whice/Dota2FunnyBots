@@ -229,7 +229,9 @@ function UseRot()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_FARM and AttackTarget:IsCreep() then
+		if bot:GetActiveMode() == BOT_MODE_FARM
+		and AttackTarget:IsCreep()
+		and not P.IsInLaningPhase() then
 			if GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
 				if Rot:GetToggleState() == false then
 					return BOT_ACTION_DESIRE_HIGH
