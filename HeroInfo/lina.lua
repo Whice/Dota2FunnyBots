@@ -110,16 +110,17 @@ function X.GetHeroItemBuild()
 		"item_bottle",
 		"item_null_talisman",
 		"item_magic_wand",
-		"item_travel_boots",
+		"item_arcane_boots",
 		
 		"item_ultimate_scepter",
-		"item_aether_lens",
+		"item_desolator",
+		"item_satanic",
 		"item_blink",
 		"item_black_king_bar",
-		"item_yasha_and_kaya",
 		"item_ultimate_scepter_2",
 		SituationalItem1,
 		"item_arcane_blink",
+		"item_travel_boots",
 		"item_travel_boots_2",
 		}
 	end
@@ -134,14 +135,16 @@ function X.GetHeroItemBuild()
 		"item_arcane_boots",
 		
 		"item_maelstrom",
-		"item_travel_boots",
+		"item_desolator",
+		"item_satanic",
 		"item_dragon_lance",
+		"item_hurricane_pike",
 		"item_mjollnir",
 		"item_black_king_bar",
 		SituationalItem1,
 		
-		"item_hurricane_pike",
 		SituationalItem2,
+		"item_travel_boots",
 		"item_travel_boots_2",
 		}
 	end

@@ -73,13 +73,14 @@ function X.GetHeroItemBuild()
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
+		"item_mask_of_madness",
 	
 		"item_maelstrom",
 		"item_dragon_lance",
+		"item_aghanims_shard",
 		"item_mjollnir",
 		"item_hurricane_pike",
-		"item_black_king_bar",
-		"item_revenants_brooch",
+		"item_butterfly",
 		"item_skadi",
 		}
 	end
@@ -89,18 +90,17 @@ function X.GetHeroItemBuild()
 		local SituationalItem2 = PRoles.ShouldBuyMKB("item_skadi")
 		
 		ItemBuild = { 
-		"item_bottle",
 		"item_wraith_band",
-		"item_magic_wand",
 		"item_power_treads",
+		"item_mask_of_madness",
 	
 		"item_maelstrom",
 		"item_dragon_lance",
+		"item_aghanims_shard",
 		"item_mjollnir",
 		"item_hurricane_pike",
-		"item_black_king_bar",
-		"item_revenants_brooch",
-		"item_monkey_king_bar",
+		"item_butterfly",
+		"item_skadi",
 		}
 	end
 	

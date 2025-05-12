@@ -68,59 +68,60 @@ function X.GetHeroItemBuild()
 		local CoreItem = PRoles.GetAOEItem()
 		
 		ItemBuild = { 
-		"item_bracer",
+		"item_soul_ring",  
 		"item_magic_wand",
-		"item_phase_boots",
+		"item_tranquil_boots", 
 		
 		CoreItem,
-		"item_ultimate_scepter",
 		"item_blink",
-		"item_sange_and_yasha",
-		"item_black_king_bar",
+		"item_eternal_shroud",
 		"item_assault",
-		"item_ultimate_scepter_2",
 		"item_heart",
+		"item_black_king_bar",
 		
-		"item_overwhelming_blink",
+		"item_arcane_blink",
+		"item_ultimate_scepter",
+		"item_ultimate_scepter_2",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
 		ItemBuild = { 
 		"item_bottle",
-		"item_bracer",
+		
+		"item_soul_ring",  
 		"item_magic_wand",
-		"item_phase_boots",
+		"item_tranquil_boots", 
 		
-		"item_ultimate_scepter",
-		--"item_aether_lens",
+		CoreItem,
 		"item_blink",
-		"item_sange_and_yasha",
-		"item_black_king_bar",
-		"item_shivas_guard",
-		"item_ultimate_scepter_2",
+		"item_eternal_shroud",
+		"item_assault",
 		"item_heart",
+		"item_black_king_bar",
 		
-		"item_overwhelming_blink",
+		"item_arcane_blink",
+		"item_ultimate_scepter",
+		"item_ultimate_scepter_2",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
 		ItemBuild = { 
-		"item_bracer",
+		"item_soul_ring",  
 		"item_magic_wand",
-		"item_phase_boots",
+		"item_tranquil_boots", 
 		
-		"item_ultimate_scepter",
-		--"item_aether_lens",
+		CoreItem,
 		"item_blink",
-		"item_sange_and_yasha",
-		"item_black_king_bar",
-		"item_sheepstick",
-		"item_ultimate_scepter_2",
+		"item_eternal_shroud",
+		"item_assault",
 		"item_heart",
+		"item_black_king_bar",
 		
-		"item_overwhelming_blink",
+		"item_arcane_blink",
+		"item_ultimate_scepter",
+		"item_ultimate_scepter_2",
 		}
 	end
 	

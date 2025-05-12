@@ -70,17 +70,17 @@ function X.GetHeroItemBuild()
 		ItemBuild = { 
 		"item_quelling_blade",
 	
-		"item_wraith_band",
+		"item_null_talisman",
 		"item_magic_wand",
 		"item_power_treads",
-		"item_falcon_blade",
 		
 		"item_mjollnir",
-		"item_dragon_lance",
-		"item_black_king_bar",
+		"item_aghanims_shard",
+		"item_desolator",
+		"item_satanic",
+		"item_butterfly",
 		"item_greater_crit",
 		
-		"item_hurricane_pike",
 		"item_skadi",
 		SituationalItem1,
 		}

@@ -138,7 +138,7 @@ PItems["basic_items"] = {
 	"item_mithril_hammer";
 	"item_lifesteal";
 	"item_mystic_staff";
-	"item_ward_observer";
+--	"item_ward_observer";
 	"item_ogre_axe";
 	"item_orb_of_venom";
 	"item_platemail";
