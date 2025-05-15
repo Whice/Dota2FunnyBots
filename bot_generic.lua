@@ -1,21 +1,21 @@
-local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
-
 local bot = GetBot()
+local botName = bot:GetUnitName()
+if bot == nil or bot:IsInvulnerable() or not bot:IsHero() or not string.find(botName, "hero") or bot:IsIllusion() then return end
 
-function MinionThink(hMinionUnit) 
-	if not hMinionUnit:IsNull() and hMinionUnit ~= nil then	
-		if hMinionUnit:IsIllusion() then
-			local target = P.IllusionTarget(hMinionUnit, bot)
-		
-			if target ~= nil then
-				hMinionUnit:Action_AttackUnit(target, false)
-			else
-				if GetUnitToUnitDistance(hMinionUnit, bot) > 200 then
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation())
-				else
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation()+RandomVector(200))
-				end
-			end
-		end
-	end
+local Utils = require( GetScriptDirectory()..'/FunLib/utils' )
+local BotBuild = dofile(GetScriptDirectory() .. "/BotLib/" .. string.gsub(botName, "npc_dota_", ""));
+
+if BotBuild == nil
+then
+	print('[ERROR] No build config file found for bot: '..botName)
+	return
+end
+
+function MinionThink(hMinionUnit)
+	if not Utils.IsValidUnit(hMinionUnit) then return end
+	if hMinionUnit.lastMinionFrameProcessTime == nil then hMinionUnit.lastMinionFrameProcessTime = DotaTime() end
+	if DotaTime() - hMinionUnit.lastMinionFrameProcessTime < 0.3 then return end
+	hMinionUnit.lastMinionFrameProcessTime = DotaTime()
+
+	BotBuild.MinionThink(hMinionUnit)
 end
