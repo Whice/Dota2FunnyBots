@@ -4,49 +4,375 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
 function PAF.AcquireTarget()
 	local bot = GetBot()
+	local BotTarget = bot:GetTarget()
 	
-	local AttackRange = (bot:GetAttackRange() + 300)
-	--local AttackRange = 1600
-		
-	if AttackRange > 1600 then
-		AttackRange = 1600
-	end
-		
-	local NearbyEnemies = bot:GetNearbyHeroes(AttackRange, true, BOT_MODE_NONE)
-	if #NearbyEnemies <= 0 then
-		NearbyEnemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
-	end
+	if not PAF.IsValidHeroTarget(BotTarget) then return end
 	
-	local Enemies = PAF.FilterTrueUnits(NearbyEnemies)
-	if #Enemies <= 0 then
-		Enemies = NearbyEnemies
-	end
+	local NearbyHeroes = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(NearbyHeroes)
 	
-	local ViableEnemies = {}
+	local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
 	
-	for v, Enemy in pairs(Enemies) do
-		if not Enemy:IsInvulnerable()
-		and not Enemy:HasModifier("modifier_abaddon_borrowed_time")
-		and not ((Enemy:HasModifier("modifier_item_blade_mail") or Enemy:HasModifier("modifier_item_blade_mail_reflect")) and #Enemies > 1) then
-			table.insert(ViableEnemies, Enemy)
-		end
-	end
-	
-	local WeakestEnemy = nil
-	
-	if #ViableEnemies > 0 then
-		WeakestEnemy = PAF.GetWeakestUnit(ViableEnemies)
-	end
-		
-	if PAF.IsValidHeroTarget(WeakestEnemy)
-	and GetUnitToUnitDistance(bot, WeakestEnemy) <= 1600 then
+	if PAF.IsValidHeroTarget(WeakestEnemy) then
 		bot:SetTarget(WeakestEnemy)
 		return
-	else
-		if not PAF.IsEngaging(bot) then
-			bot:SetTarget(nil)
+	end
+end
+
+function PAF.IllusionTarget(hMinionUnit, bot)
+	local MinionTarget = nil
+	local Mode = bot:GetActiveMode()
+	local BotTarget = bot:GetTarget()
+	local BotAttackTarget = bot:GetAttackTarget()
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1600 then
+				hMinionUnit:Action_AttackUnit(BotTarget, false)
+				return
+			end
+		end
+	end
+	
+	if Mode == BOT_MODE_RETREAT
+	or Mode == BOT_MODE_TEAM_ROAM
+	or Mode == BOT_MODE_SIDE_SHOP
+	or Mode == BOT_MODE_EVASIVE_MANEUVERS
+	or Mode == BOT_MODE_ITEM
+	or Mode == BOT_MODE_WARD
+	or Mode == BOT_MODE_RUNE then
+		local NearbyEnemies = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(NearbyEnemies)
+		
+		if #FilteredEnemies > 0 then
+			local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
+			
+			if WeakestEnemy ~= nil then
+				hMinionUnit:Action_AttackUnit(WeakestEnemy, false)
+				return
+			end
+		end
+		
+		local NearbyCreeps = bot:GetNearbyLaneCreeps(1600, true)
+			
+		if #NearbyCreeps > 0 then
+			local WeakestCreep = PAF.GetWeakestUnit(NearbyCreeps)
+				
+			if PAF.IsValidCreepTarget(WeakestCreep) then
+				hMinionUnit:Action_AttackUnit(WeakestCreep, false)
+				return
+			end
+		end
+	end
+	
+	-- Harass enemy lane heroes while also trying to avoid attacks
+	if Mode == BOT_MODE_LANING then
+		if BotAttackTarget ~= nil then
+			hMinionUnit:Action_AttackUnit(BotAttackTarget, false)
 			return
 		end
+		
+		local NearbyTowers = bot:GetNearbyTowers(1600, true)
+		
+		for v, Tower in pairs(NearbyTowers) do
+			local TowerAttackTarget = Tower:GetAttackTarget()
+			
+			if PAF.IsValidBuildingTarget(Tower) then
+				if (TowerAttackTarget ~= nil and TowerAttackTarget == hMinionUnit) or GetUnitToUnitDistance(hMinionUnit, Tower) <= 800 then
+					hMinionUnit:Action_MoveToLocation(PAF.GetFountainLocation(bot))
+					return
+				end
+			end
+		end
+		
+		local NearbyEnemies = bot:GetNearbyHeroes(800, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(NearbyEnemies)
+		
+		if #FilteredEnemies > 0 then
+			for v, Enemy in pairs(FilteredEnemies) do
+				local EnemyAttackTarget = Enemy:GetAttackTarget()
+				
+				if EnemyAttackTarget ~= nil and EnemyAttackTarget == hMinionUnit then
+					hMinionUnit:Action_MoveToLocation(PAF.GetFountainLocation(bot))
+					return
+				end
+			end
+			
+			local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
+			
+			if WeakestEnemy ~= nil then
+				hMinionUnit:Action_AttackUnit(WeakestEnemy, false)
+				return
+			end
+		end
+	end
+	
+	-- Micro minions to attack lane creeps
+	if Mode == BOT_MODE_FARM then
+		local NearbyCreeps = bot:GetNearbyLaneCreeps(1600, true)
+		
+		if #NearbyCreeps > 0 then
+			local WeakestCreep = PAF.GetWeakestUnit(NearbyCreeps)
+			
+			if PAF.IsValidCreepTarget(WeakestCreep) then
+				hMinionUnit:Action_AttackUnit(WeakestCreep, false)
+				return
+			end
+		else
+			NearbyCreeps = bot:GetNearbyCreeps(1600, true)
+			
+			if #NearbyCreeps > 0 then
+				local WeakestCreep = PAF.GetWeakestUnit(NearbyCreeps)
+			
+				if PAF.IsValidCreepTarget(WeakestCreep) then
+					hMinionUnit:Action_AttackUnit(WeakestCreep, false)
+					return
+				end
+			end
+		end
+	end
+	
+	if P.IsPushing(bot) then
+		local NearbyLaneCreeps = bot:GetNearbyLaneCreeps(1600, true)
+		
+		if #NearbyLaneCreeps > 0 then
+			for v, Creep in pairs(NearbyLaneCreeps) do
+				local WeakestCreep = PAF.GetWeakestUnit(NearbyLaneCreeps)
+			
+				if PAF.IsValidCreepTarget(WeakestCreep) then
+					hMinionUnit:Action_AttackUnit(WeakestCreep, false)
+					return
+				end
+			end
+		end
+		
+		local EnemyAncient = GetAncient(GetOpposingTeam())
+		
+		if PAF.IsValidBuildingTarget(EnemyAncient) then
+			if not EnemyAncient:IsInvulnerable() then
+				hMinionUnit:Action_AttackUnit(EnemyAncient, false)
+				return
+			end
+		end
+		
+		local NearbyBarracks = bot:GetNearbyBarracks(1600, true)
+		
+		if #NearbyBarracks > 0 then
+			for v, Barracks in pairs(NearbyBarracks) do
+				if PAF.IsValidBuildingTarget(Barracks) then
+					if not Barracks:IsInvulnerable() then
+						if string.find(Barracks:GetUnitName(), "melee_rax") then
+							hMinionUnit:Action_AttackUnit(Barracks, false)
+							return
+						end
+					end
+				end
+			end
+			
+			for v, Barracks in pairs(NearbyBarracks) do
+				if PAF.IsValidBuildingTarget(Barracks) then
+					if not Barracks:IsInvulnerable() then
+						if string.find(Barracks:GetUnitName(), "ranged_rax") then
+							hMinionUnit:Action_AttackUnit(Barracks, false)
+							return
+						end
+					end
+				end
+			end
+		end
+		
+		local NearbyTowers = bot:GetNearbyTowers(1600, true)
+		
+		if #NearbyTowers > 0 then
+			for v, Tower in pairs(NearbyTowers) do
+				if PAF.IsValidBuildingTarget(Tower) then
+					if not Tower:IsInvulnerable() then
+						hMinionUnit:Action_AttackUnit(Tower, false)
+						return
+					end
+				end
+			end
+		end
+		
+		local NearbyFillers = bot:GetNearbyFillers(1600, true)
+		
+		if #NearbyFillers > 0 then
+			for v, Filler in pairs(NearbyFillers) do
+				if PAF.IsValidBuildingTarget(Filler) then
+					if not Filler:IsInvulnerable() then
+						hMinionUnit:Action_AttackUnit(Filler, false)
+						return
+					end
+				end
+			end
+		end
+	end
+	
+	if P.IsDefending(bot) then
+		local NearbyLaneCreeps = bot:GetNearbyLaneCreeps(1600, true)
+		
+		if #NearbyLaneCreeps > 0 then
+			for v, Creep in pairs(NearbyLaneCreeps) do
+				local WeakestCreep = PAF.GetWeakestUnit(NearbyLaneCreeps)
+			
+				if PAF.IsValidCreepTarget(WeakestCreep) then
+					hMinionUnit:Action_AttackUnit(WeakestCreep, false)
+					return
+				end
+			end
+		end
+	end
+	
+	if Mode == BOT_MODE_ROSHAN then
+		local NearbyCreeps = bot:GetNearbyCreeps(1600, true)
+		
+		if #NearbyCreeps > 0 then
+			for v, Creep in pairs(NearbyCreeps) do
+				if PAF.IsRoshan(Creep) then
+					hMinionUnit:Action_AttackUnit(Creep, false)
+					return
+				end
+			end
+		end
+	end
+	
+	if Mode == BOT_MODE_SECRET_SHOP then
+		if BotAttackTarget ~= nil then
+			hMinionUnit:Action_AttackUnit(BotAttackTarget, false)
+			return
+		end
+	end
+	
+	if GetUnitToUnitDistance(hMinionUnit, bot) > 200 then
+		hMinionUnit:Action_MoveToLocation(bot:GetLocation())
+		return
+	else
+		hMinionUnit:Action_MoveToLocation(bot:GetLocation()+RandomVector(200))
+		return
+	end
+end
+
+function PAF.StrongIllusionTarget(hMinionUnit, bot)
+	-- This function is for minion units that are active while the hero is dead or inactive
+	
+	local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
+	local FilteredAllies = PAF.FilterTrueUnits(Allies)
+	local AliveAllies = {}
+	
+	if #FilteredAllies > 0 then
+		for v, Ally in pairs(FilteredAllies) do
+			if Ally:IsAlive() then
+				table.insert(AliveAllies, Ally)
+			end
+		end
+	end
+	
+	local StrongestAlly = nil
+	if #AliveAllies > 0 then
+		StrongestAlly = PAF.GetStrongestPowerUnit(AliveAllies)
+	end
+	
+	-- Try to preserve the unit
+	if hMinionUnit:GetHealth() < (hMinionUnit:GetMaxHealth() * 0.25) then
+		hMinionUnit:Action_MoveToLocation(PAF.GetFountainLocation(bot))
+		return
+	end
+	
+	local NearbyEnemies = StrongestAlly:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(NearbyEnemies)
+		
+	if #FilteredEnemies > 0 then
+		local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
+				
+		if WeakestEnemy ~= nil then
+			hMinionUnit:Action_AttackUnit(WeakestEnemy, false)
+			return
+		end
+	end
+	
+	local NearbyLaneCreeps = StrongestAlly:GetNearbyLaneCreeps(1600, true)
+		
+	if #NearbyLaneCreeps > 0 then
+		local WeakestCreep = PAF.GetWeakestUnit(NearbyLaneCreeps)
+				
+		if WeakestCreep ~= nil then
+			hMinionUnit:Action_AttackUnit(WeakestCreep, false)
+			return
+		end
+	end
+	
+	local EnemyAncient = GetAncient(GetOpposingTeam())
+		
+	if PAF.IsValidBuildingTarget(EnemyAncient) then
+		if not EnemyAncient:IsInvulnerable() then
+			hMinionUnit:Action_AttackUnit(EnemyAncient, false)
+			return
+		end
+	end
+	
+	local NearbyBarracks = StrongestAlly:GetNearbyBarracks(1600, true)
+		
+	if #NearbyBarracks > 0 then
+		for v, Barracks in pairs(NearbyBarracks) do
+			if PAF.IsValidBuildingTarget(Barracks) then
+				if not Barracks:IsInvulnerable() then
+					if string.find(Barracks:GetUnitName(), "melee_rax") then
+						hMinionUnit:Action_AttackUnit(Barracks, false)
+						return
+					end
+				end
+			end
+		end
+			
+		for v, Barracks in pairs(NearbyBarracks) do
+			if PAF.IsValidBuildingTarget(Barracks) then
+				if not Barracks:IsInvulnerable() then
+					if string.find(Barracks:GetUnitName(), "ranged_rax") then
+						hMinionUnit:Action_AttackUnit(Barracks, false)
+						return
+					end
+				end
+			end
+		end
+	end
+		
+	local NearbyTowers = StrongestAlly:GetNearbyTowers(1600, true)
+		
+	if #NearbyTowers > 0 then
+		for v, Tower in pairs(NearbyTowers) do
+			if PAF.IsValidBuildingTarget(Tower) then
+				if not Tower:IsInvulnerable() then
+					hMinionUnit:Action_AttackUnit(Tower, false)
+					return
+				end
+			end
+		end
+	end
+		
+	local NearbyFillers = StrongestAlly:GetNearbyFillers(1600, true)
+		
+	if #NearbyFillers > 0 then
+		for v, Filler in pairs(NearbyFillers) do
+			if PAF.IsValidBuildingTarget(Filler) then
+				if not Filler:IsInvulnerable() then
+					hMinionUnit:Action_AttackUnit(Filler, false)
+					return
+				end
+			end
+		end
+	end
+	
+	if StrongestAlly ~= nil then
+		if GetUnitToUnitDistance(hMinionUnit, StrongestAlly) > 200 then
+			hMinionUnit:Action_MoveToLocation(StrongestAlly:GetLocation())
+			return
+		else
+			hMinionUnit:Action_MoveToLocation(StrongestAlly:GetLocation()+RandomVector(500))
+			return
+		end
+	else
+		hMinionUnit:Action_MoveToLocation(PAF.GetFountainLocation(bot))
+		return
 	end
 end
 
@@ -131,13 +457,17 @@ function PAF.CombineOffensivePower(units, bRaw)
 			UnitPower = Unit:GetOffensivePower()
 		end
 		
-		if Unit:GetUnitName() == "npc_dota_hero_medusa" then
-			UnitPower = (UnitPower * 2)
-		end
-		if Unit:GetUnitName() == "npc_dota_hero_terrorblade" then
-			UnitPower = (UnitPower / 2)
-		end
-		
+		TotalPower = (TotalPower + UnitPower)
+	end
+	
+	return TotalPower
+end
+
+function PAF.CombineEnemyEstimatedOffensivePower(units)
+	local TotalPower = 0
+	
+	for v, Unit in pairs(units) do
+		local UnitPower = PAF.GetEstimatedEnemyOffensivePower(Unit)
 		TotalPower = (TotalPower + UnitPower)
 	end
 	
@@ -152,6 +482,21 @@ function PAF.CombineEstimatedDamage(CurrentlyAvailable, TableUnits, Unit, Durati
 	end
 	
 	return TotalDamage
+end
+
+function PAF.GetEstimatedEnemyOffensivePower(hEnemy)
+	local EnemyRawPower = hEnemy:GetRawOffensivePower()
+	local EnemyMana = hEnemy:GetMana()
+	local EnemyMaxMana = hEnemy:GetMaxMana()
+	
+	local EnemyPhysicalDmgOfPower = PAF.GetAttackDPS(hEnemy)
+	
+	local RemainingPower = (EnemyRawPower - EnemyPhysicalDmgOfPower)
+	local EnemySpellDmgOfPower = (1.0 - RemapValClamped(EnemyMana, 0, EnemyMaxMana, 0, RemainingPower))
+	
+	local EstimatedPower = (EnemyPhysicalDmgOfPower + EnemySpellDmgOfPower)
+	
+	return EstimatedPower
 end
 
 -- Detect illusions
@@ -186,7 +531,7 @@ function PAF.FilterTrueUnits(units)
 	local trueunits = {}
 
 	for v, unit in pairs(units) do
-		if not PAF.IsPossibleIllusion(unit) then
+		if PAF.IsValidHeroAndNotIllusion(unit) then
 			table.insert(trueunits, unit)
 		end
 	end
@@ -198,7 +543,7 @@ function PAF.FilterUnitsForStun(units)
 	local filteredunits = {}
 	
 	for v, unit in pairs(units) do
-		if not PAF.IsPossibleIllusion(unit) 
+		if PAF.IsValidHeroAndNotIllusion(unit)
 		and not PAF.IsDisabled(unit) 
 		and not PAF.IsMagicImmune(unit) then
 			table.insert(filteredunits, unit)
@@ -212,13 +557,12 @@ end
 function PAF.IsEngaging(SelectedUnit)
 	local mode = SelectedUnit:GetActiveMode()
 	return mode == BOT_MODE_ATTACK or
-		   mode == BOT_MODE_DEFEND_ALLY or
-		   mode == BOT_MODE_ROAM
+		   mode == BOT_MODE_DEFEND_ALLY
 end
 
 function PAF.IsInTeamFight(SelectedUnit)
-	local nearbyallies = SelectedUnit:GetNearbyHeroes(1000, false, BOT_MODE_NONE)
-	local nearbyenemies = SelectedUnit:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
+	local nearbyallies = SelectedUnit:GetNearbyHeroes(1200, false, BOT_MODE_NONE)
+	local nearbyenemies = SelectedUnit:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
 	local trueallies = PAF.FilterTrueUnits(nearbyallies)
 	local trueenemies = PAF.FilterTrueUnits(nearbyenemies)
 	
@@ -270,7 +614,13 @@ end
 function PAF.IsRoshan(unit)
 	return unit ~= nil
 	and unit:IsAlive() 
-	and (string.find(unit:GetUnitName(), "roshan") or string.find(unit:GetUnitName(), "miniboss"))
+	and string.find(unit:GetUnitName(), "roshan")
+end
+
+function PAF.IsTormentor(unit)
+	return unit ~= nil
+	and unit:IsAlive() 
+	and string.find(unit:GetUnitName(), "miniboss")
 end
 
 function PAF.IsValidHeroAndNotIllusion(unit)
@@ -298,6 +648,14 @@ function PAF.IsPhysicalImmune(unit)
 	else
 		return false
 	end
+end
+
+function PAF.IsReflectingSpells(unit)
+	if unit:HasModifier("modifier_item_lotus_orb_active") then
+		return true
+	end
+	
+	return false
 end
 
 -- Disabled checks
@@ -353,7 +711,7 @@ function PAF.GetStrongestPowerUnit(units)
 	local strongestpower = 0
 	
 	for v, unit in pairs(units) do
-		if unit:GetRawOffensivePower() < strongestpower then
+		if unit:GetRawOffensivePower() > strongestpower then
 			strongestunit = unit
 			strongestpower = unit:GetRawOffensivePower()
 		end
@@ -381,7 +739,7 @@ function PAF.GetClosestUnit(SelectedUnit, units)
 	local shortestdistance = 99999
 
 	for v, unit in pairs(units) do
-		if GetUnitToUnitDistance(SelectedUnit, unit) < shortestdistance then
+		if unit ~= SelectedUnit and GetUnitToUnitDistance(SelectedUnit, unit) < shortestdistance then
 			closestunit = unit
 			shortestdistance = GetUnitToUnitDistance(SelectedUnit, unit)
 		end
@@ -405,10 +763,22 @@ end
 
 function PAF.IsChasing(SelectedUnit, Target)
 	if SelectedUnit:IsFacingLocation(Target:GetLocation(), 10)
-	and not Target:IsFacingLocation(SelectedUnit:GetLocation(), 150) then
+	and not Target:IsFacingLocation(SelectedUnit:GetLocation(), 45) then
 		return true
 	end
 
+	return false
+end
+
+function PAF.CanLastHitCreep(hCreep)
+	local bot = GetBot()
+	local AttackDamage = bot:GetAttackDamage()
+	
+	local ActualDamage = hCreep:GetActualIncomingDamage(AttackDamage, DAMAGE_TYPE_PHYSICAL)
+	if ActualDamage >= hCreep:GetHealth() then
+		return true
+	end
+	
 	return false
 end
 
@@ -429,12 +799,61 @@ function PAF.CanLastHitCreepAndHarass(bot, BotTarget, AOE, Damage, DamageType)
 	return false
 end
 
+function PAF.GetStabilizedLocation(fTime, hUnit)
+	local UnitStability = hUnit:GetMovementDirectionStability()
+	local NewTime = RemapValClamped(UnitStability, 0.0, 1.0, 0.0, fTime)
+	
+	local ExtrapolatedLocation = hUnit:GetExtrapolatedLocation(NewTime)
+	
+	if ExtrapolatedLocation <= 0 then
+		return hUnit:GetLocation()
+	else
+		return ExtrapolatedLocation
+	end
+end
+
+function PAF.GetAttackDPS(hUnit)
+	local AttackDamage = hUnit:GetAttackDamage()
+	local SecondsPerAttack = hUnit:GetSecondsPerAttack()
+	local DPSRange = 5
+	
+	local AttackDPS = (DPSRange / SecondsPerAttack) * AttackDamage
+	
+	return AttackDPS
+end
+
+function PAF.GetStrongestDPSUnit(units)
+	local strongestunit = nil
+	local strongestdamage = 0
+	
+	for v, unit in pairs(units) do
+		if PAF.GetAttackDPS(unit) > strongestdamage then
+			strongestunit = unit
+			strongestdamage = PAF.GetAttackDPS(unit)
+		end
+	end
+	
+	return strongestunit
+end
+
 function PAF.GetVectorInBetween(LocOne, LocTwo)
 	local NewX = (LocOne.x + LocTwo.x) / 2
 	local NewY = (LocOne.y + LocTwo.y) / 2
 	local NewZ = (LocOne.z + LocTwo.z) / 2
 	
 	return Vector(NewX, NewY, NewZ)
+end
+
+function PAF.GetAverageLocationOfUnits(Units)
+	local sumPos = Vector(0,0)
+	
+	for v, Unit in pairs(Units) do
+		local UnitLoc = Unit:GetLocation()
+		sumPos = (sumPos + UnitLoc)
+	end
+	
+	local avgPos = (sumPos / #Units)
+	return avgPos
 end
 
 function PAF.GetFurthestBuildingOnLane(lane)
@@ -590,6 +1009,253 @@ function PAF.GetClosestTPLocation(bot, Unit, TravelBootsAvailable)
 	else
 		return nil
 	end
+end
+
+function PAF.GetXUnitsTowardsLocation(iLoc, tLoc, nUnits)
+    local direction = (tLoc - iLoc):Normalized()
+    return iLoc + direction * nUnits
+end
+
+function PAF.GetAllyHumanHeroes()
+	local AlliedHeroes = GetUnitList(UNIT_LIST_ALLIED_HEROES)
+	local HumanHeroes = {}
+	
+	for v, Ally in pairs(AlliedHeroes) do
+		if not Ally:IsBot() then
+			table.insert(HumanHeroes, Ally)
+		end
+	end
+	
+	return HumanHeroes
+end
+
+function PAF.GetLastHumanPing()
+	local LastPing = nil
+	local LastPingTime = -90
+	
+	for v, Ally in pairs(PAF.GetAllyHumanHeroes()) do
+		if Ally:GetMostRecentPing().time > LastPingTime then
+			LastPing = Ally:GetMostRecentPing()
+			lastPingTime = Ally:GetMostRecentPing().time
+		end
+	end
+	
+	return LastPing
+end
+
+function PAF.IsHealthRestoring(bot)
+	return bot:HasModifier('modifier_flask_healing') 
+		or bot:HasModifier('modifier_tango_heal') 
+		or bot:HasModifier('modifier_fountain_aura') 
+		or bot:HasModifier("modifier_filler_heal")
+		or bot:HasModifier("modifier_item_urn_heal")
+		or bot:HasModifier("modifier_item_spirit_vessel_heal")
+		or bot:HasModifier("modifier_bottle_regeneration")
+end
+
+function PAF.IsManaRestoring(bot)
+	return bot:HasModifier('modifier_clarity_potion') 
+		or bot:HasModifier('modifier_fountain_aura') 
+end
+
+function PAF.IsItemAvailable(sItemName)
+	local bot = GetBot()
+	local slot = bot:FindItemSlot(sItemName)
+	
+	if slot >= 0 and slot <= 5 then
+		return bot:GetItemInSlot(slot)
+	end
+end
+
+function PAF.SwitchTreadsToInt(bot)
+	bot:Action_ClearActions(false)
+	
+	local Treads = PAF.IsItemAvailable("item_power_treads")
+	
+	if Treads ~= nil and Treads:IsFullyCastable() then
+		local TreadStat = Treads:GetPowerTreadsStat()
+		
+		if TreadStat == 2 then
+			bot:ActionQueue_UseAbility(Treads)
+			bot:ActionQueue_UseAbility(Treads)
+			return
+		elseif TreadStat == 0 then
+			bot:ActionQueue_UseAbility(Treads)
+			return
+		end
+	end
+	
+	return
+end
+
+function PAF.SwitchTreadsToStr(bot)
+	bot:Action_ClearActions(false)
+	
+	local Treads = PAF.IsItemAvailable("item_power_treads")
+	
+	if Treads ~= nil and Treads:IsFullyCastable() then
+		local TreadStat = Treads:GetPowerTreadsStat()
+		
+		if TreadStat == 2 then
+			bot:ActionQueue_UseAbility(Treads)
+			return
+		elseif TreadStat == 1 then
+			bot:ActionQueue_UseAbility(Treads)
+			bot:ActionQueue_UseAbility(Treads)
+			return
+		end
+	end
+	
+	return
+end
+
+function PAF.SwitchTreadsToAgi(bot)
+	bot:Action_ClearActions(false)
+	
+	local Treads = PAF.IsItemAvailable("item_power_treads")
+	
+	if Treads ~= nil and Treads:IsFullyCastable() then
+		local TreadStat = Treads:GetPowerTreadsStat()
+		
+		if TreadStat == 0 then
+			bot:ActionQueue_UseAbility(Treads)
+			bot:ActionQueue_UseAbility(Treads)
+			return
+		elseif TreadStat == 1 then
+			bot:ActionQueue_UseAbility(Treads)
+			return
+		end
+	end
+	
+	return
+end
+
+function PAF.GetAttackCombatEfficiency(hAttacker, hReceiver)
+	-- WIP
+	
+	if hAttacker:IsHero() then
+		if hReceiver:IsCreep() then
+			local ReceiverCreepType = hReceiver:GetAbilityInSlot(0)
+		
+			if ReceiverCreepType:GetName() == "creep_siege" then
+				return 0.5
+			end
+		end
+	end
+	
+	if hAttacker:IsCreep() then
+		local AttackerCreepType = hAttacker:GetAbilityInSlot(0)
+		
+		if hReceiver:IsCreep() then
+			local ReceiverCreepType = hReceiver:GetAbilityInSlot(0)
+			
+			if AttackerCreepType:GetName() == "creep_piercing" then
+				if ReceiverCreepType:GetName() ~= "creep_siege" then
+					return 1.5
+				else
+					return 0.7
+				end
+			end
+		end
+	end
+end
+
+function PAF.ShouldCastAbilityToFarm(hUnit, nManaCost, nManaThreshold, bPercentage)
+	local nMana = hUnit:GetMana()
+	
+	if bPercentage then
+		local nMaxMana = hUnit:GetMaxMana()
+		
+		if (nMana - nManaCost) >= (nMaxMana * nManaThreshold) then
+			return true
+		end
+	else
+		if (nMana - nManaCost) >= nManaThreshold then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function PAF.GetNearbyFilteredHeroes(hUnit, nRadius, bEnemies, nMode)
+	local NearbyHeroes = hUnit:GetNearbyHeroes(nRadius, bEnemies, nMode)
+	local FilteredHeroes = PAF.FilterTrueUnits(NearbyHeroes)
+	
+	return FilteredHeroes
+end
+
+function PAF.FilterExceptedUnit(tUnits, hExceptedUnit)
+	local FilteredUnits = {}
+	
+	for x, Unit in pairs(tUnits) do
+		if Unit ~= hExceptedUnit then
+			table.insert(FilteredUnits, Unit)
+		end
+	end
+	
+	return FilteredUnits
+end
+
+function PAF.IsInCreepAttackingMode(hUnit)
+	if hUnit:GetActiveMode() == BOT_MODE_PUSH_TOWER_TOP
+	or hUnit:GetActiveMode() == BOT_MODE_PUSH_TOWER_MID
+	or hUnit:GetActiveMode() == BOT_MODE_PUSH_TOWER_BOT
+	or hUnit:GetActiveMode() == BOT_MODE_FARM then
+		return true
+	end
+	
+	return false
+end
+
+function PAF.CanDamageKillEnemy(hUnit, nDamage, nDamageType)
+	if (nDamageType == DAMAGE_TYPE_MAGICAL or nDamageType == DAMAGE_TYPE_PURE)
+	and PAF.IsMagicImmune(hUnit) then
+		return false
+	end
+	
+	local Damage = hUnit:GetActualIncomingDamage(nDamage, nDamageType)
+	
+	if Damage >= hUnit:GetHealth() then
+		return true
+	end
+	
+	return false
+end
+
+function PAF.IsHardBot(hUnit)
+	-- Passive: 0
+	-- Easy: 1
+	-- Normal: 2
+	-- Hard: 3
+	-- Unfair: 4
+	-- New Player: 9
+	
+	if hUnit:IsBot() then
+		local nDifficulty = hUnit:GetDifficulty()
+		
+		if nDifficulty == 3 or nDifficulty == 4 then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function PAF.GetAbilityUsageDelay(hUnit)
+	if hUnit:IsBot() then
+		local nDifficulty = hUnit:GetDifficulty()
+		
+		if nDifficulty == 9 then
+			return 3.0
+		elseif nDifficulty == 1 then
+			return 2.0
+		elseif nDifficulty == 2 then
+			return 1.0
+		end
+	end
+	
+	return 0
 end
 
 return PAF

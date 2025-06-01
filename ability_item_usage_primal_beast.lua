@@ -42,25 +42,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	PulverizeDesire, PulverizeTarget = UsePulverize()
 	if PulverizeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Pulverize, PulverizeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Pulverize, PulverizeTarget)
 		return
 	end
 	
 	OnslaughtDesire, OnslaughtTarget = UseOnslaught()
 	if OnslaughtDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Onslaught, OnslaughtTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Onslaught, OnslaughtTarget)
 		return
 	end
 	
 	UproarDesire = UseUproar()
 	if UproarDesire > 0 then
-		bot:Action_UseAbility(Uproar)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Uproar)
 		return
 	end
 	
 	TrampleDesire = UseTrample()
 	if TrampleDesire > 0 then
-		bot:Action_UseAbility(Trample)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Trample)
 		return
 	end
 end

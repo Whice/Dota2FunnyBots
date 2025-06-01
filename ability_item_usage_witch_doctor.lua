@@ -45,31 +45,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ParalyzingCaskDesire, ParalyzingCaskTarget = UseParalyzingCask()
 	if ParalyzingCaskDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ParalyzingCask, ParalyzingCaskTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ParalyzingCask, ParalyzingCaskTarget)
 		return
 	end
 	
 	MaledictDesire, MaledictTarget = UseMaledict()
 	if MaledictDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Maledict, MaledictTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Maledict, MaledictTarget)
 		return
 	end
 	
 	DeathWardDesire, DeathWardTarget = UseDeathWard()
 	if DeathWardDesire > 0 then
-		bot:Action_UseAbilityOnLocation(DeathWard, DeathWardTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(DeathWard, DeathWardTarget)
 		return
 	end
 	
 	VoodooSwitcherooDesire = UseVoodooSwitcheroo()
 	if VoodooSwitcherooDesire > 0 then
-		bot:Action_UseAbility(VoodooSwitcheroo)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(VoodooSwitcheroo)
 		return
 	end
 	
 	VodooRestorationDesire = UseVodooRestoration()
 	if VodooRestorationDesire > 0 then
-		bot:Action_UseAbility(VodooRestoration)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(VodooRestoration)
 		return
 	end
 end

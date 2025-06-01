@@ -42,19 +42,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	EnrageDesire = UseEnrage()
 	if EnrageDesire > 0 then
-		bot:Action_UseAbility(Enrage)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Enrage)
 		return
 	end
 	
 	OverpowerDesire = UseOverpower()
 	if OverpowerDesire > 0 then
-		bot:Action_UseAbility(Overpower)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Overpower)
 		return
 	end
 	
 	EarthshockDesire = UseEarthshock()
 	if EarthshockDesire > 0 then
-		bot:Action_UseAbility(Earthshock)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Earthshock)
 		return
 	end
 end
@@ -123,6 +126,10 @@ function UseOverpower()
 	
 		if PAF.IsRoshan(AttackTarget) then
 			return BOT_ACTION_DESIRE_VERYHIGH
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	

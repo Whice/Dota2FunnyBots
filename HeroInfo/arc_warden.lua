@@ -30,11 +30,11 @@ function X.GetHeroLevelPoints()
 	abilities[1], -- Level 2
 	abilities[3], -- Level 3
 	abilities[1], -- Level 4
-	abilities[3], -- Level 5
+	abilities[1], -- Level 5
 	abilities[4], -- Level 6
-	abilities[3], -- Level 7
-	abilities[1], -- Level 8
-	abilities[1], -- Level 9
+	abilities[1], -- Level 7
+	abilities[3], -- Level 8
+	abilities[3], -- Level 9
 	talents[2],   -- Level 10
 	abilities[2], -- Level 11
 	abilities[4], -- Level 12
@@ -50,12 +50,12 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[7],   -- Level 25
+	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
 	talents[1],   -- Level 27
 	talents[3],   -- Level 28
 	talents[5],   -- Level 29
-	talents[8]    -- Level 30
+	talents[7]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -65,38 +65,40 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		
 		ItemBuild = { 
-		"item_quelling_blade",
-	
 		"item_wraith_band",
 		"item_magic_wand",
-		"item_hand_of_midas",
 		"item_power_treads",
+		"item_hand_of_midas",
 	
-		"item_gungir",
-		"item_manta",
+		"item_mjollnir",
+		"item_bloodthorn",
 		"item_hurricane_pike",
-		"item_silver_edge",
-		"item_sheepstick",
-		"item_ultimate_scepter_2",
+		
+		"item_manta",
+		SituationalItem1,
+		"item_butterfly",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_greater_crit")
+		
 		ItemBuild = { 
-		"item_quelling_blade",
-	
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_hand_of_midas",
 		"item_power_treads",
 	
-		"item_gungir",
-		"item_manta",
+		"item_mjollnir",
+		"item_bloodthorn",
 		"item_hurricane_pike",
-		"item_silver_edge",
-		"item_sheepstick",
-		"item_ultimate_scepter_2",
+		
+		SituationalItem1,
+		"item_butterfly",
+		"item_skadi",
 		}
 	end
 	

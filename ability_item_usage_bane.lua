@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	NightmareDesire, NightmareTarget = UseNightmare()
 	if NightmareDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Nightmare, NightmareTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Nightmare, NightmareTarget)
 		return
 	end
 	
 	EnfeebleDesire, EnfeebleTarget = UseEnfeeble()
 	if EnfeebleDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Enfeeble, EnfeebleTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Enfeeble, EnfeebleTarget)
 		return
 	end
 	
 	BrainSapDesire, BrainSapTarget = UseBrainSap()
 	if BrainSapDesire > 0 then
-		bot:Action_UseAbilityOnEntity(BrainSap, BrainSapTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(BrainSap, BrainSapTarget)
 		return
 	end
 	
 	FiendsGripDesire, FiendsGripTarget = UseFiendsGrip()
 	if FiendsGripDesire > 0 then
-		bot:Action_UseAbilityOnEntity(FiendsGrip, FiendsGripTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(FiendsGrip, FiendsGripTarget)
 		return
 	end
 end
@@ -117,12 +121,18 @@ function UseBrainSap()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	

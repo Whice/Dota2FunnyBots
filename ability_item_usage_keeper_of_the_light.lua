@@ -50,33 +50,38 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	SpiritFormDesire = UseSpiritForm()
 	if SpiritFormDesire > 0 then
-		bot:Action_UseAbility(SpiritForm)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SpiritForm)
 		return
 	end
 	
 	if not SpiritFormIlluminate:IsHidden() then
 		IlluminateDesire, SpiritFormIlluminateTarget = UseIlluminate()
 		if IlluminateDesire > 0 then
-			bot:Action_UseAbilityOnLocation(SpiritFormIlluminate, SpiritFormIlluminateTarget)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnLocation(SpiritFormIlluminate, SpiritFormIlluminateTarget)
 			return
 		end
 	end
 	
 	BlindingLightDesire, BlindingLightTarget = UseBlindingLight()
 	if BlindingLightDesire > 0 then
-		bot:Action_UseAbilityOnLocation(BlindingLight, BlindingLightTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(BlindingLight, BlindingLightTarget)
 		return
 	end
 	
 	SolarBindDesire, SolarBindTarget = UseSolarBind()
 	if SolarBindDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SolarBind, SolarBindTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SolarBind, SolarBindTarget)
 		return
 	end
 	
 	WillOWispDesire, WillOWispTarget = UseWillOWisp()
 	if WillOWispDesire > 0 then
-		bot:Action_UseAbilityOnLocation(WillOWisp, WillOWispTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(WillOWisp, WillOWispTarget)
 		return
 	end
 	
@@ -88,14 +93,16 @@ function AbilityUsageThink()
 	
 	RecallDesire, RecallTarget = UseRecall()
 	if RecallDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Recall, RecallTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Recall, RecallTarget)
 		return
 	end
 	
 	if not Illuminate:IsHidden() then
 		IlluminateDesire, IlluminateTarget = UseIlluminate()
 		if IlluminateDesire > 0 then
-			bot:Action_UseAbilityOnLocation(Illuminate, IlluminateTarget)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnLocation(Illuminate, IlluminateTarget)
 			return
 		end
 	end
@@ -159,7 +166,7 @@ function UseBlindingLight()
 	
 	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
 		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetXUnitsTowardsLocation(bot, (Radius / 2))
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(ClosestTarget:GetLocation(), bot:GetLocation(), (Radius / 2))
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then

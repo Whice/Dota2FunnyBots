@@ -41,21 +41,31 @@ function AbilityUsageThink()
 	BotTarget = bot:GetTarget()
 	
 	-- The order to use abilities in
+	BerserkersBloodDesire = UseBerserkersBlood()
+	if BerserkersBloodDesire > 0 then
+		PAF.SwitchTreadsToStr(bot)
+		bot:ActionQueue_UseAbility(BerserkersBlood)
+		return
+	end
+	
 	LifeBreakDesire, LifeBreakTarget = UseLifeBreak()
 	if LifeBreakDesire > 0 then
-		bot:Action_UseAbilityOnEntity(LifeBreak, LifeBreakTarget)
+		PAF.SwitchTreadsToStr(bot)
+		bot:ActionQueue_UseAbilityOnEntity(LifeBreak, LifeBreakTarget)
 		return
 	end
 	
 	InnerFireDesire = UseInnerFire()
 	if InnerFireDesire > 0 then
-		bot:Action_UseAbility(InnerFire)
+		PAF.SwitchTreadsToStr(bot)
+		bot:ActionQueue_UseAbility(InnerFire)
 		return
 	end
 	
 	BurningSpearDesire, BurningSpearTarget = UseBurningSpear()
 	if BurningSpearDesire > 0 then
-		bot:Action_UseAbilityOnEntity(BurningSpear, BurningSpearTarget)
+		PAF.SwitchTreadsToStr(bot)
+		bot:ActionQueue_UseAbilityOnEntity(BurningSpear, BurningSpearTarget)
 		return
 	end
 end
@@ -119,7 +129,9 @@ function UseBurningSpear()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if (AttackTarget ~= nil and AttackTarget:IsHero()) or bot:GetActiveMode() == BOT_MODE_FARM then
+	if (AttackTarget ~= nil and AttackTarget:IsHero())
+	or bot:GetActiveMode() == BOT_MODE_FARM
+	or PAF.IsTormentor(AttackTarget) then
 		if BurningSpear:GetAutoCastState() == false then
 			BurningSpear:ToggleAutoCast()
 		end
@@ -127,6 +139,19 @@ function UseBurningSpear()
 		if BurningSpear:GetAutoCastState() == true then
 			BurningSpear:ToggleAutoCast()
 		end
+	end
+	
+	return 0
+end
+
+function UseBerserkersBlood()
+	if not BerserkersBlood:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	if bot:IsDisarmed()
+	or bot:IsRooted()
+	or bot:IsBlind() then
+		return 1
 	end
 	
 	return 0

@@ -54,28 +54,33 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	SonicWaveDesire, SonicWaveTarget = UseSonicWave()
 	if SonicWaveDesire > 0 then
-		bot:Action_UseAbilityOnLocation(SonicWave, SonicWaveTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(SonicWave, SonicWaveTarget)
 		return
 	end
 	
 	BlinkDesire, BlinkTarget = UseBlink()
 	if BlinkDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Blink, BlinkTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkTarget)
 		return
 	end
 	
 	ScreamOfPainDesire = UseScreamOfPain()
 	if ScreamOfPainDesire > 0 then
-		bot:Action_UseAbility(ScreamOfPain)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(ScreamOfPain)
 		return
 	end
 	
 	ShadowStrikeDesire, ShadowStrikeTarget = UseShadowStrike()
 	if ShadowStrikeDesire > 0 then
 		if bot:HasScepter() then
-			bot:Action_UseAbilityOnLocation(ShadowStrike, ShadowStrikeTarget)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnLocation(ShadowStrike, ShadowStrikeTarget)
 		else
-			bot:Action_UseAbilityOnEntity(ShadowStrike, ShadowStrikeTarget)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnEntity(ShadowStrike, ShadowStrikeTarget)
 		end
 		return
 	end
@@ -102,7 +107,7 @@ function UseShadowStrike()
 	end
 	
 	if P.IsInLaningPhase() then
-		local EnemiesWithinRange = bot:GetNearbyHeroes((CastRange + 200), true, BOT_MODE_NONE)
+		local EnemiesWithinRange = bot:GetNearbyHeroes((CastRange + 150), true, BOT_MODE_NONE)
 		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 		local WeakestTarget = PAF.GetWeakestUnit(FilteredEnemies)
 		
@@ -117,16 +122,18 @@ function UseShadowStrike()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			if bot:HasScepter() then
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
-			else
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
 			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -194,19 +201,26 @@ function UseScreamOfPain()
 		return BOT_ACTION_DESIRE_ABSOLUTE
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		local Neutrals = bot:GetNearbyNeutralCreeps(CastRange)
+	if bot:GetActiveMode() == BOT_MODE_FARM and not P.IsInLaningPhase() then
+		local Neutrals = bot:GetNearbyCreeps(CastRange, true)
 		
 		if #Neutrals >= 2 and (bot:GetMana() - ScreamOfPain:GetManaCost()) > manathreshold then
 			return BOT_ACTION_DESIRE_ABSOLUTE
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget) and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_ABSOLUTE
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	

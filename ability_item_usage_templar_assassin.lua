@@ -48,19 +48,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	PsionicTrapDesire, PsionicTrapTarget = UsePsionicTrap()
 	if PsionicTrapDesire > 0 then
-		bot:Action_UseAbilityOnLocation(PsionicTrap, PsionicTrapTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(PsionicTrap, PsionicTrapTarget)
 		return
 	end
 	
 	RefractionDesire = UseRefraction()
 	if RefractionDesire > 0 then
-		bot:Action_UseAbility(Refraction)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Refraction)
 		return
 	end
 	
 	MeldDesire = UseMeld()
 	if MeldDesire > 0 then
-		bot:Action_UseAbility(Meld)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Meld)
 		return
 	end
 end
@@ -120,6 +123,10 @@ function UseMeld()
 		end
 		
 		if PAF.IsRoshan(AttackTarget) and bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			return BOT_ACTION_DESIRE_HIGH
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
 		end
 		

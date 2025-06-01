@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	WintersCurseDesire, WintersCurseTarget = UseWintersCurse()
 	if WintersCurseDesire > 0 then
-		bot:Action_UseAbilityOnEntity(WintersCurse, WintersCurseTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(WintersCurse, WintersCurseTarget)
 		return
 	end
 	
 	ColdEmbraceDesire, ColdEmbraceTarget = UseColdEmbrace()
 	if ColdEmbraceDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ColdEmbrace, ColdEmbraceTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ColdEmbrace, ColdEmbraceTarget)
 		return
 	end
 	
 	SplinterBlastDesire, SplinterBlastTarget = UseSplinterBlast()
 	if SplinterBlastDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SplinterBlast, SplinterBlastTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SplinterBlast, SplinterBlastTarget)
 		return
 	end
 	
 	ArcticBurnDesire = UseArcticBurn()
 	if ArcticBurnDesire > 0 then
-		bot:Action_UseAbility(ArcticBurn)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(ArcticBurn)
 		return
 	end
 end

@@ -50,25 +50,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	TempestDoubleDesire, TempestDoubleTarget = UseTempestDouble()
 	if TempestDoubleDesire > 0 then
-		bot:Action_UseAbilityOnLocation(TempestDouble, TempestDoubleTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(TempestDouble, TempestDoubleTarget)
 		return
 	end
 	
 	FluxDesire, FluxTarget = UseFlux()
 	if FluxDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Flux, FluxTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Flux, FluxTarget)
 		return
 	end
 	
-	MagneticFieldDesire = UseMagneticField()
+	MagneticFieldDesire, MagneticFieldTarget = UseMagneticField()
 	if MagneticFieldDesire > 0 then
-		bot:Action_UseAbility(MagneticField)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(MagneticField, MagneticFieldTarget)
 		return
 	end
 	
 	SparkWraithDesire, SparkWraithTarget = UseSparkWraith()
 	if SparkWraithDesire > 0 then
-		bot:Action_UseAbilityOnLocation(SparkWraith, SparkWraithTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(SparkWraith, SparkWraithTarget)
 		return
 	end
 end
@@ -88,12 +92,18 @@ function UseFlux()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -109,20 +119,58 @@ function UseMagneticField()
 	local allies = bot:GetNearbyHeroes(CastRange + 100, false, BOT_MODE_NONE)
 	local allytarget = P.GetWeakestAllyHero(allies)
 	local EnemiesAroundAlly
+	local Radius = MagneticField:GetSpecialValueInt("radius")
 	
-	--[[if allytarget ~= nil then
+	if bot:HasModifier("modifier_arc_warden_tempest_double") then
+		local AlliesWithinRadius = bot:GetNearbyHeroes(1200, false, BOT_MODE_NONE)
+		local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRadius)
+		
+		for v, Ally in pairs(FilteredAllies) do
+			if Ally ~= bot then
+				if Ally:GetUnitName() == "npc_dota_hero_arc_warden" then
+					if Ally:GetAbilityInSlot(1):IsFullyCastable() then
+						return 0
+					end
+				end
+			end
+		end
+	end
+	
+	if allytarget ~= nil then
 		EnemiesAroundAlly = allytarget:GetNearbyHeroes(800, true, BOT_MODE_NONE)
 	end
 	
 	if allytarget ~= nil and #EnemiesAroundAlly >= 1 and allytarget:GetHealth() < (allytarget:GetMaxHealth() * 0.4) 
 	and not (allytarget:HasModifier("modifier_arc_warden_magnetic_field_evasion") and not allytarget:HasModifier("modifier_arc_warden_magnetic_field_attack_speed")) then
 		return BOT_ACTION_DESIRE_HIGH, allytarget:GetLocation()
-	end]]--
+	end
 	
 	local enemies = bot:GetNearbyHeroes(AttackRange + 100, true, BOT_MODE_NONE)
 	if (PAF.IsEngaging(bot) and #enemies >= 1) or P.IsRetreating(bot) 
 	and not (bot:HasModifier("modifier_arc_warden_magnetic_field_evasion") and not bot:HasModifier("modifier_arc_warden_magnetic_field_attack_speed")) then
-		return BOT_ACTION_DESIRE_HIGH
+		
+		if bot:HasModifier("modifier_arc_warden_tempest_double") then
+			local AlliesWithinRadius = bot:GetNearbyHeroes(Radius, false, BOT_MODE_NONE)
+			local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRadius)
+			local ShouldCast = true
+			
+			for v, Ally in pairs(FilteredAllies) do
+				if Ally ~= bot then
+					if Ally:GetUnitName() == "npc_dota_hero_arc_warden" then
+						if Ally:GetAbilityInSlot(1):IsFullyCastable() then
+							ShouldCast = false
+						end
+					end
+				end
+			end
+			
+			if ShouldCast then
+				return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
+			end
+		else
+			return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
+		end
+		
 	end
 	
 	local attacktarget = bot:GetAttackTarget()
@@ -130,7 +178,11 @@ function UseMagneticField()
 	if attacktarget ~= nil then
 		if attacktarget:IsBuilding()
 		and not (bot:HasModifier("modifier_arc_warden_magnetic_field_evasion") and not bot:HasModifier("modifier_arc_warden_magnetic_field_attack_speed")) then
-			return BOT_ACTION_DESIRE_HIGH
+			return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
 		end
 	end
 	
@@ -139,7 +191,7 @@ function UseMagneticField()
 		
 		if #neutrals >= 2 and (bot:GetMana() - MagneticField:GetManaCost()) > manathreshold
 		and not (bot:HasModifier("modifier_arc_warden_magnetic_field_evasion") and not bot:HasModifier("modifier_arc_warden_magnetic_field_attack_speed")) then
-			return BOT_ACTION_DESIRE_HIGH
+			return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
 		end
 	end
 	
@@ -179,12 +231,18 @@ function UseSparkWraith()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -209,11 +267,18 @@ function UseTempestDouble()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, bot:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH, bot:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
 		end
 	end
 	

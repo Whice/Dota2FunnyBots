@@ -29,11 +29,11 @@ function X.GetHeroLevelPoints()
 	abilities[1], -- Level 1
 	abilities[3], -- Level 2
 	abilities[1], -- Level 3
-	abilities[2], -- Level 4
+	abilities[3], -- Level 4
 	abilities[1], -- Level 5
 	abilities[4], -- Level 6
 	abilities[1], -- Level 7
-	abilities[3], -- Level 8
+	abilities[2], -- Level 8
 	abilities[3], -- Level 9
 	talents[1],   -- Level 10
 	abilities[3], -- Level 11
@@ -50,12 +50,12 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[7],   -- Level 25
+	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
 	talents[2],   -- Level 27
 	talents[3],   -- Level 28
 	talents[5],   -- Level 29
-	talents[8]    -- Level 30
+	talents[7]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -66,14 +66,15 @@ function X.GetHeroItemBuild()
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
 		ItemBuild = { 
+		"item_bottle",
 		"item_wraith_band",
 		"item_magic_wand",
 		"item_power_treads",
 		
 		"item_hurricane_pike",
+		"item_black_king_bar",
 		"item_manta",
-		"item_skadi",
-		"item_satanic",
+		"item_sheepstick",
 		"item_butterfly",
 		}
 	end
@@ -86,11 +87,10 @@ function X.GetHeroItemBuild()
 		"item_magic_wand",
 		"item_power_treads",
 		
-		"item_dragon_lance",
-		CoreItem,
 		"item_hurricane_pike",
+		"item_black_king_bar",
 		"item_manta",
-		"item_skadi",
+		CoreItem,
 		"item_assault",
 		}
 	end

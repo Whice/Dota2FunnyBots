@@ -61,10 +61,15 @@ local BotTarget
 local AttackRange = 0
 
 local SunStrikeEnabled = false
+local LastInvokeTime = -90
+local LastTornadoTime = -90
+local TornadoLiftDuration = 0
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	
+	TornadoLiftDuration = Tornado:GetSpecialValueFloat("lift_duration")
 	
 	if P.IsRetreating(bot)
 	and bot:HasModifier("modifier_invoker_ghost_walk_self")
@@ -82,7 +87,10 @@ function AbilityUsageThink()
 	end
 	
 	-- Prepare Tornado combo
-	if not P.IsInLaningPhase() then
+	if not P.IsInLaningPhase()
+	and Quas:IsTrained()
+	and Wex:IsTrained()
+	and (DotaTime() - LastInvokeTime) > 1 then
 		if Tornado:IsFullyCastable() and not IsActiveAbility(Tornado) and Invoke:IsFullyCastable() then
 			InvokeSpell(Tornado)
 		end
@@ -101,6 +109,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(GhostWalk) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbility(GhostWalk)
 			return
 		end
@@ -109,12 +118,35 @@ function AbilityUsageThink()
 	TornadoComboDesire, TornadoComboTarget = UseTornadoCombo()
 	if TornadoComboDesire > 0 then
 		bot:Action_ClearActions(false)
+		
+		PAF.SwitchTreadsToInt(bot)
 		bot:ActionQueue_UseAbilityOnLocation(Tornado, TornadoComboTarget)
+		LastTornadoTime = DotaTime()
 		bot:ActionQueue_UseAbilityOnLocation(EMP, TornadoComboTarget)
 		InvokeSpell(ChaosMeteor)
 		bot:ActionQueue_UseAbilityOnLocation(ChaosMeteor, TornadoComboTarget)
 		return
 	end
+	
+	-- Cataclysm Usage --
+	--[[if bot:HasScepter()
+	and PAF.IsInTeamFight(bot)
+	and SunStrike:IsFullyCastable()
+	and not P.CantUseAbility(bot)
+	and Exort:IsTrained()
+	and (DotaTime() - LastTornadoTime) > TornadoLiftDuration then
+		bot:Action_ClearActions(false)
+		
+		if not IsActiveAbility(SunStrike) and Invoke:IsFullyCastable() then
+			InvokeSpell(SunStrike)
+		end
+	
+		if IsActiveAbility(SunStrike) then
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnEntity(SunStrike, bot)
+			return
+		end
+	end]]--
 	
 	TornadoDesire, TornadoTarget = UseTornado()
 	if TornadoDesire > 0 then
@@ -125,7 +157,9 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(Tornado) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbilityOnLocation(Tornado, TornadoTarget)
+			LastTornadoTime = DotaTime()
 			return
 		end
 	end
@@ -139,6 +173,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(EMP) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbilityOnLocation(EMP, EMPTarget)
 			return
 		end
@@ -151,6 +186,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(ChaosMeteor) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbilityOnLocation(ChaosMeteor, ChaosMeteorTarget)
 			return
 		end
@@ -165,6 +201,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(ColdSnap) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbilityOnEntity(ColdSnap, ColdSnapTarget)
 			return
 		end
@@ -179,6 +216,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(Alacrity) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbilityOnEntity(Alacrity, AlacrityTarget)
 			return
 		end
@@ -193,6 +231,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(IceWall) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbility(IceWall)
 			return
 		end
@@ -208,8 +247,10 @@ function AbilityUsageThink()
 	
 		if IsActiveAbility(DeafeningBlast) then
 			if bot:GetLevel() < 25 then
+				PAF.SwitchTreadsToInt(bot)
 				bot:ActionQueue_UseAbilityOnLocation(DeafeningBlast, DeafeningBlastTarget)
 			else
+				PAF.SwitchTreadsToInt(bot)
 				bot:ActionQueue_UseAbility(DeafeningBlast)
 			end
 		end
@@ -226,6 +267,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(SunStrike) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbilityOnLocation(SunStrike, SunStrikeTarget)
 			return
 		end
@@ -240,6 +282,7 @@ function AbilityUsageThink()
 		end
 	
 		if IsActiveAbility(ForgeSpirit) then
+			PAF.SwitchTreadsToInt(bot)
 			bot:ActionQueue_UseAbility(ForgeSpirit)
 			return
 		end
@@ -306,6 +349,10 @@ function InvokeSpell(SpellToInvoke)
 	bot:ActionQueue_UseAbility(y)
 	bot:ActionQueue_UseAbility(z)
 	bot:ActionQueue_UseAbility(Invoke)
+	
+	if SpellToInvoke ~= Tornado and SpellToInvoke ~= EMP then
+		LastInvokeTime = DotaTime()
+	end
 end
 
 function IsActiveAbility(SpellToCheck)
@@ -324,7 +371,7 @@ function CanCastTornadoCombo()
 	and EMP:IsFullyCastable()
 	and ChaosMeteor:IsFullyCastable()
 	and IsActiveAbility(Tornado)
-	and IsActiveAbility(EMP) then
+	and IsActiveAbility(EMP) then		
 		local TotalManaCost = 0
 		
 		TotalManaCost = (TotalManaCost + Tornado:GetManaCost())
@@ -360,6 +407,7 @@ function UseSunStrike()
 	if not SunStrike:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	if not Exort:IsTrained() then return 0 end
+	if (DotaTime() - LastTornadoTime) <= TornadoLiftDuration then return 0 end
 	
 	local Damage = SunStrike:GetSpecialValueInt("damage")
 	local SSDelay = SunStrike:GetSpecialValueInt("delay")
@@ -441,6 +489,10 @@ function UseAlacrity()
 			end
 		end
 		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, StrongestAlly
+		end
+		
 		if AttackTarget:IsBuilding() and AttackTarget:GetTeam() ~= bot:GetTeam() then
 			local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, false)
 			
@@ -516,6 +568,7 @@ function UseDeafeningBlast()
 	if not Quas:IsTrained() then return 0 end
 	if not Wex:IsTrained() then return 0 end
 	if not Exort:IsTrained() then return 0 end
+	if (DotaTime() - LastTornadoTime) <= TornadoLiftDuration then return 0 end
 	
 	local CR = DeafeningBlast:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
@@ -567,7 +620,16 @@ function UseForgeSpirit()
 	if not Quas:IsTrained() then return 0 end
 	if not Exort:IsTrained() then return 0 end
 	
-	local MaxForgedSpiritCount = ForgeSpirit:GetSpecialValueInt("spirit_count")
+	local MaxForgedSpiritCount = 1
+	
+	if Quas:GetLevel() >= 4 and Exort:GetLevel() >= 4 then
+		MaxForgedSpiritCount = 2
+	end
+	
+	if Quas:GetLevel() >= 8 and Exort:GetLevel() >= 8 then
+		MaxForgedSpiritCount = 3
+	end
+	
 	local CreepsWithinRange = bot:GetNearbyCreeps(1600, false)
 	local ForgedSpiritCount = 0
 	
@@ -585,7 +647,7 @@ function UseForgeSpirit()
 		local AttackTarget = bot:GetAttackTarget()
 		
 		if AttackTarget ~= nil then
-			if bot:GetActiveMode() == BOT_MODE_FARM
+			if (bot:GetActiveMode() == BOT_MODE_FARM and not P.IsInLaningPhase())
 			or bot:GetActiveMode() == BOT_MODE_PUSH_TOP
 			or bot:GetActiveMode() == BOT_MODE_PUSH_MID
 			or bot:GetActiveMode() == BOT_MODE_PUSH_BOT then
@@ -615,10 +677,16 @@ function UseTornado()
 	local EnemiesWithinRange = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
 	
-	if PAF.IsInTeamFight(bot) then
+	--[[if PAF.IsInTeamFight(bot) then
 		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), TravelDistance, TornadoRadius/2, 0, 0)
 		if (AoE.count >= 2) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
+		end
+	end]]--
+	
+	for v, enemy in pairs(FilteredEnemies) do
+		if enemy:IsChanneling() then
+			return BOT_ACTION_DESIRE_HIGH, enemy:GetLocation()
 		end
 	end
 	
@@ -640,6 +708,7 @@ function UseEMP()
 	if P.CantUseAbility(bot) then return 0 end
 	if not Wex:IsTrained() then return 0 end
 	if CanCastTornadoCombo() then return 0 end
+	if (DotaTime() - LastTornadoTime) <= TornadoLiftDuration then return 0 end
 	
 	local CR = EMP:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
@@ -661,6 +730,7 @@ function UseChaosMeteor()
 	if not Exort:IsTrained() then return 0 end
 	if not Wex:IsTrained() then return 0 end
 	if CanCastTornadoCombo() then return 0 end
+	if (DotaTime() - LastTornadoTime) <= TornadoLiftDuration then return 0 end
 	
 	local CR = ChaosMeteor:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)

@@ -50,26 +50,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	DarknessDesire = UseDarkness()
 	if DarknessDesire > 0 then
-		bot:Action_UseAbility(Darkness)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Darkness)
 		return
 	end
 	
 	CripplingFearDesire = UseCripplingFear()
 	if CripplingFearDesire > 0 then
-		bot:Action_UseAbility(CripplingFear)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(CripplingFear)
 		return
 	end
 	
 	HunterInTheNightDesire, HunterInTheNightTarget = UseHunterInTheNight()
 	if HunterInTheNightDesire > 0 then
-		bot:Action_UseAbilityOnEntity(HunterInTheNight, HunterInTheNightTarget)
+		PAF.SwitchTreadsToAgi(bot)
+		bot:ActionQueue_UseAbilityOnEntity(HunterInTheNight, HunterInTheNightTarget)
 		return
 	end
 	
 	VoidDesire, VoidTarget = UseVoid()
 	if VoidDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Void, VoidTarget)
-		return
+		if Void:GetLevel() >= 5 then
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnLocation(Void, VoidTarget:GetLocation())
+			return
+		else
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnEntity(Void, VoidTarget)
+			return
+		end
 	end
 end
 

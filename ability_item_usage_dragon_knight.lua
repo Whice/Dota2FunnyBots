@@ -51,25 +51,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ElderDragonFormDesire = UseElderDragonForm()
 	if ElderDragonFormDesire > 0 then
-		bot:Action_UseAbility(ElderDragonForm)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(ElderDragonForm)
 		return
 	end
 	
 	DragonTailDesire, DragonTailTarget = UseDragonTail()
 	if DragonTailDesire > 0 then
-		bot:Action_UseAbilityOnEntity(DragonTail, DragonTailTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(DragonTail, DragonTailTarget)
 		return
 	end
 	
 	FireballDesire, FireballTarget = UseFireball()
 	if FireballDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Fireball, FireballTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Fireball, FireballTarget)
 		return
 	end
 	
 	BreatheFireDesire, BreatheFireTarget = UseBreatheFire()
 	if BreatheFireDesire > 0 then
-		bot:Action_UseAbilityOnLocation(BreatheFire, BreatheFireTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(BreatheFire, BreatheFireTarget)
 		return
 	end
 end
@@ -80,11 +84,25 @@ function UseBreatheFire()
 	
 	local CR = BreatheFire:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local Radius = BreatheFire:GetSpecialValueInt("end_radius")
+	local Damage = BreatheFire:GetSpecialValueInt("damage")
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange and not PAF.IsMagicImmune(BotTarget) then
 				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			end
+		end
+	end
+	
+	if P.IsInLaningPhase()
+	and bot:GetActiveMode() == BOT_MODE_LANING then
+		local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	
+		for v, enemy in pairs(FilteredEnemies) do
+			if PAF.CanLastHitCreepAndHarass(bot, enemy, Radius, Damage, DAMAGE_TYPE_MAGICAL) then
+				return BOT_ACTION_DESIRE_HIGH, enemy:GetLocation()
 			end
 		end
 	end
@@ -103,8 +121,17 @@ function UseBreatheFire()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
@@ -176,8 +203,15 @@ function UseElderDragonForm()
 			return BOT_ACTION_DESIRE_HIGH
 		end
 		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(attacktarget) then
-			return BOT_ACTION_DESIRE_HIGH
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(attacktarget)
+			and GetUnitToUnitDistance(bot, attacktarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, attacktarget
+			end
+		end
+		
+		if PAF.IsTormentor(attacktarget) then
+			return BOT_ACTION_DESIRE_HIGH, attacktarget
 		end
 	end
 	
@@ -202,6 +236,21 @@ function UseFireball()
 		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
 		if (AoE.count >= 2) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc;
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	

@@ -42,19 +42,37 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	EchoSlamDesire = UseEchoSlam()
 	if EchoSlamDesire > 0 then
-		bot:Action_UseAbility(EchoSlam)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(EchoSlam)
 		return
 	end
 	
-	EnchantTotemDesire = UseEnchantTotem()
-	if EnchantTotemDesire > 0 then
-		bot:Action_UseAbility(EnchantTotem)
-		return
+	if bot:HasScepter() then		
+		EnchantTotemDesire, EnchantTotemTarget = UseEnchantTotem()
+		if EnchantTotemDesire > 0 then
+			if EnchantTotemTarget == bot then
+				PAF.SwitchTreadsToInt(bot)
+				bot:ActionQueue_UseAbilityOnEntity(EnchantTotem, EnchantTotemTarget)
+				return
+			else
+				PAF.SwitchTreadsToInt(bot)
+				bot:ActionQueue_UseAbilityOnLocation(EnchantTotem, EnchantTotemTarget)
+				return
+			end
+		end
+	else
+		EnchantTotemDesire = UseEnchantTotem()
+		if EnchantTotemDesire > 0 then
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbility(EnchantTotem)
+			return
+		end
 	end
 	
 	FissureDesire, FissureTarget = UseFissure()
 	if FissureDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Fissure, FissureTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Fissure, FissureTarget)
 		return
 	end
 end
@@ -81,7 +99,7 @@ function UseFissure()
 			and not PAF.IsMagicImmune(BotTarget)
 			and not PAF.IsDisabled(BotTarget) then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(1)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(1), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(1), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
 				end
@@ -111,36 +129,79 @@ function UseEnchantTotem()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = Aftershock:GetSpecialValueInt("aftershock_range")
+	local LeapRange = EnchantTotem:GetSpecialValueInt("scepter_height")
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local AttackTarget = bot:GetAttackTarget()
 	
-	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= (CastRange - 50)
-			and not PAF.IsDisabled(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH
+	local EnemiesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	
+	if bot:HasScepter() then
+		if PAF.IsEngaging(bot) then
+			if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+				if GetUnitToUnitDistance(bot, BotTarget) <= LeapRange then
+					if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+						return BOT_ACTION_DESIRE_HIGH, bot
+					else
+						return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+					end
+				end
+			end
+		end
+		
+		if #FilteredEnemies >= 1 and P.IsRetreating(bot) then
+			return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), LeapRange)
+		end
+	else
+		if PAF.IsEngaging(bot) then
+			if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+				if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+				and not PAF.IsDisabled(BotTarget) then
+					return BOT_ACTION_DESIRE_HIGH
+				end
+			end
+		end
+		
+		if #FilteredEnemies >= 1
+		and P.IsRetreating(bot)
+		and GetUnitToUnitDistance(bot, FilteredEnemies[1]) <= CastRange then
+			return BOT_ACTION_DESIRE_HIGH
+		end
+		
+		if bot:GetActiveMode() == BOT_MODE_LANING then
+			local NearbyEnemyLaneCreeps = bot:GetNearbyLaneCreeps(1200, true)
+			local NearbyAlliedLaneCreeps = bot:GetNearbyLaneCreeps(1200, false)
+			
+			for x, EnemyCreep in pairs(NearbyEnemyLaneCreeps) do
+				if string.find(EnemyCreep:GetUnitName(), "ranged")
+				or string.find(EnemyCreep:GetUnitName(), "flagbearer") then
+					for y, AlliedCreep in pairs(NearbyAlliedLaneCreeps) do
+						if AlliedCreep:GetAttackTarget() == EnemyCreep
+						and not bot:HasModifier("modifier_earthshaker_enchant_totem") then
+							return BOT_ACTION_DESIRE_HIGH
+						end
+					end
+				end
 			end
 		end
 	end
-	
-	if #FilteredEnemies >= 1 and P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-	
-	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil and not P.IsInLaningPhase() then
 		if AttackTarget:IsCreep() then
 			local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, true)
-			
-			if #CreepsWithinRange >= 3 then
-				return BOT_ACTION_DESIRE_HIGH
+				
+			if #CreepsWithinRange >= 3
+			and (bot:GetMana() - EnchantTotem:GetManaCost()) >= (bot:GetMaxMana() * 0.5) then
+				return BOT_ACTION_DESIRE_HIGH, bot
 			end
 		end
-		
+			
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+			return BOT_ACTION_DESIRE_HIGH, bot
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, bot
 		end
 	end
 	
@@ -149,15 +210,32 @@ end
 
 function UseEchoSlam()
 	if not EchoSlam:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = (EchoSlam:GetSpecialValueInt("echo_slam_echo_range") - 50)
+	local CastRange = EchoSlam:GetSpecialValueInt("echo_slam_damage_range")
 	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, true)
+	local InitialDamage = EchoSlam:GetSpecialValueInt("echo_slam_initial_damage")
+	local EchoDamage = EchoSlam:GetSpecialValueInt("echo_slam_echo_damage")
 	
 	if #FilteredEnemies >= 3 then
-		return BOT_ACTION_DESIRE_HIGH
+		if PAF.IsInTeamFight(bot) then
+			return 1
+		else
+			local TotalDamage = InitialDamage
+			TotalDamage = (TotalDamage + ((EchoDamage * 2) * #FilteredEnemies))
+			TotalDamage = (TotalDamage + (EchoDamage * #CreepsWithinRange))
+			
+			for v, Enemy in pairs(FilteredEnemies) do
+				local EstimatedDamage = Enemy:GetActualIncomingDamage(TotalDamage, DAMAGE_TYPE_MAGICAL)
+				
+				if EstimatedDamage >= Enemy:GetHealth()
+				and Enemy:GetHealth() > (Enemy:GetMaxHealth() * 0.15) then
+					return 1
+				end
+			end
+		end
 	end
 	
 	return 0

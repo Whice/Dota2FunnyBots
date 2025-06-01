@@ -48,19 +48,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	SlithereenCrushDesire = UseSlithereenCrush()
 	if SlithereenCrushDesire > 0 then
-		bot:Action_UseAbility(SlithereenCrush)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SlithereenCrush)
 		return
 	end
 	
 	CorrosiveHazeDesire, CorrosiveHazeTarget = UseCorrosiveHaze()
 	if CorrosiveHazeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(CorrosiveHaze, CorrosiveHazeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(CorrosiveHaze, CorrosiveHazeTarget)
 		return
 	end
 	
 	SprintDesire = UseSprint()
 	if SprintDesire > 0 then
-		bot:Action_UseAbility(Sprint)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Sprint)
 		return
 	end
 end

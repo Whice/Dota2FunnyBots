@@ -1,30 +1,13 @@
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
+local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
 
 local bot = GetBot()
 
 function MinionThink(hMinionUnit) 
 	if not hMinionUnit:IsNull() and hMinionUnit ~= nil then	
-		if string.find(hMinionUnit:GetUnitName(), "npc_dota_clinkz_skeleton_archer") then
-			local target = WardTarget(hMinionUnit)
-		
-			if target ~= nil then
-				hMinionUnit:Action_AttackUnit(target, false)
-			else
-			end
-		end
-		
 		if hMinionUnit:IsIllusion() and not string.find(hMinionUnit:GetUnitName(), "npc_dota_clinkz_skeleton_archer") then
-			local target = P.IllusionTarget(hMinionUnit, bot)
-		
-			if target ~= nil then
-				hMinionUnit:Action_AttackUnit(target, false)
-			else
-				if GetUnitToUnitDistance(hMinionUnit, bot) > 200 then
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation())
-				else
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation()+RandomVector(200))
-				end
-			end
+			PAF.IllusionTarget(hMinionUnit, bot)
+			return
 		end
 	end
 end

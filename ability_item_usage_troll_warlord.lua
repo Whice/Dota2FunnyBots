@@ -44,25 +44,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	BattleTranceDesire = UseBattleTrance()
 	if BattleTranceDesire > 0 then
-		bot:Action_UseAbility(BattleTrance)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(BattleTrance)
 		return
 	end
 	
 	BerserkersRageDesire = UseBerserkersRage()
 	if BerserkersRageDesire > 0 then
-		bot:Action_UseAbility(BerserkersRage)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(BerserkersRage)
 		return
 	end
 	
 	WhirlingAxesMeleeDesire = UseWhirlingAxesMelee()
 	if WhirlingAxesMeleeDesire > 0 then
-		bot:Action_UseAbility(WhirlingAxesMelee)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(WhirlingAxesMelee)
 		return
 	end
 	
 	WhirlingAxesRangedDesire, WhirlingAxesRangedTarget = UseWhirlingAxesRanged()
 	if WhirlingAxesRangedDesire > 0 then
-		bot:Action_UseAbilityOnLocation(WhirlingAxesRanged, WhirlingAxesRangedTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(WhirlingAxesRanged, WhirlingAxesRangedTarget)
 		return
 	end
 end

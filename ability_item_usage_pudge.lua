@@ -43,7 +43,8 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	MeatHookDesire, MeatHookTarget = UseMeatHook()
 	if MeatHookDesire > 0 then
-		bot:Action_UseAbilityOnLocation(MeatHook, MeatHookTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(MeatHook, MeatHookTarget)
 		return
 	end
 	
@@ -55,13 +56,15 @@ function AbilityUsageThink()
 	
 	FleshHeapDesire = UseFleshHeap()
 	if FleshHeapDesire > 0 then
-		bot:Action_UseAbility(FleshHeap)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(FleshHeap)
 		return
 	end
 	
 	DismemberDesire, DismemberTarget = UseDismember()
 	if DismemberDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Dismember, DismemberTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Dismember, DismemberTarget)
 		return
 	end
 end
@@ -93,7 +96,7 @@ function UseMeatHook()
 					return BOT_ACTION_DESIRE_HIGH, PredictedLoc
 				elseif GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 				and GetUnitToLocationDistance(bot, PredictedLoc) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PredictedLoc, CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PredictedLoc, CastRange)
 				end
 			end
 		end
@@ -122,7 +125,7 @@ function UseMeatHook()
 						return BOT_ACTION_DESIRE_HIGH, PredictedLoc
 					elseif GetUnitToUnitDistance(bot, Enemy) <= CastRange
 					and GetUnitToLocationDistance(bot, PredictedLoc) > CastRange then
-						return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PredictedLoc, CastRange)
+						return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PredictedLoc, CastRange)
 					end
 				end
 			end
@@ -147,7 +150,7 @@ function UseMeatHook()
 						return BOT_ACTION_DESIRE_HIGH, PredictedLoc
 					elseif GetUnitToUnitDistance(bot, Enemy) <= CastRange
 					and GetUnitToLocationDistance(bot, PredictedLoc) > CastRange then
-						return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PredictedLoc, CastRange)
+						return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PredictedLoc, CastRange)
 					end
 				end
 			end
@@ -192,7 +195,7 @@ function UseMeatHook()
 						return BOT_ACTION_DESIRE_HIGH, PredictedLoc
 					elseif GetUnitToUnitDistance(bot, Ally) <= CastRange
 					and GetUnitToLocationDistance(bot, PredictedLoc) > CastRange then
-						return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PredictedLoc, CastRange)
+						return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PredictedLoc, CastRange)
 					end
 				end
 			end
@@ -229,7 +232,9 @@ function UseRot()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_FARM and AttackTarget:IsCreep() then
+		if bot:GetActiveMode() == BOT_MODE_FARM
+		and AttackTarget:IsCreep()
+		and not P.IsInLaningPhase() then
 			if GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
 				if Rot:GetToggleState() == false then
 					return BOT_ACTION_DESIRE_HIGH

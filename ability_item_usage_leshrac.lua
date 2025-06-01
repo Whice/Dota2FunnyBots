@@ -46,31 +46,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	SplitEarthDesire, SplitEarthTarget = UseSplitEarth()
 	if SplitEarthDesire > 0 then
-		bot:Action_UseAbilityOnLocation(SplitEarth, SplitEarthTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(SplitEarth, SplitEarthTarget)
 		return
 	end
 	
 	NihilismDesire = UseNihilism()
 	if NihilismDesire > 0 then
-		bot:Action_UseAbility(Nihilism)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Nihilism)
 		return
 	end
 	
 	PulseNovaDesire = UsePulseNova()
 	if PulseNovaDesire > 0 then
-		bot:Action_UseAbility(PulseNova)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(PulseNova)
 		return
 	end
 	
 	LightningStormDesire, LightningStormTarget = UseLightningStorm()
 	if LightningStormDesire > 0 then
-		bot:Action_UseAbilityOnEntity(LightningStorm, LightningStormTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(LightningStorm, LightningStormTarget)
 		return
 	end
 	
 	DiabolicEdictDesire = UseDiabolicEdict()
 	if DiabolicEdictDesire > 0 then
-		bot:Action_UseAbility(DiabolicEdict)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(DiabolicEdict)
 		return
 	end
 end
@@ -99,7 +104,8 @@ function UseSplitEarth()
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and (BotTarget:HasModifier("modifier_leshrac_lightning_storm_slow") or PAF.IsDisabled(BotTarget)) then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(ExtrapLoc)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
+					PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(ExtrapLoc), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(ExtrapLoc)
 				end
@@ -114,10 +120,16 @@ function UseSplitEarth()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -140,9 +152,24 @@ function UseDiabolicEdict()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if AttackTarget:IsBuilding()
-	and AttackTarget:GetTeam() ~= bot:GetTeam() then
-		if GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+	if AttackTarget ~= nil then
+		if AttackTarget:IsBuilding()
+		and AttackTarget:GetTeam() ~= bot:GetTeam() then
+			if GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_HIGH
+			end
+		end
+	end
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
@@ -182,6 +209,10 @@ function UseLightningStorm()
 		if PAF.IsRoshan(AttackTarget)
 		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
 			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	

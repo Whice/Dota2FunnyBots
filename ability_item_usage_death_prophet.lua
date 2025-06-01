@@ -50,25 +50,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ExorcismDesire = UseExorcism()
 	if ExorcismDesire > 0 then
-		bot:Action_UseAbility(Exorcism)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Exorcism)
 		return
 	end
 	
 	SilenceDesire, SilenceTarget = UseSilence()
 	if SilenceDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Silence, SilenceTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Silence, SilenceTarget)
 		return
 	end
 	
 	SpiritSiphonDesire, SpiritSiphonTarget = UseSpiritSiphon()
 	if SpiritSiphonDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SpiritSiphon, SpiritSiphonTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SpiritSiphon, SpiritSiphonTarget)
 		return
 	end
 	
 	SwarmDesire, SwarmTarget = UseSwarm()
 	if SwarmDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Swarm, SwarmTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Swarm, SwarmTarget)
 		return
 	end
 end
@@ -87,7 +91,7 @@ function UseSwarm()
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetLocation(), CastDistance)
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetLocation(), CastDistance)
 			end
 		end
 	end
@@ -99,7 +103,7 @@ function UseSwarm()
 	
 		for v, enemy in pairs(FilteredEnemies) do
 			if PAF.CanLastHitCreepAndHarass(bot, enemy, Radius, Damage, DAMAGE_TYPE_MAGICAL) then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(enemy:GetLocation(), CastDistance)
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), enemy:GetLocation(), CastDistance)
 			end
 		end
 	end
@@ -117,14 +121,21 @@ function UseSwarm()
 			
 			if AoECount >= 3
 			and (bot:GetMana() - Swarm:GetManaCost()) > manathreshold then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(AttackTarget:GetLocation(), CastDistance)
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), AttackTarget:GetLocation(), CastDistance)
 			end
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(AttackTarget:GetLocation(), CastDistance)
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -196,18 +207,17 @@ function UseExorcism()
 		return BOT_ACTION_DESIRE_HIGH
 	end
 	
-	local attacktarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
 	
-	if attacktarget ~= nil then
-		if attacktarget:IsBuilding()
-		and attacktarget:GetTeam() ~= bot:GetTeam() then
-			return BOT_ACTION_DESIRE_HIGH
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
 		end
 		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(attacktarget) then
-				return BOT_ACTION_DESIRE_HIGH
-			end
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	

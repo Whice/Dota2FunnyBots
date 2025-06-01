@@ -45,31 +45,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	SkeletonWalkDesire = UseSkeletonWalk()
 	if SkeletonWalkDesire > 0 then
-		bot:Action_UseAbility(SkeletonWalk)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SkeletonWalk)
 		return
 	end
 	
 	DeathPactDesire, DeathPactTarget = UseDeathPact()
 	if DeathPactDesire > 0 then
-		bot:Action_UseAbilityOnEntity(DeathPact, DeathPactTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(DeathPact, DeathPactTarget)
 		return
 	end
 	
 	TarBombDesire, TarBombTarget = UseTarBomb()
 	if TarBombDesire > 0 then
-		bot:Action_UseAbilityOnEntity(TarBomb, TarBombTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(TarBomb, TarBombTarget)
 		return
 	end
 	
 	StrafeDesire = UseStrafe()
 	if StrafeDesire > 0 then
-		bot:Action_UseAbility(Strafe)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Strafe)
 		return
 	end
 	
 	BurningBarrageDesire, BurningBarrageTarget = UseBurningBarrage()
 	if BurningBarrageDesire > 0 then
-		bot:Action_UseAbilityOnLocation(BurningBarrage, BurningBarrageTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(BurningBarrage, BurningBarrageTarget)
 		return
 	end
 end

@@ -26,7 +26,7 @@ end
 local TimeWalk = bot:GetAbilityByName("faceless_void_time_walk")
 local TimeDilation = bot:GetAbilityByName("faceless_void_time_dilation")
 local TimeLock = bot:GetAbilityByName("faceless_void_time_lock")
-local Chronosphere = bot:GetAbilityByName("faceless_void_chronosphere")
+local Chronosphere = bot:GetAbilityInSlot(5)
 
 local TimeWalkDesire = 0
 local TimeDilationDesire = 0
@@ -46,21 +46,24 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	
 	-- The order to use abilities in
+	TimeDilationDesire = UseTimeDilation()
+	if TimeDilationDesire > 0 then
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(TimeDilation)
+		return
+	end
+	
 	TimeWalkDesire, TimeWalkTarget = UseTimeWalk()
 	if TimeWalkDesire > 0 then
-		bot:Action_UseAbilityOnLocation(TimeWalk, TimeWalkTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(TimeWalk, TimeWalkTarget)
 		return
 	end
 	
 	ChronosphereDesire, ChronosphereTarget = UseChronosphere()
 	if ChronosphereDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Chronosphere, ChronosphereTarget)
-		return
-	end
-	
-	TimeDilationDesire = UseTimeDilation()
-	if TimeDilationDesire > 0 then
-		bot:Action_UseAbility(TimeDilation)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Chronosphere, ChronosphereTarget)
 		return
 	end
 end

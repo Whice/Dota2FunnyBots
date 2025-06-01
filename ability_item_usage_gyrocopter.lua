@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	CallDownDesire, CallDownTarget = UseCallDown()
 	if CallDownDesire > 0 then
-		bot:Action_UseAbilityOnLocation(CallDown, CallDownTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(CallDown, CallDownTarget)
 		return
 	end
 	
 	HomingMissileDesire, HomingMissileTarget = UseHomingMissile()
 	if HomingMissileDesire > 0 then
-		bot:Action_UseAbilityOnEntity(HomingMissile, HomingMissileTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(HomingMissile, HomingMissileTarget)
 		return
 	end
 	
 	RocketBarrageDesire = UseRocketBarrage()
 	if RocketBarrageDesire > 0 then
-		bot:Action_UseAbility(RocketBarrage)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(RocketBarrage)
 		return
 	end
 	
 	FlakCannonDesire = UseFlakCannon()
 	if FlakCannonDesire > 0 then
-		bot:Action_UseAbility(FlakCannon)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(FlakCannon)
 		return
 	end
 end
@@ -81,12 +85,19 @@ function UseRocketBarrage()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
+		if PAF.IsTormentor(AttackTarget)
 		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	
@@ -137,12 +148,31 @@ end
 
 function UseFlakCannon()
 	if not FlakCannon:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-		if GetUnitToUnitDistance(bot, BotTarget) <= AttackRange then
-			return BOT_ACTION_DESIRE_HIGH
+	local radius = FlakCannon:GetSpecialValueInt("radius")
+	local EnemiesWithinRange = bot:GetNearbyHeroes(radius, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	
+	if PAF.IsEngaging(bot) and #FilteredEnemies > 1 then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= AttackRange then
+				return BOT_ACTION_DESIRE_HIGH
+			end
+		end
+	end
+	
+	if P.IsPushing(bot) or bot:GetActiveMode() == BOT_MODE_FARM then
+		local AttackTarget = bot:GetAttackTarget()
+		if AttackTarget ~= nil then
+			if AttackTarget:IsCreep() and AttackTarget:GetTeam() ~= bot:GetTeam() then
+				local NearbyCreeps = bot:GetNearbyCreeps(radius, true)
+				if #NearbyCreeps >= 3 then
+					if bot:GetMana() > (bot:GetMaxMana() * 0.55) then
+						return BOT_ACTION_DESIRE_HIGH
+					end
+				end
+			end
 		end
 	end
 	

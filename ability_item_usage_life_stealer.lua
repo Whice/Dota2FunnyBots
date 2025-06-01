@@ -50,19 +50,22 @@ function AbilityUsageThink()
 	
 	InfestDesire, InfestTarget = UseInfest()
 	if InfestDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Infest, InfestTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Infest, InfestTarget)
 		return
 	end
 	
 	RageDesire = UseRage()
 	if RageDesire > 0 then
-		bot:Action_UseAbility(Rage)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Rage)
 		return
 	end
 	
 	OpenWoundsDesire, OpenWoundsTarget = UseOpenWounds()
 	if OpenWoundsDesire > 0 then
-		bot:Action_UseAbilityOnEntity(OpenWounds, OpenWoundsTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(OpenWounds, OpenWoundsTarget)
 		return
 	end
 end
@@ -98,30 +101,27 @@ function UseInfest()
 	if P.CantUseAbility(bot) then return 0 end
 	if Infest:IsHidden() then return 0 end
 	
-	local allies = bot:GetNearbyHeroes(800, false, BOT_MODE_NONE)
-	local trueallies = {}
-	
-	for v, ally in pairs(allies) do
-		if not ally:IsIllusion() and ally ~= bot then
-			table.insert(trueallies, ally)
+	if bot:HasScepter() then
+		local EnemiesWithinRange = bot:GetNearbyHeroes(700, true, BOT_MODE_NONE)
+		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+		
+		local ClosestEnemy = PAF.GetClosestUnit(bot, FilteredEnemies)
+		
+		if ClosestEnemy ~= nil then
+			if bot:GetHealth() < (bot:GetMaxHealth() * 0.3) then
+				return 1, ClosestEnemy
+			end
 		end
 	end
 	
-	if #trueallies >= 1 then
-		local closestally = nil
-		local closestdistance = 99999
-		
-		for v, ally in pairs(trueallies) do
-			if GetUnitToUnitDistance(bot, ally) < closestdistance then
-				closestally = ally
-				closestdistance = GetUnitToUnitDistance(bot, ally)
-			end
-		end
-		
-		local enemies = bot:GetNearbyHeroes(800, true, BOT_MODE_NONE)
-		
-		if closestally ~= nil and bot:GetHealth() < (bot:GetMaxHealth() * 0.3) and #enemies >= 1 then
-			return BOT_ACTION_DESIRE_HIGH, closestally
+	local AlliesWithinRange = bot:GetNearbyHeroes(700, false, BOT_MODE_NONE)
+	local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
+	
+	local ClosestAlly = PAF.GetClosestUnit(bot, FilteredAllies)
+	
+	if ClosestAlly ~= nil then
+		if bot:GetHealth() < (bot:GetMaxHealth() * 0.3) then
+			return 1, ClosestAlly
 		end
 	end
 	

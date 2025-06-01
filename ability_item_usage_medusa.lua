@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	StoneGazeDesire = UseStoneGaze()
 	if StoneGazeDesire > 0 then
-		bot:Action_UseAbility(StoneGaze)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(StoneGaze)
 		return
 	end
 	
 	SplitShotDesire = UseSplitShot()
 	if SplitShotDesire > 0 then
-		bot:Action_UseAbility(SplitShot)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SplitShot)
 		return
 	end
 	
 	MysticSnakeDesire, MysticSnakeTarget = UseMysticSnake()
 	if MysticSnakeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(MysticSnake, MysticSnakeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(MysticSnake, MysticSnakeTarget)
 		return
 	end
 	
 	GorgonGraspDesire, GorgonGraspTarget = UseGorgonGrasp()
 	if GorgonGraspDesire > 0 then
-		bot:Action_UseAbilityOnLocation(GorgonGrasp, GorgonGraspTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(GorgonGrasp, GorgonGraspTarget)
 		return
 	end
 end
@@ -74,8 +78,6 @@ function UseSplitShot()
 		if SplitShot:GetToggleState() == true then
 			return BOT_ACTION_DESIRE_HIGH
 		end
-		
-		return 0
 	else
 		local AttackTarget = bot:GetAttackTarget()
 		
@@ -103,12 +105,10 @@ function UseSplitShot()
 					end
 				end
 			end
-			
-			if SplitShot:GetToggleState() == true then
-				return BOT_ACTION_DESIRE_HIGH
-			end
-			
-			return 0
+		end
+		
+		if SplitShot:GetToggleState() == true then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	

@@ -68,6 +68,7 @@ function X.GetHeroItemBuild()
 		local SituationalItem1 = PRoles.ShouldBuySphere("item_shivas_guard")
 		
 		ItemBuild = { 
+		"item_bottle",
 		"item_null_talisman",
 		"item_magic_wand",
 		"item_travel_boots",
@@ -76,9 +77,9 @@ function X.GetHeroItemBuild()
 		SituationalItem1,
 		"item_black_king_bar",
 		"item_octarine_core",
+		"item_ultimate_scepter_2",
 		"item_sheepstick",
 		"item_overwhelming_blink",
-		"item_ultimate_scepter_2",
 		"item_travel_boots_2",
 		}
 	end
@@ -91,13 +92,13 @@ function X.GetHeroItemBuild()
 		"item_magic_wand",
 		"item_travel_boots",
 		
-		CoreItem,
 		"item_blink",
+		"item_shivas_guard",
 		"item_black_king_bar",
 		"item_octarine_core",
-		"item_assault",
-		"item_overwhelming_blink",
+		CoreItem,
 		"item_ultimate_scepter_2",
+		"item_overwhelming_blink",
 		"item_travel_boots_2",
 		}
 	end

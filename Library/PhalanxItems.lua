@@ -70,33 +70,32 @@ PItems['neutralItem'] = {
 }
 
 PItems['earlyGameItem'] = {
-	 "item_tango_single",
-	 "item_clarity",
-	 "item_faerie_fire",
-	 "item_tango",  
-	 "item_flask", 
-	 "item_infused_raindrop",
-	 "item_quelling_blade", 
-	 "item_stout_shield", 
-	 "item_magic_wand",
-	 "item_bottle",  
-	 "item_soul_ring",  
-	 "item_bracer",
-	 "item_wraith_band",
-	 "item_null_talisman", 
-	 "item_dust",
-	 "item_ward_observer",
-	 "item_hand_of_midas",
-	 "item_enchanted_mango",
-	 "item_ancient_janggo"
-	 --"item_tpscroll"
+	"item_tango_single",
+	"item_clarity",
+	"item_faerie_fire",
+	"item_tango",  
+	"item_flask", 
+	"item_infused_raindrop",
+	"item_quelling_blade", 
+	"item_stout_shield", 
+	"item_magic_wand",
+	"item_bottle",  
+	"item_soul_ring",  
+	"item_bracer",
+	"item_wraith_band",
+	"item_null_talisman", 
+	"item_dust",
+	"item_hand_of_midas",
+	"item_enchanted_mango",
+	"item_falcon_blade",
+	"item_orb_of_corrosion",
 }
 
 PItems['earlyBoots'] = {  
 	"item_phase_boots", 
 	"item_power_treads", 
 	"item_tranquil_boots", 
-	"item_arcane_boots"  
+	"item_arcane_boots",
 }
 
 PItems["basic_items"] = {    
@@ -179,9 +178,10 @@ PItems["basic_items"] = {
 	"item_cornucopia";
 	"item_ring_of_tarrasque";
 	"item_tiara_of_selemene";
+	"item_orb_of_frost";
 }
 
-PItems["item_abyssal_blade"] = { "item_basher"; "item_vanguard"; "item_recipe_abyssal_blade" }
+PItems["item_abyssal_blade"] = { "item_basher"; "item_sange"; "item_recipe_abyssal_blade" }
 
 PItems["item_aether_lens"] = { "item_void_stone"; "item_energy_booster"; "item_recipe_aether_lens" }
 
@@ -193,7 +193,7 @@ PItems["item_armlet"] = { "item_helm_of_iron_will"; "item_gloves"; "item_blades_
 
 PItems["item_assault"] = { "item_platemail"; "item_hyperstone"; "item_recipe_assault"; "item_buckler" }
 
-PItems["item_bfury"] = { "item_quelling_blade"; "item_cornucopia"; "item_broadsword"; "item_claymore"; "item_recipe_bfury" }
+PItems["item_bfury"] = { "item_quelling_blade"; "item_cornucopia"; "item_broadsword"; "item_broadsword"; "item_recipe_bfury" }
 
 PItems["item_black_king_bar"] = { "item_ogre_axe"; "item_mithril_hammer"; "item_recipe_black_king_bar" }
 
@@ -245,7 +245,7 @@ PItems["item_ethereal_blade"] = { "item_aether_lens"; "item_ghost"; "item_recipe
 
 PItems["item_cyclone"] = { "item_wind_lace"; "item_void_stone"; "item_staff_of_wizardry"; "item_recipe_cyclone" }
 
-PItems["item_skadi"] = { "item_ultimate_orb"; "item_point_booster"; "item_recipe_skadi" }
+PItems["item_skadi"] = { "item_ultimate_orb"; "item_ultimate_orb"; "item_orb_of_frost" }
 
 PItems["item_force_staff"] = { "item_staff_of_wizardry"; "item_fluffy_hat"; "item_recipe_force_staff" }
 
@@ -259,9 +259,9 @@ PItems["item_headdress"] = { "item_ring_of_regen"; "item_recipe_headdress" }
 
 PItems["item_heart"] = { "item_reaver"; "item_ring_of_tarrasque"; "item_recipe_heart" }
 
-PItems["item_heavens_halberd"] = { "item_sange"; "item_talisman_of_evasion"; "item_recipe_heavens_halberd"}
+PItems["item_heavens_halberd"] = { "item_vanguard"; "item_crown"; "item_recipe_heavens_halberd"}
 
-PItems["item_helm_of_the_dominator"] = { "item_helm_of_iron_will"; "item_diadem"; "item_recipe_helm_of_the_dominator" }
+PItems["item_helm_of_the_dominator"] = { "item_helm_of_iron_will"; "item_crown"; "item_recipe_helm_of_the_dominator" }
 
 PItems["item_helm_of_the_overlord"] = { "item_helm_of_the_dominator"; "item_vladmir"; "item_recipe_helm_of_the_overlord" }
 
@@ -343,7 +343,7 @@ PItems["item_satanic"] = { "item_lifesteal"; "item_reaver"; "item_claymore" }
 
 PItems["item_sheepstick"] = { "item_mystic_staff"; "item_tiara_of_selemene"; "item_recipe_sheepstick" }
 
-PItems["item_invis_sword"] = { "item_blitz_knuckles"; "item_broadsword"; "item_shadow_amulet" }
+PItems["item_invis_sword"] = { "item_blitz_knuckles"; "item_claymore"; "item_shadow_amulet" }
 
 PItems["item_shivas_guard"] = { "item_veil_of_discord"; "item_platemail"; "item_recipe_shivas_guard" }
 
@@ -359,7 +359,7 @@ PItems["item_soul_ring"] = { "item_ring_of_protection"; "item_gauntlets"; "item_
 
 PItems["item_tranquil_boots"] = { "item_wind_lace"; "item_boots"; "item_ring_of_regen" }
 
-PItems["item_urn_of_shadows"] = { "item_sobi_mask" ; "item_ring_of_protection"; "item_fluffy_hat"; "item_recipe_urn_of_shadows" }
+PItems["item_urn_of_shadows"] = { "item_sobi_mask" ; "item_ring_of_protection"; "item_circlet"; "item_recipe_urn_of_shadows" }
 
 PItems["item_vanguard"] = { "item_vitality_booster"; "item_ring_of_health"  }
 
@@ -376,7 +376,7 @@ PItems["item_meteor_hammer"] = { "item_crown"; "item_kaya"; "item_recipe_meteor_
 --aeon disk
 PItems["item_aeon_disk"] = { "item_vitality_booster"; "item_energy_booster"; "item_recipe_aeon_disk" }
 
-PItems["item_spirit_vessel"] = { "item_urn_of_shadows"; "item_vitality_booster"; "item_recipe_spirit_vessel" }
+PItems["item_spirit_vessel"] = { "item_urn_of_shadows"; "item_diadem"; "item_recipe_spirit_vessel" }
 
 PItems["item_nullifier"] = { "item_helm_of_iron_will"; "item_relic" }
 --kaya
@@ -392,10 +392,10 @@ PItems["item_ultimate_scepter_2"] = { "item_ultimate_scepter"; "item_recipe_ulti
 
 ---------- 7.28 NEW ITEMS ---------------
 PItems["item_falcon_blade"] = { "item_fluffy_hat"; "item_sobi_mask"; "item_blades_of_attack"; "item_recipe_falcon_blade" }
-PItems["item_orb_of_corrosion"] = {"item_orb_of_venom"; "item_ring_of_protection"; "item_gloves" }
-PItems["item_witch_blade"] = { "item_oblivion_staff"; "item_chainmail"; "item_recipe_witch_blade" }
-PItems["item_gungir"] = { "item_maelstrom"; "item_rod_of_atos"; "item_recipe_gungir" }
-PItems["item_mage_slayer"] = { "item_cloak"; "item_oblivion_staff"; "item_recipe_mage_slayer" }
+PItems["item_orb_of_corrosion"] = {"item_orb_of_frost"; "item_blight_stone"; "item_boots_of_elves" }
+PItems["item_witch_blade"] = { "item_oblivion_staff"; "item_chainmail"; "item_orb_of_venom"; "item_recipe_witch_blade" }
+PItems["item_gungir"] = { "item_point_booster"; "item_rod_of_atos"; "item_recipe_gungir" }
+PItems["item_mage_slayer"] = { "item_cloak"; "item_orb_of_venom"; "item_gloves"; "item_cornucopia" }
 PItems["item_eternal_shroud"] = { "item_cloak"; "item_ogre_axe"; "item_vitality_booster"; "item_recipe_eternal_shroud" }
 PItems["item_helm_of_the_dominator_2"] = { "item_helm_of_the_dominator"; "item_ultimate_orb"; "item_recipe_helm_of_the_dominator_2" }
 PItems["item_overwhelming_blink"] = { "item_blink"; "item_reaver"; "item_recipe_overwhelming_blink" }
@@ -404,7 +404,7 @@ PItems["item_arcane_blink"] = { "item_blink"; "item_mystic_staff"; "item_recipe_
 PItems["item_wind_waker"] = { "item_cyclone"; "item_mystic_staff"; "item_recipe_wind_waker" }
 
 ---------- 7.30 NEW ITEMS ---------------
-PItems["item_revenants_brooch"] = { "item_relic"; "item_voodoo_mask"; "item_recipe_revenants_brooch" }
+PItems["item_revenants_brooch"] = { "item_lesser_crit"; "item_voodoo_mask"; "item_recipe_revenants_brooch" }
 PItems["item_boots_of_bearing"] = { "item_tranquil_boots"; "item_ancient_janggo"; "item_recipe_boots_of_bearing" }
 
 ---------- 7.33 NEW ITEMS ---------------
@@ -414,7 +414,7 @@ PItems["item_harpoon"] = { "item_echo_sabre"; "item_diadem"; "item_recipe_harpoo
 PItems["item_disperser"] = { "item_diffusal_blade"; "item_eagle"; "item_recipe_disperser" }
 
 ---------- 7.35 NEW ITEMS ---------------
-PItems["item_angels_demise"] = { "item_phylactery"; "item_lesser_crit"; "item_recipe_angels_demise" }
+PItems["item_angels_demise"] = { "item_phylactery"; "item_tiara_of_selemene"; "item_recipe_angels_demise" }
 PItems["item_devastator"] = { "item_witch_blade"; "item_mystic_staff"; "item_recipe_devastator" }
 
 --Normalize some item names 

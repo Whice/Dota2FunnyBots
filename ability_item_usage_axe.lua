@@ -42,19 +42,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	CullingBladeDesire, CullingBladeTarget = UseCullingBlade()
 	if CullingBladeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(CullingBlade, CullingBladeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(CullingBlade, CullingBladeTarget)
 		return
 	end
 	
 	BerserkersCallDesire = UseBerserkersCall()
 	if BerserkersCallDesire > 0 then
-		bot:Action_UseAbility(BerserkersCall)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(BerserkersCall)
 		return
 	end
 	
 	BattleHungerDesire, BattleHungerTarget = UseBattleHunger()
 	if BattleHungerDesire > 0 then
-		bot:Action_UseAbilityOnEntity(BattleHunger, BattleHungerTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(BattleHunger, BattleHungerTarget)
 		return
 	end
 end
@@ -103,8 +106,15 @@ function UseBattleHunger()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end

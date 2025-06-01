@@ -27,6 +27,7 @@ local WhirlingDeath = bot:GetAbilityByName("shredder_whirling_death")
 local TimberChain = bot:GetAbilityByName("shredder_timber_chain")
 local ReactiveArmor = bot:GetAbilityByName("shredder_reactive_armor")
 local Chakram = bot:GetAbilityByName("shredder_chakram")
+local TwistedChakram = bot:GetAbilityByName("shredder_twisted_chakram")
 --local SecondChakram = bot:GetAbilityByName("shredder_chakram_2")
 local Flamethrower = bot:GetAbilityByName("shredder_flamethrower")
 
@@ -37,6 +38,7 @@ local WhirlingDeathDesire = 0
 local TimberChainDesire = 0
 local ReactiveArmorDesire = 0
 local ChakramDesire = 0
+local TwistedChakramDesire = 0
 local SecondChakramDesire = 0
 local FlamethrowerDesire = 0
 local ReturnChakramDesire = 0
@@ -70,32 +72,44 @@ function AbilityUsageThink()
 	if bot:HasScepter() then
 		ReactiveArmorDesire = UseReactiveArmor()
 		if ReactiveArmorDesire > 0 then
-			bot:Action_UseAbility(ReactiveArmor)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbility(ReactiveArmor)
 			return
 		end
 	end
 	
 	FlamethrowerDesire = UseFlamethrower()
 	if FlamethrowerDesire > 0 then
-		bot:Action_UseAbility(Flamethrower)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Flamethrower)
 		return
 	end
 	
 	TimberChainDesire, TimberChainTarget = UseTimberChain()
 	if TimberChainDesire > 0 then
-		bot:Action_UseAbilityOnLocation(TimberChain, TimberChainTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(TimberChain, TimberChainTarget)
 		return
 	end
 	
+	--[[TwistedChakramDesire, TwistedChakramTarget = UseTwistedChakram()
+	if TwistedChakramDesire > 0 then
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(TwistedChakram, TwistedChakramTarget)
+		return
+	end]]--
+	
 	WhirlingDeathDesire = UseWhirlingDeath()
 	if WhirlingDeathDesire > 0 then
-		bot:Action_UseAbility(WhirlingDeath)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(WhirlingDeath)
 		return
 	end
 	
 	ChakramDesire, ChakramTarget = UseChakram()
 	if ChakramDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Chakram, ChakramTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Chakram, ChakramTarget)
 		ChakramLoc = ChakramTarget
 		return
 	end
@@ -133,10 +147,16 @@ function UseWhirlingDeath()
 	end
 	
 	local AttackTarget = bot:GetAttackTarget()
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= Radius then
-			return BOT_ACTION_DESIRE_VERYHIGH
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	
@@ -271,6 +291,40 @@ function UseChakram()
 	return 0
 end
 
+function UseTwistedChakram()
+	if not TwistedChakram:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local CR = TwistedChakram:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			end
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+		end
+	end
+	
+	return 0
+end
+
 function UseSecondChakram()
 	if not SecondChakram:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
@@ -347,7 +401,7 @@ function UseReturnChakram()
 		local EnemyIsInsideChakram = false
 		local CanKillEnemy = false
 		for v, Enemy in pairs(FilteredEnemies) do
-			if GetUnitToLocationDistance(Enemy, ChakramLoc) <= Radius then
+			if GetUnitToLocationDistance(Enemy, ChakramLoc) <= (Radius - 100) then
 				if not EnemyIsInsideChakram then
 					EnemyIsInsideChakram = true
 				end
@@ -417,7 +471,7 @@ function UseReturnSecondChakram()
 		local EnemyIsInsideChakram = false
 		local CanKillEnemy = false
 		for v, Enemy in pairs(FilteredEnemies) do
-			if GetUnitToLocationDistance(Enemy, SecondChakramLoc) <= Radius then
+			if GetUnitToLocationDistance(Enemy, SecondChakramLoc) <= (Radius - 100) then
 				if not EnemyIsInsideChakram then
 					EnemyIsInsideChakram = true
 				end
@@ -472,7 +526,8 @@ function UseFlamethrower()
 		end
 	end
 	
-	if AttackTarget:IsBuilding()
+	if AttackTarget ~= nil
+	and AttackTarget:IsBuilding()
 	and AttackTarget:GetTeam() ~= bot:GetTeam()
 	and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange
 	and bot:IsFacingLocation(BotTarget:GetLocation(), 10) then

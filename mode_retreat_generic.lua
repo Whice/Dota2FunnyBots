@@ -5,8 +5,15 @@ local bot = GetBot()
 local UrgentRetreat = false
 
 function GetDesire()
-	if bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_active") then
+	if bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_active")
+	or bot:HasModifier("modifier_skeleton_king_reincarnation_scepter_respawn_time") then
 		return 0
+	end
+	
+	if bot:GetUnitName() == "npc_dota_hero_tinker" then
+		if bot:DistanceFromFountain() <= 0 and bot:GetMana() < (bot:GetMaxMana() * 0.9) then
+			return 0.9
+		end
 	end
 	
 	local RetreatDesire = 0
@@ -39,7 +46,10 @@ function GetDesire()
 		return 0.9
 	end
 	
-	
+	if bot:GetUnitName() == "npc_dota_hero_huskar"
+	and bot:GetAbilityInSlot(2):IsTrained() then
+		HealthRetreatVal = RemapValClamped(HealthMissing, 0, BotMaxHealth, 0.0, HealthRetreatVal)
+	end
 	
 	RetreatDesire = HealthRetreatVal
 	
@@ -131,6 +141,16 @@ function GetDesire()
 	and #EnemyTowers == 0 then
 		RetreatDesire = (RetreatDesire - SafeVal)
 	end
+	
+	--[[if bot:GetActiveMode() == BOT_MODE_LANING then
+		local HealthRegenPerStr = bot:GetHealthRegenPerStr()
+		local MinRegenThreshold = 7
+		local HealthRegen = bot:GetHealthRegen()
+		
+		if HealthRegen >= (HealthRegenPerStr + MinRegenThreshold) then
+			RetreatDesire = (RetreatDesire - SafeVal)
+		end
+	end]]--
 	
 	local ClampedRetreatDesire = Clamp(RetreatDesire, 0.0, 1.0)
 	return ClampedRetreatDesire

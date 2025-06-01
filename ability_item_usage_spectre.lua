@@ -53,7 +53,8 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	DispersionDesire = UseDispersion()
 	if DispersionDesire > 0 then
-		bot:Action_UseAbility(Dispersion)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Dispersion)
 		return
 	end
 	
@@ -66,7 +67,8 @@ function AbilityUsageThink()
 	if bot:HasScepter() then
 		HauntDesire = UseHaunt()
 		if HauntDesire > 0 then
-			bot:Action_UseAbility(Haunt)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbility(Haunt)
 			HauntTime = DotaTime()
 			return
 		end
@@ -74,7 +76,8 @@ function AbilityUsageThink()
 	
 	ShadowStepDesire, ShadowStepTarget = UseShadowStep()
 	if ShadowStepDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ShadowStep, ShadowStepTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ShadowStep, ShadowStepTarget)
 		ShadowStepTime = DotaTime()
 		StepTarget = ShadowStepTarget
 		return
@@ -82,7 +85,8 @@ function AbilityUsageThink()
 	
 	SpectralDaggerDesire, SpectralDaggerTarget = UseSpectralDagger()
 	if SpectralDaggerDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SpectralDagger, SpectralDaggerTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SpectralDagger, SpectralDaggerTarget)
 		return
 	end
 end
@@ -127,11 +131,11 @@ function UseHaunt()
 	
 	for v, ally in pairs(FilteredAllies) do
 		if PAF.IsInTeamFight(ally) then
-			local enemies = ally:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
+			local enemies = ally:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
 			local FilteredEnemies = PAF.FilterTrueUnits(enemies)
 			local target = PAF.GetWeakestUnit(enemies)
 			
-			if target ~= nil and not P.IsRetreating(bot) and not PAF.IsEngaging(bot) and GetUnitToUnitDistance(bot, target) > 1600 then
+			if target ~= nil and not P.IsRetreating(bot) and not PAF.IsEngaging(bot) and GetUnitToUnitDistance(bot, target) > SpectralDagger:GetCastRange() then
 				return BOT_ACTION_DESIRE_HIGH
 			end
 		end
@@ -165,7 +169,7 @@ function UseShadowStep()
 	end
 	
 	if PAF.IsEngaging(bot) then
-		if GetUnitToUnitDistance(bot, BotTarget) > 1000 then
+		if GetUnitToUnitDistance(bot, BotTarget) > SpectralDagger:GetCastRange() then
 			return BOT_ACTION_DESIRE_HIGH, BotTarget
 		end
 	end

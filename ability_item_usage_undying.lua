@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	FleshGolemDesire = UseFleshGolem()
 	if FleshGolemDesire > 0 then
-		bot:Action_UseAbility(FleshGolem)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(FleshGolem)
 		return
 	end
 	
 	TombstoneDesire, TombstoneTarget = UseTombstone()
 	if TombstoneDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Tombstone, TombstoneTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Tombstone, TombstoneTarget)
 		return
 	end
 	
 	SoulRipDesire, SoulRipTarget = UseSoulRip()
 	if SoulRipDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SoulRip, SoulRipTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SoulRip, SoulRipTarget)
 		return
 	end
 	
 	DecayDesire, DecayTarget = UseDecay()
 	if DecayDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Decay, DecayTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Decay, DecayTarget)
 		return
 	end
 end

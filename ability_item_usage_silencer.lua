@@ -43,30 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	GlobalSilenceDesire = UseGlobalSilence()
 	if GlobalSilenceDesire > 0 then
-		bot:Action_UseAbility(GlobalSilence)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(GlobalSilence)
 		return
 	end
 	
 	CurseOfTheSilentDesire, CurseOfTheSilentTarget = UseCurseOfTheSilent()
 	if CurseOfTheSilentDesire > 0 then
-		bot:Action_UseAbilityOnLocation(CurseOfTheSilent, CurseOfTheSilentTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(CurseOfTheSilent, CurseOfTheSilentTarget)
 		return
 	end
 	
-	--[[LastWordDesire, LastWordTarget = UseLastWord()
+	LastWordDesire, LastWordTarget = UseLastWord()
 	if LastWordDesire > 0 then
-		if bot:HasScepter() then
-			bot:Action_UseAbilityOnLocation(LastWord, LastWordTarget:GetLocation())
-			return
-		else
-			bot:Action_UseAbilityOnEntity(LastWord, LastWordTarget)
-			return
-		end
-	end]]--
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(LastWord, LastWordTarget)
+		return
+	end
 	
 	GlaivesOfWisdomDesire, GlaivesOfWisdomTarget = UseGlaivesOfWisdom()
 	if GlaivesOfWisdomDesire > 0 then
-		bot:Action_UseAbilityOnEntity(GlaivesOfWisdom, GlaivesOfWisdomTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(GlaivesOfWisdom, GlaivesOfWisdomTarget)
 		return
 	end
 end
@@ -93,12 +92,18 @@ function UseCurseOfTheSilent()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -106,35 +111,27 @@ function UseCurseOfTheSilent()
 end
 
 function UseGlaivesOfWisdom()
-	if not GlaivesOfWisdom:IsFullyCastable() or bot:IsDisarmed() then return 0 end
+	if not GlaivesOfWisdom:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = GlaivesOfWisdom:GetCastRange()
+	local AttackTarget = bot:GetAttackTarget()
 	
-	local target = bot:GetAttackTarget()
-	
-	if P.IsValidTarget(target) 
-	and not P.IsPossibleIllusion(target)
-	and not target:IsMagicImmune()
-	and not P.IsRetreating(bot) then
-		if GlaivesOfWisdom:GetAutoCastState() == false then
-			GlaivesOfWisdom:ToggleAutoCast()
-			return 0
-		end
-	end
-	
-	if target == nil then
-		if GlaivesOfWisdom:GetAutoCastState() == true then
-			GlaivesOfWisdom:ToggleAutoCast()
-			return 0
-		end
-	else
-		if not target:IsHero() then
-			if GlaivesOfWisdom:GetAutoCastState() == true then
+	if AttackTarget ~= nil then
+		if AttackTarget:IsHero()
+		or AttackTarget:IsBuilding()
+		or PAF.IsRoshan(AttackTarget) then
+			if GlaivesOfWisdom:GetAutoCastState() == false then
 				GlaivesOfWisdom:ToggleAutoCast()
+				return 0
+			else
 				return 0
 			end
 		end
+	end
+	
+	if GlaivesOfWisdom:GetAutoCastState() == true then
+		GlaivesOfWisdom:ToggleAutoCast()
+		return 0
 	end
 	
 	return 0
@@ -168,6 +165,21 @@ function UseLastWord()
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
 				return BOT_ACTION_DESIRE_HIGH, BotTarget
 			end
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	

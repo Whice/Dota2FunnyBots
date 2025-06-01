@@ -46,31 +46,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ThundergodsWrathDesire = UseThundergodsWrath()
 	if ThundergodsWrathDesire > 0 then
-		bot:Action_UseAbility(ThundergodsWrath)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(ThundergodsWrath)
 		return
 	end
 	
 	NimbusDesire, NimbusTarget = UseNimbus()
 	if NimbusDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Nimbus, NimbusTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Nimbus, NimbusTarget)
 		return
 	end
 	
 	HeavenlyJumpDesire = UseHeavenlyJump()
 	if HeavenlyJumpDesire > 0 then
-		bot:Action_UseAbility(HeavenlyJump)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(HeavenlyJump)
 		return
 	end
 	
 	LightningBoltDesire, LightningBoltTarget = UseLightningBolt()
 	if LightningBoltDesire > 0 then
-		bot:Action_UseAbilityOnLocation(LightningBolt, LightningBoltTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(LightningBolt, LightningBoltTarget)
 		return
 	end
 	
 	ArcLightningDesire, ArcLightningTarget = UseArcLightning()
 	if ArcLightningDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ArcLightning, ArcLightningTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ArcLightning, ArcLightningTarget)
 		return
 	end
 end

@@ -30,32 +30,32 @@ function X.GetHeroLevelPoints()
 	abilities[2], -- Level 1
 	abilities[3], -- Level 2
 	abilities[4], -- Level 3
-	abilities[2], -- Level 4
+	abilities[1], -- Level 4
 	abilities[2], -- Level 5
-	abilities[1], -- Level 6
+	abilities[2], -- Level 6
 	abilities[2], -- Level 7
-	abilities[1], -- Level 8
+	abilities[3], -- Level 8
 	abilities[3], -- Level 9
 	abilities[4], -- Level 10
-	talents[1],   -- Level 11
+	talents[2],   -- Level 11
 	abilities[3], -- Level 12
-	abilities[3], -- Level 13
+	abilities[1], -- Level 13
 	abilities[1], -- Level 14
-	talents[4],   -- Level 15
+	talents[3],   -- Level 15
 	abilities[1], -- Level 16
 	abilities[4], -- Level 17
-	abilities[4], -- Level 18
+	"NoLevel",    -- Level 18
 	"NoLevel",    -- Level 19
-	talents[6],   -- Level 20
+	talents[5],   -- Level 20
 	"NoLevel",    -- Level 21
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	abilities[4], -- Level 24
 	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[2],   -- Level 27
-	talents[3],   -- Level 28
-	talents[5],   -- Level 29
+	talents[1],   -- Level 27
+	talents[4],   -- Level 28
+	talents[6],   -- Level 29
 	talents[7]    -- Level 30
 	}
 	
@@ -76,10 +76,10 @@ function X.GetHeroItemBuild()
 		"item_diffusal_blade",
 		"item_blink",
 		"item_disperser",
-		"item_skadi",
-		"item_swift_blink",
 		"item_sheepstick",
+		"item_skadi",
 		"item_nullifier",
+		"item_swift_blink",
 		}
 	end
 	
@@ -94,10 +94,10 @@ function X.GetHeroItemBuild()
 		"item_diffusal_blade",
 		"item_blink",
 		"item_disperser",
-		"item_skadi",
-		"item_swift_blink",
 		"item_sheepstick",
+		"item_skadi",
 		"item_nullifier",
+		"item_swift_blink",
 		}
 	end
 	

@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ShadowWordDesire, ShadowWordTarget = UseShadowWord()
 	if ShadowWordDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ShadowWord, ShadowWordTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ShadowWord, ShadowWordTarget)
 		return
 	end
 	
 	FatalBondsDesire, FatalBondsTarget = UseFatalBonds()
 	if FatalBondsDesire > 0 then
-		bot:Action_UseAbilityOnEntity(FatalBonds, FatalBondsTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(FatalBonds, FatalBondsTarget)
 		return
 	end
 	
 	RainOfChaosDesire, RainOfChaosTarget = UseRainOfChaos()
 	if RainOfChaosDesire > 0 then
-		bot:Action_UseAbilityOnLocation(RainOfChaos, RainOfChaosTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(RainOfChaos, RainOfChaosTarget)
 		return
 	end
 	
 	UpheavalDesire, UpheavalTarget = UseUpheaval()
 	if UpheavalDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Upheaval, UpheavalTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Upheaval, UpheavalTarget)
 		return
 	end
 end

@@ -31,32 +31,32 @@ function X.GetHeroLevelPoints()
 	abilities[2], -- Level 1
 	abilities[1], -- Level 2
 	abilities[2], -- Level 3
-	abilities[1], -- Level 4
+	abilities[3], -- Level 4
 	abilities[2], -- Level 5
 	abilities[4], -- Level 6
 	abilities[2], -- Level 7
-	abilities[1], -- Level 8
-	abilities[1], -- Level 9
+	abilities[3], -- Level 8
+	abilities[3], -- Level 9
 	talents[1],   -- Level 10
 	abilities[3], -- Level 11
 	abilities[4], -- Level 12
-	abilities[3], -- Level 13
-	abilities[3], -- Level 14
-	talents[3],   -- Level 15
-	abilities[3], -- Level 16
+	abilities[1], -- Level 13
+	abilities[1], -- Level 14
+	talents[4],   -- Level 15
+	abilities[1], -- Level 16
 	"NoLevel",    -- Level 17
 	abilities[4], -- Level 18
 	"NoLevel",    -- Level 19
-	talents[5],   -- Level 20
+	talents[6],   -- Level 20
 	"NoLevel",    -- Level 21
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
-	"NoLevel",    -- Level 24
-	talents[8],   -- Level 25
+	talents[8],   -- Level 24
+	"NoLevel",    -- Level 25
 	"NoLevel",    -- Level 26
 	talents[2],   -- Level 27
-	talents[4],   -- Level 28
-	talents[6],   -- Level 29
+	talents[3],   -- Level 28
+	talents[5],   -- Level 29
 	talents[7]    -- Level 30
 	}
 	
@@ -65,26 +65,26 @@ end
 
 function X.GetHeroItemBuild()
 	local ItemBuild
-
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "OffLane" then
-		local CoreItem = PRoles.GetAOEItem()
-		
-		ItemBuild = { 
-		"item_quelling_blade",
-		
-		"item_bracer",
+	
+	local SupportBoots = PRoles.GetSupportBoots(bot)
+	local SupportUtility = PRoles.GetSupportUtilityItem(bot)
+	
+	local CoreItems = {
 		"item_magic_wand",
-		"item_arcane_boots",
-		"item_hand_of_midas",
+		SupportBoots,
 		
-		CoreItem,
-		"item_blink",
-		"item_heart",
-		"item_sange_and_yasha",
-		"item_assault",
-		"item_overwhelming_blink",
-		}
-	end
+		"item_hand_of_midas",
+		SupportUtility,
+	}
+	
+	local LuxuryItems = {
+		"item_aether_lens",
+		"item_sheepstick",
+		"item_octarine_core",
+		"item_ultimate_scepter_2",
+	}
+	
+	ItemBuild = PRoles.CreateSupportBuild(bot, CoreItems, LuxuryItems, 3)
 	
 	return ItemBuild
 end

@@ -45,31 +45,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ReversePolarityDesire = UseReversePolarity()
 	if ReversePolarityDesire > 0 then
-		bot:Action_UseAbility(ReversePolarity)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(ReversePolarity)
 		return
 	end
 	
 	SkewerDesire, SkewerTarget = UseSkewer()
 	if SkewerDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Skewer, SkewerTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Skewer, SkewerTarget)
 		return
 	end
 	
 	HornTossDesire = UseHornToss()
 	if HornTossDesire > 0 then
-		bot:Action_UseAbility(HornToss)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(HornToss)
 		return
 	end
 	
 	ShockWaveDesire, ShockWaveTarget = UseShockWave()
 	if ShockWaveDesire > 0 then
-		bot:Action_UseAbilityOnLocation(ShockWave, ShockWaveTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(ShockWave, ShockWaveTarget)
 		return
 	end
 	
 	EmpowerDesire, EmpowerTarget = UseEmpower()
 	if EmpowerDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Empower, EmpowerTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Empower, EmpowerTarget)
 		return
 	end
 end
@@ -147,12 +152,12 @@ function UseEmpower()
 		return BOT_ACTION_DESIRE_HIGH, bot
 	end
 	
-	if bot:HasModifier("modifier_magnataur_empower") then
+	--[[if bot:HasModifier("modifier_magnataur_empower") then
 		local mIndex = bot:GetModifierByName("modifier_magnataur_empower")
 		if bot:GetModifierRemainingDuration(mIndex) <= Cooldown then
 			return BOT_ACTION_DESIRE_HIGH, bot
 		end
-	end
+	end]]--
 	
 	local allies = bot:GetNearbyHeroes(CastRange + 300, false, BOT_MODE_NONE)
 	local filteredallies = {}
@@ -165,7 +170,7 @@ function UseEmpower()
 		end
 	end
 	
-	local target = PAF.GetStrongestAttackDamageUnit(filteredallies)
+	local target = PAF.GetStrongestDPSUnit(filteredallies)
 	
 	if target ~= nil then
 		return BOT_ACTION_DESIRE_HIGH, target
@@ -191,7 +196,7 @@ function UseSkewer()
 					if PointLine.within == true
 					and PointLine.distance <= (Radius - 50)
 					and GetUnitToLocationDistance(bot, Fountain) > GetUnitToLocationDistance(BotTarget, Fountain) then
-						return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(Fountain, CastRange)
+						return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), Fountain, CastRange)
 					end
 				end
 			end
@@ -202,7 +207,7 @@ function UseSkewer()
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(Fountain, CastRange)
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), Fountain, CastRange)
 	end
 	
 	return 0

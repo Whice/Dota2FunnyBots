@@ -50,25 +50,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	SpellShieldDesire = UseSpellShield()
 	if SpellShieldDesire > 0 then
-		bot:Action_UseAbility(SpellShield)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SpellShield)
 		return
 	end
 	
 	CounterSpellAllyDesire, CounterSpellAllyTarget = UseCounterSpellAlly()
 	if CounterSpellAllyDesire > 0 then
-		bot:Action_UseAbilityOnEntity(CounterSpellAlly, CounterSpellAllyTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(CounterSpellAlly, CounterSpellAllyTarget)
 		return
 	end
 	
 	ManaVoidDesire, ManaVoidTarget = UseManaVoid()
 	if ManaVoidDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ManaVoid, ManaVoidTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ManaVoid, ManaVoidTarget)
 		return
 	end
 	
 	BlinkDesire, BlinkTarget = UseBlink()
 	if BlinkDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Blink, BlinkTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkTarget)
 		return
 	end
 end
@@ -120,7 +124,10 @@ function UseSpellShield()
 	local projectiles = bot:GetIncomingTrackingProjectiles()
 	
 	for v, proj in pairs(projectiles) do
-		if GetUnitToLocationDistance(bot, proj.location) <= 300 and proj.is_attack == false then
+		if GetUnitToLocationDistance(bot, proj.location) <= 300
+		and proj.is_attack == false
+		and proj.caster ~= nil
+		and proj.caster:GetTeam() ~= bot:GetTeam() then
 			return BOT_ACTION_DESIRE_HIGH
 		end
 	end

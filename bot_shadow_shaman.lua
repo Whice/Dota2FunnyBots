@@ -1,4 +1,6 @@
 local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
+local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
+local PNA = require(GetScriptDirectory() ..  "/Library/PhalanxNeutralAbilities")
 
 local bot = GetBot()
 
@@ -9,23 +11,34 @@ function MinionThink(hMinionUnit)
 		
 			if target ~= nil then
 				hMinionUnit:Action_AttackUnit(target, false)
+				return
 			else
 			end
 		end
 		
-		if hMinionUnit:IsIllusion() and not string.find(hMinionUnit:GetUnitName(), "shadow_shaman_ward") then
-			local target = P.IllusionTarget(hMinionUnit, bot)
 		
-			if target ~= nil then
-				hMinionUnit:Action_AttackUnit(target, false)
-			else
-				if GetUnitToUnitDistance(hMinionUnit, bot) > 200 then
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation())
-				else
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation()+RandomVector(200))
+		if hMinionUnit:IsCreep() then
+			local MinionAbilities = {
+				hMinionUnit:GetAbilityInSlot(0),
+				hMinionUnit:GetAbilityInSlot(1),
+				hMinionUnit:GetAbilityInSlot(2),
+				hMinionUnit:GetAbilityInSlot(3),
+				hMinionUnit:GetAbilityInSlot(4),
+				hMinionUnit:GetAbilityInSlot(5),
+			}
+			
+			for v, hAbility in pairs(MinionAbilities) do
+				if hAbility ~= nil and hAbility:GetName() ~= "" and not hAbility:IsPassive() then
+					if PNA.UseNeutralAbility(hAbility, bot, hMinionUnit) == true then
+						return
+					end
 				end
 			end
 		end
+		
+		PAF.IllusionTarget(hMinionUnit, bot)
+		return
+		
 	end
 end
 

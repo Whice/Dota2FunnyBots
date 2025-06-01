@@ -72,13 +72,14 @@ function X.GetHeroItemBuild()
 		"item_magic_wand",
 		"item_arcane_boots",
 		
-		CoreItem,
 		"item_blink",
 		"item_black_king_bar",
-		"item_sphere",
-		"item_assault",
+		CoreItem,
+		"item_ultimate_scepter",
+		"item_octarine_core",
 		"item_ultimate_scepter_2",
-		"item_overwhelming_blink",
+		"item_shivas_guard",
+		"item_arcane_blink",
 		}
 	end
 	

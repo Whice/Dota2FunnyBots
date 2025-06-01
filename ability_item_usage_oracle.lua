@@ -45,31 +45,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	FalsePromiseDesire, FalsePromiseTarget = UseFalsePromise()
 	if FalsePromiseDesire > 0 then
-		bot:Action_UseAbilityOnEntity(FalsePromise, FalsePromiseTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(FalsePromise, FalsePromiseTarget)
 		return
 	end
 	
 	FatesEdictDesire, FatesEdictTarget = UseFatesEdict()
 	if FatesEdictDesire > 0 then
-		bot:Action_UseAbilityOnEntity(FatesEdict, FatesEdictTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(FatesEdict, FatesEdictTarget)
 		return
 	end
 	
 	RainOfDestinyDesire, RainOfDestinyTarget = UseRainOfDestiny()
 	if RainOfDestinyDesire > 0 then
-		bot:Action_UseAbilityOnLocation(RainOfDestiny, RainOfDestinyTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(RainOfDestiny, RainOfDestinyTarget)
 		return
 	end
 	
 	PurifyingFlamesDesire, PurifyingFlamesTarget = UsePurifyingFlames()
 	if PurifyingFlamesDesire > 0 then
-		bot:Action_UseAbilityOnEntity(PurifyingFlames, PurifyingFlamesTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(PurifyingFlames, PurifyingFlamesTarget)
 		return
 	end
 	
 	FortunesEndDesire, FortunesEndTarget = UseFortunesEnd()
 	if FortunesEndDesire > 0 then
-		bot:Action_UseAbilityOnEntity(FortunesEnd, FortunesEndTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(FortunesEnd, FortunesEndTarget)
 		return
 	end
 end

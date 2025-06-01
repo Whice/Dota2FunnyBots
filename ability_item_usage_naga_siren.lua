@@ -25,11 +25,12 @@ end
 
 local MirrorImage = bot:GetAbilityByName("naga_siren_mirror_image")
 local Ensnare = bot:GetAbilityByName("naga_siren_ensnare")
-local Riptide = bot:GetAbilityByName("naga_siren_rip_tide")
+local Riptide = bot:GetAbilityInSlot(2) -- Actually Deluge now xd
 local SongOfTheSiren = bot:GetAbilityByName("naga_siren_song_of_the_siren")
 
 local MirrorImageDesire = 0
 local EnsnareDesire = 0
+local RipetideDesire = 0
 local SongOfTheSirenDesire = 0
 
 local AttackRange
@@ -40,21 +41,31 @@ function AbilityUsageThink()
 	BotTarget = bot:GetTarget()
 	
 	-- The order to use abilities in
+	--[[RiptideDesire = UseRiptide()
+	if RiptideDesire > 0 then
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Riptide)
+		return
+	end]]--
+	
 	SongOfTheSirenDesire, SongOfTheSirenTarget = UseSongOfTheSiren()
 	if SongOfTheSirenDesire > 0 then
-		bot:Action_UseAbility(SongOfTheSiren)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SongOfTheSiren)
 		return
 	end
 	
-	MirrorImageDesire, MirrorImageTarget = UseMirrorImage()
+	MirrorImageDesire = UseMirrorImage()
 	if MirrorImageDesire > 0 then
-		bot:Action_UseAbility(MirrorImage)
+		PAF.SwitchTreadsToAgi(bot)
+		bot:ActionQueue_UseAbility(MirrorImage)
 		return
 	end
 	
 	EnsnareDesire, EnsnareTarget = UseEnsnare()
 	if EnsnareDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Ensnare, EnsnareTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Ensnare, EnsnareTarget)
 		return
 	end
 end
@@ -127,6 +138,24 @@ function UseEnsnare()
 		if PAF.IsRoshan(AttackTarget)
 		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
 			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		end
+	end
+	
+	return 0
+end
+
+function UseRiptide()
+	if not Riptide:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local CastRange = Riptide:GetSpecialValueInt("radius")
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			end
 		end
 	end
 	

@@ -36,7 +36,7 @@ function X.GetHeroLevelPoints()
 	abilities[1], -- Level 7
 	abilities[2], -- Level 8
 	abilities[2], -- Level 9
-	talents[1],   -- Level 10
+	talents[2],   -- Level 10
 	abilities[2], -- Level 11
 	abilities[4], -- Level 12
 	abilities[3], -- Level 13
@@ -53,7 +53,7 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 24
 	talents[7],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[2],   -- Level 27
+	talents[1],   -- Level 27
 	talents[4],   -- Level 28
 	talents[6],   -- Level 29
 	talents[8]    -- Level 30
@@ -66,40 +66,41 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
-		local SituationalItem1 = PRoles.ShouldBuySphere("item_kaya_and_sange")
 		
 		ItemBuild = { 
+		"item_bottle",
 		"item_null_talisman",
 		"item_magic_wand",
 		"item_arcane_boots",
 		
-		"item_phylactery",
-		"item_octarine_core",
+		"item_kaya",
 		"item_ultimate_scepter",
-		SituationalItem1,
-		"item_wind_waker",
-		"item_angels_demise",
-		"item_ultimate_scepter_2",
 		"item_refresher",
+		"item_octarine_core",
+		
+		"item_kaya_and_sange",
+		"item_black_king_bar",
+		"item_ultimate_scepter_2",
+		"item_sheepstick",
 		}
 	end
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySphere("item_yasha_and_kaya")
 		
 		ItemBuild = { 
 		"item_null_talisman",
 		"item_magic_wand",
 		"item_power_treads",
 		
-		"item_phylactery",
-		"item_octarine_core",
+		"item_kaya",
 		"item_ultimate_scepter",
-		SituationalItem1,
-		"item_wind_waker",
-		"item_angels_demise",
-		"item_ultimate_scepter_2",
 		"item_refresher",
+		"item_octarine_core",
+		
+		"item_kaya_and_sange",
+		"item_black_king_bar",
+		"item_ultimate_scepter_2",
+		"item_sheepstick",
 		}
 	end
 	

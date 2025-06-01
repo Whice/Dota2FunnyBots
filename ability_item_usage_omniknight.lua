@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	GuardianAngelDesire, GuardianAngelTarget = UseGuardianAngel()
 	if GuardianAngelDesire > 0 then
-		bot:Action_UseAbilityOnLocation(GuardianAngel, GuardianAngelTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(GuardianAngel, GuardianAngelTarget)
 		return
 	end
 	
 	HeavenlyGraceDesire, HeavenlyGraceTarget = UseHeavenlyGrace()
 	if HeavenlyGraceDesire > 0 then
-		bot:Action_UseAbilityOnEntity(HeavenlyGrace, HeavenlyGraceTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(HeavenlyGrace, HeavenlyGraceTarget)
 		return
 	end
 	
 	PurificationDesire, PurificationTarget = UsePurification()
 	if PurificationDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Purification, PurificationTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Purification, PurificationTarget)
 		return
 	end
 	
 	HammerOfPurityDesire, HammerOfPurityTarget = UseHammerOfPurity()
 	if HammerOfPurityDesire > 0 then
-		bot:Action_UseAbilityOnEntity(HammerOfPurity, HammerOfPurityTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(HammerOfPurity, HammerOfPurityTarget)
 		return
 	end
 end

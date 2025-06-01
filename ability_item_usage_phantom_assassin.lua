@@ -36,7 +36,8 @@ local FanOfKnivesDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
+local AttackTarget
+local ManaThreshold
 
 local RadiantBase = Vector(-7171.12, -7261.72, 1469.28)
 local DireBase = Vector(6977.84, 5797.69, 1357.99)
@@ -46,12 +47,8 @@ local team = bot:GetTeam()
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
-	
-	manathreshold = 100
-	manathreshold = manathreshold + StiflingDagger:GetManaCost()
-	manathreshold = manathreshold + PhantomStrike:GetManaCost()
-	manathreshold = manathreshold + Blur:GetManaCost()
-	manathreshold = manathreshold + FanOfKnives:GetManaCost()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = (100 + StiflingDagger:GetManaCost() + PhantomStrike:GetManaCost() + Blur:GetManaCost() + FanOfKnives:GetManaCost())
 	
 	if team == TEAM_RADIANT then
 		base = RadiantBase
@@ -62,25 +59,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	FanOfKnivesDesire, FanOfKnivesTarget = UseFanOfKnives()
 	if FanOfKnivesDesire > 0 then
-		bot:Action_UseAbility(FanOfKnives)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(FanOfKnives)
 		return
 	end
 	
 	BlurDesire, BlurTarget = UseBlur()
 	if BlurDesire > 0 then
-		bot:Action_UseAbility(Blur)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Blur)
 		return
 	end
 	
 	StiflingDaggerDesire, StiflingDaggerTarget = UseStiflingDagger()
 	if StiflingDaggerDesire > 0 then
-		bot:Action_UseAbilityOnEntity(StiflingDagger, StiflingDaggerTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(StiflingDagger, StiflingDaggerTarget)
 		return
 	end
 	
 	PhantomStrikeDesire, PhantomStrikeTarget = UsePhantomStrike()
 	if PhantomStrikeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(PhantomStrike, PhantomStrikeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(PhantomStrike, PhantomStrikeTarget)
 		return
 	end
 end
@@ -96,11 +97,20 @@ function UseStiflingDagger()
 	local AFPercentage = (AttackFactor / 100)
 	local AttackDamageBonus = (bot:GetAttackDamage() * AFPercentage)
 	local DaggerDamage = (BaseDamage + AttackDamageBonus)
+	local DamageType = StiflingDagger:GetDamageType()
+	
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
+	
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		if PAF.CanDamageKillEnemy(Enemy, DaggerDamage, DamageType) then
+			return 1
+		end
+	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+				return 1, BotTarget
 			end
 		end
 	end
@@ -109,23 +119,24 @@ function UseStiflingDagger()
 		local LaneCreepsWithinRange = bot:GetNearbyLaneCreeps(CastRange, true)
 		
 		for v, Creep in pairs(LaneCreepsWithinRange) do
-			local EstimatedDaggerDamage = Creep:GetActualIncomingDamage(DaggerDamage, DAMAGE_TYPE_PHYSICAL)
+			local EstimatedDaggerDamage = Creep:GetActualIncomingDamage(DaggerDamage, DamageType)
 			
 			if Creep:GetHealth() < EstimatedDaggerDamage
 			and GetUnitToUnitDistance(bot, Creep) > 450 then
-				return BOT_ACTION_DESIRE_HIGH, Creep
+				return 1, Creep
 			end
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
+		end
+	end
 	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
-			end
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget
 		end
 	end
 	
@@ -138,6 +149,7 @@ function UsePhantomStrike()
 	
 	local CR = PhantomStrike:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local ManaCost = PhantomStrike:GetManaCost()
 	
 	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
@@ -161,36 +173,36 @@ function UsePhantomStrike()
 		end
 		
 		if AllyClosestToBase ~= nil and AllyClosestToBaseDist < GetUnitToLocationDistance(bot, base) then
-			return BOT_ACTION_DESIRE_HIGH, AllyClosestToBase
+			return 1, AllyClosestToBase
 		end
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+				return 1, BotTarget
 			end
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		local neutrals = bot:GetNearbyNeutralCreeps(CastRange)
-		
-		if #neutrals >= 1 and (bot:GetMana() - PhantomStrike:GetManaCost()) > manathreshold then
-			local AttackTarget = bot:GetAttackTarget()
-			
-			if AttackTarget ~= nil and AttackTarget:IsCreep() then
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				return 1, AttackTarget
 			end
 		end
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget
 		end
 	end
 	
@@ -201,15 +213,44 @@ function UseBlur()
 	if not Blur:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local enemies = bot:GetNearbyHeroes((Blur:GetSpecialValueInt("radius") + 400), true, BOT_MODE_NONE)
+	local Radius = Blur:GetSpecialValueInt("radius")
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM or bot:GetActiveMode() == BOT_MODE_ROAM then
-		return BOT_ACTION_DESIRE_HIGH
+	local projectiles = bot:GetIncomingTrackingProjectiles()
+	
+	for v, proj in pairs(projectiles) do
+		if GetUnitToLocationDistance(bot, proj.location) <= 200
+		and proj.is_dodgeable
+		and proj.is_attack == false then
+			return 1
+		end
 	end
-
-	if P.IsRetreating(bot) then
-		if #enemies <= 0 then
-			return BOT_ACTION_DESIRE_HIGH
+	
+	local HeroesWithinRange = bot:GetNearbyHeroes((Radius * 1.5), true, BOT_MODE_NONE)
+	local BuildingsWithinRange = {}
+		
+	local Buildings = GetUnitList(UNIT_LIST_ENEMY_BUILDINGS)
+	for x, Building in pairs(Buildings) do
+		if GetUnitToUnitDistance(bot, Building) <= (Radius * 1.5) then
+			table.insert(BuildingsWithinRange, Building)
+		end
+	end
+	
+	if #HeroesWithinRange > 0 or #BuildingsWithinRange > 0 then
+		return 0
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_RETREAT
+	or bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if #HeroesWithinRange <= 0 and #BuildingsWithinRange <= 0 then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_FARM then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() == TEAM_NEUTRAL then
+				return 1
+			end
 		end
 	end
 	
@@ -221,23 +262,47 @@ function UseFanOfKnives()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = FanOfKnives:GetSpecialValueInt("radius")
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local neutrals = bot:GetNearbyNeutralCreeps(FanOfKnives:GetSpecialValueInt("radius"))
+	local ManaCost = FanOfKnives:GetManaCost
+	local DamageType = FanOfKnives:GetDamageType()
 	
-	if PAF.IsEngaging(bot) and #EnemiesWithinRange >= 1 then
-		return BOT_ACTION_DESIRE_HIGH
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
+	
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		if PAF.CanDamageKillEnemy(Enemy, (Enemy:GetMaxHealth() * 0.3), DamageType) then
+			return 1
+		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM and #neutrals >= 2 and (bot:GetMana() - FanOfKnives:GetManaCost()) > manathreshold then
-		return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+				return 1
+			end
+		end
+	end
+	
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, true)
+				
+				if #CreepsWithinRange >= 3 then
+					return 1
+				end
+			end
+		end
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsRoshan(AttackTarget) then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1
 		end
 	end
 	

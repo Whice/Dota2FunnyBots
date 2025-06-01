@@ -44,25 +44,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	OvergrowthDesire = UseOvergrowth()
 	if OvergrowthDesire > 0 then
-		bot:Action_UseAbility(Overgrowth)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Overgrowth)
 		return
 	end
 	
 	LeechSeedDesire, LeechSeedTarget = UseLeechSeed()
 	if LeechSeedDesire > 0 then
-		bot:Action_UseAbilityOnEntity(LeechSeed, LeechSeedTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(LeechSeed, LeechSeedTarget)
 		return
 	end
 	
 	NaturesGraspDesire, NaturesGraspTarget = UseNaturesGrasp()
 	if NaturesGraspDesire > 0 then
-		bot:Action_UseAbilityOnLocation(NaturesGrasp, NaturesGraspTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(NaturesGrasp, NaturesGraspTarget)
 		return
 	end
 	
 	LivingArmorDesire, LivingArmorTarget = UseLivingArmor()
 	if LivingArmorDesire > 0 then
-		bot:Action_UseAbilityOnEntity(LivingArmor, LivingArmorTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(LivingArmor, LivingArmorTarget)
 		return
 	end
 end

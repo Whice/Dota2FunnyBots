@@ -40,25 +40,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	JuxtaposeDesire = UseJuxtapose()
 	if JuxtaposeDesire > 0 then
-		bot:Action_UseAbility(Juxtapose)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Juxtapose)
 		return
 	end
 	
 	PhantomRushDesire = UsePhantomRush()
 	if PhantomRushDesire > 0 then
-		bot:Action_UseAbility(PhantomRush)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(PhantomRush)
 		return
 	end
 	
 	SpiritLanceDesire, SpiritLanceTarget = UseSpiritLance()
 	if SpiritLanceDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SpiritLance, SpiritLanceTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SpiritLance, SpiritLanceTarget)
 		return
 	end
 	
 	DoppelGangerDesire, DoppelGangerTarget = UseDoppelGanger()
 	if DoppelGangerDesire > 0 then
-		bot:Action_UseAbilityOnLocation(DoppelGanger, DoppelGangerTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(DoppelGanger, DoppelGangerTarget)
 		return
 	end
 end
@@ -81,12 +85,18 @@ function UseSpiritLance()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -103,7 +113,7 @@ function UseDoppelGanger()
 	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(PAF.GetFountainLocation(bot), CastRange)
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), CastRange)
 	end
 	
 	if PAF.IsEngaging(bot) then

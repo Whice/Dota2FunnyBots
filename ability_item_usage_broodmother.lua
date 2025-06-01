@@ -43,19 +43,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	SpawnSpiderlingsDesire, SpawnSpiderlingsTarget = UseSpawnSpiderlings()
 	if SpawnSpiderlingsDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SpawnSpiderlings, SpawnSpiderlingsTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SpawnSpiderlings, SpawnSpiderlingsTarget)
 		return
 	end
 	
 	SpinWebDesire, SpinWebTarget = UseSpinWeb()
 	if SpinWebDesire > 0 then
-		bot:Action_UseAbilityOnLocation(SpinWeb, SpinWebTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(SpinWeb, SpinWebTarget)
 		return
 	end
 	
 	InsatiableHungerDesire, InsatiableHungerTarget = UseInsatiableHunger()
 	if InsatiableHungerDesire > 0 then
-		bot:Action_UseAbility(InsatiableHunger)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(InsatiableHunger)
 		return
 	end
 end
@@ -72,11 +75,17 @@ function UseInsatiableHunger()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	

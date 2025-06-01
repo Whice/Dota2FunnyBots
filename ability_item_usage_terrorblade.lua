@@ -37,39 +37,48 @@ local DemonZealDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = (100 + Reflection:GetManaCost() + ConjureImage:GetManaCost() + Metamorphosis:GetManaCost() + Sunder:GetManaCost())
 	
 	-- The order to use abilities in
 	SunderDesire, SunderTarget = UseSunder()
 	if SunderDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Sunder, SunderTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Sunder, SunderTarget)
 		return
 	end
 	
 	MetamorphosisDesire = UseMetamorphosis()
 	if MetamorphosisDesire > 0 then
-		bot:Action_UseAbility(Metamorphosis)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Metamorphosis)
 		return
 	end
 	
 	DemonZealDesire = UseDemonZeal()
 	if DemonZealDesire > 0 then
-		bot:Action_UseAbility(DemonZeal)
+		PAF.SwitchTreadsToStr(bot)
+		bot:ActionQueue_UseAbility(DemonZeal)
 		return
 	end
 	
 	ReflectionDesire, ReflectionTarget = UseReflection()
 	if ReflectionDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Reflection, ReflectionTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Reflection, ReflectionTarget)
 		return
 	end
 	
 	ConjureImageDesire = UseConjureImage()
 	if ConjureImageDesire > 0 then
-		bot:Action_UseAbility(ConjureImage)
+		PAF.SwitchTreadsToAgi(bot)
+		bot:ActionQueue_UseAbility(ConjureImage)
 		return
 	end
 end
@@ -80,12 +89,14 @@ function UseReflection()
 	
 	local CR = Reflection:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local CastPoint = Reflection:GetCastPoint()
 	local Radius = Reflection:GetSpecialValueInt("range")
 	
-	if PAF.IsEngaging(bot) then
-		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
-		if (AoE.count >= 2) then
-			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc;
+	if bot:GetActiveMode() == BOT_MODE_LANING or PAF.IsEngaging(bot) then
+		local AoELocation = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius, CastPoint, 0)
+		
+		if AoELocation.count >= 2 then
+			return 1, AoELocation.targetloc
 		end
 	end
 	
@@ -96,33 +107,19 @@ function UseConjureImage()
 	if not ConjureImage:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local combocost = Sunder:GetManaCost()
+	local ManaCost = ConjureImage:GetManaCost()
 	
-	if PAF.IsEngaging(bot) then
-		return BOT_ACTION_DESIRE_HIGH
+	local ManaThresholdTwo = 0
+	if Metamorphosis:IsFullyCastable() then
+		ManaThresholdTwo = (ManaThresholdTwo + Metamorphosis:GetManaCost())
+	end
+	if Sunder:IsFullyCastable() then
+		ManaThresholdTwo = (ManaThresholdTwo + Sunder:GetManaCost())
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil then
-		if AttackTarget ~= nil then
-			if bot:GetActiveMode() == BOT_MODE_FARM
-			or bot:GetActiveMode() == BOT_MODE_PUSH_TOP
-			or bot:GetActiveMode() == BOT_MODE_PUSH_MID
-			or bot:GetActiveMode() == BOT_MODE_PUSH_BOT then
-				if AttackTarget:IsCreep()
-				or AttackTarget:IsBuilding() then
-					if AttackTarget:GetTeam() ~= bot:GetTeam() then
-						return BOT_ACTION_DESIRE_HIGH
-					end
-				end
-			end
-		end
-		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget) then
-				return BOT_ACTION_DESIRE_VERYHIGH
-			end
+	if PAF.IsEngaging(bot) or not P.IsInLaningPhase() then
+		if PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThresholdTwo, false) then
+			return 1
 		end
 	end
 	
@@ -131,23 +128,30 @@ end
 
 function UseMetamorphosis()
 	if not Metamorphosis:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsInTeamFight(bot) then
+		return 1
+	end
+	
+	return 0
 end
 
 function UseSunder()
 	if not Sunder:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = Sunder:GetCastRange()
+	local CR = Sunder:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
 	
-	local enemies = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local target = PAF.GetHealthiestUnit(enemies)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
-	if bot:GetHealth() <= bot:GetMaxHealth() * 0.35 then
-		return BOT_ACTION_DESIRE_HIGH, target
+	if bot:GetHealth() <= (bot:GetMaxHealth() * 0.35) then
+		local HealthiestEnemy = PAF.GetHealthiestUnit(EnemiesWithinCastRange)
+		
+		if HealthiestEnemy ~= nil then
+			return 1, HealthiestEnemy
+		end
 	end
 	
 	return 0
@@ -155,18 +159,24 @@ end
 
 function UseDemonZeal()
 	if not DemonZeal:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	if PAF.IsInTeamFight(bot) then
-		return BOT_ACTION_DESIRE_HIGH
+	local Duration = DemonZeal:GetSpecialValueInt("duration")
+	local MetamorphosisCooldown = Metamorphosis:GetCooldownTimeRemaining()
+	
+	if MetamorphosisCooldown <= Duration then
+		return 0
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
+	if PAF.IsInTeamFight(bot) then
+		return 1
+	end
+	
+	if PAF.IsInCreepAttackingMode(bot) then
+		if AttackTarget:GetTeam() ~= bot:GetTeam() then
+			return 1
 		end
 	end
+	
+	return 0
 end

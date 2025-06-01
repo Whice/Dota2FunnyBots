@@ -35,11 +35,11 @@ function X.GetHeroLevelPoints()
 	abilities[2], -- Level 7
 	abilities[4], -- Level 8
 	abilities[3], -- Level 9
-	talents[1],   -- Level 10
+	abilities[1], -- Level 10
 	abilities[1], -- Level 11
 	abilities[1], -- Level 12
 	abilities[1], -- Level 13
-	abilities[1], -- Level 14
+	talents[1],   -- Level 14
 	talents[4],   -- Level 15
 	abilities[4], -- Level 16
 	"NoLevel",    -- Level 17
@@ -65,22 +65,18 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
-		local SituationalItem1 = PRoles.ShouldBuySphere("item_heart")
-		local SituationalItem2 = PRoles.ShouldBuyMKB("item_satanic")
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_satanic")
 		
 		ItemBuild = { 
 		"item_bracer",
 		"item_magic_wand",
-		"item_power_treads",
+		"item_phase_boots",
 		
 		"item_armlet",
-		"item_sange",
+		"item_sange_and_yasha",
 		"item_black_king_bar",
-		"item_heavens_halberd",
-		"item_ultimate_scepter",
-		SituationalItem1,
 		"item_ultimate_scepter_2",
-		"item_satanic",
+		SituationalItem1,
 		}
 	end
 	

@@ -47,25 +47,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ReapersScytheDesire, ReapersScytheTarget = UseReapersScythe()
 	if ReapersScytheDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ReapersScythe, ReapersScytheTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ReapersScythe, ReapersScytheTarget)
 		return
 	end
 	
 	GhostShroudDesire, GhostShroudTarget = UseGhostShroud()
 	if GhostShroudDesire > 0 then
-		bot:Action_UseAbility(GhostShroud)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(GhostShroud)
 		return
 	end
 	
 	DeathSeekerDesire, DeathSeekerTarget = UseDeathSeeker()
 	if DeathSeekerDesire > 0 then
-		bot:Action_UseAbilityOnEntity(DeathSeeker, DeathSeekerTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(DeathSeeker, DeathSeekerTarget)
 		return
 	end
 	
 	DeathPulseDesire, DeathPulseTarget = UseDeathPulse()
 	if DeathPulseDesire > 0 then
-		bot:Action_UseAbility(DeathPulse)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(DeathPulse)
 		return
 	end
 end
@@ -107,7 +111,13 @@ function UseDeathPulse()
 				end
 			end
 			
-			if PAF.IsRoshan(AttackTarget) then
+			if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+				if PAF.IsRoshan(AttackTarget) then
+					return BOT_ACTION_DESIRE_VERYHIGH
+				end
+			end
+			
+			if PAF.IsTormentor(AttackTarget) then
 				return BOT_ACTION_DESIRE_HIGH
 			end
 		end

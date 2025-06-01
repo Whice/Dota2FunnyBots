@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	MaleficeDesire, MaleficeTarget = UseMalefice()
 	if MaleficeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Malefice, MaleficeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Malefice, MaleficeTarget)
 		return
 	end
 	
 	MidnightPulseDesire, MidnightPulseTarget = UseMidnightPulse()
 	if MidnightPulseDesire > 0 then
-		bot:Action_UseAbilityOnLocation(MidnightPulse, MidnightPulseTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(MidnightPulse, MidnightPulseTarget)
 		return
 	end
 	
 	BlackHoleDesire, BlackHoleTarget = UseBlackHole()
 	if BlackHoleDesire > 0 then
-		bot:Action_UseAbilityOnLocation(BlackHole, BlackHoleTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(BlackHole, BlackHoleTarget)
 		return
 	end
 	
 	DemonicConversionDesire, DemonicConversionTarget = UseDemonicConversion()
 	if DemonicConversionDesire > 0 then
-		bot:Action_UseAbilityOnLocation(DemonicConversion, DemonicConversionTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(DemonicConversion, DemonicConversionTarget)
 		return
 	end
 end
@@ -131,6 +135,21 @@ function UseMidnightPulse()
 		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
 		if (AoE.count >= 2) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc;
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	

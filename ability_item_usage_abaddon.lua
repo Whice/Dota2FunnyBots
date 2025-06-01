@@ -41,13 +41,15 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	AphoticShieldDesire, AphoticShieldTarget = UseAphoticShield()
 	if AphoticShieldDesire > 0 then
-		bot:Action_UseAbilityOnEntity(AphoticShield, AphoticShieldTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(AphoticShield, AphoticShieldTarget)
 		return
 	end
 	
 	DeathCoilDesire, DeathCoilTarget = UseDeathCoil()
 	if DeathCoilDesire > 0 then
-		bot:Action_UseAbilityOnEntity(DeathCoil, DeathCoilTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(DeathCoil, DeathCoilTarget)
 		return
 	end
 end
@@ -88,6 +90,14 @@ function UseDeathCoil()
 		end
 	end
 	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		end
+	end
+	
 	return 0
 end
 
@@ -105,6 +115,16 @@ function UseAphoticShield()
 		and Ally:WasRecentlyDamagedByAnyHero(2)
 		and not Ally:HasModifier("modifier_abaddon_aphotic_shield") then
 			return BOT_ACTION_DESIRE_HIGH, Ally
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if PAF.IsTormentor(AttackTarget) then
+			if not Ally:HasModifier("modifier_abaddon_aphotic_shield") then
+				return BOT_ACTION_DESIRE_HIGH, bot
+			end
 		end
 	end
 	

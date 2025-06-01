@@ -45,31 +45,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	CurseOfTheForestDesire = UseCurseOfTheForest()
 	if CurseOfTheForestDesire > 0 then
-		bot:Action_UseAbility(CurseOfTheForest)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(CurseOfTheForest)
 		return
 	end
 	
 	WrathOfNatureDesire, WrathOfNatureTarget = UseWrathOfNature()
 	if WrathOfNatureDesire > 0 then
-		bot:Action_UseAbilityOnEntity(WrathOfNature, WrathOfNatureTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(WrathOfNature, WrathOfNatureTarget)
 		return
 	end
 	
 	SproutDesire, SproutTarget = UseSprout()
 	if SproutDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Sprout, SproutTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Sprout, SproutTarget)
 		return
 	end
 	
 	ForceOfNatureDesire, ForceOfNatureTarget = UseForceOfNature()
 	if ForceOfNatureDesire > 0 then
-		bot:Action_UseAbilityOnLocation(ForceOfNature, ForceOfNatureTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(ForceOfNature, ForceOfNatureTarget)
 		return
 	end
 	
 	TeleportationDesire, TeleportationTarget = UseTeleportation()
 	if TeleportationDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Teleportation, TeleportationTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Teleportation, TeleportationTarget)
 		return
 	end
 end
@@ -122,6 +127,26 @@ function UseTeleportation()
 	
 	return 0
 end
+
+--[[function UseForceOfNature()
+	if not ForceOfNature:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	local CR = ForceOfNature:GetCastRange()
+	local CastRange = PAF.GetProperCastRange(CR)
+	
+	local Trees = bot:GetNearbyTrees(CastRange)
+	
+	if PAF.IsEngaging(bot) and #Trees >= 1 then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
+				return BOT_ACTION_DESIRE_HIGH, Trees[1]
+			end
+		end
+	end
+	
+	return 0
+end]]--
 
 function UseForceOfNature()
 	if not ForceOfNature:IsFullyCastable() then return 0 end

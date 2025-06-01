@@ -44,30 +44,38 @@ function AbilityUsageThink()
 
 	manathreshold = (bot:GetMaxMana() * 0.4)
 	
+	if QuillSpray:IsTrained() and QuillSpray:GetAutoCastState() == true then
+		QuillSpray:ToggleAutoCast()
+	end
+	
 	-- The order to use abilities in
 	if bot:HasScepter() then
 		BristlebackDesire, BristlebackTarget = UseBristleback()
 		if BristlebackDesire > 0 then
-			bot:Action_UseAbilityOnLocation(Bristleback, BristlebackTarget)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnLocation(Bristleback, BristlebackTarget)
 			return
 		end
 	end
 	
 	HairballDesire, HairballTarget = UseHairball()
 	if HairballDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Hairball, HairballTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Hairball, HairballTarget)
 		return
 	end
 	
 	ViscousNasalGooDesire, ViscousNasalGooTarget = UseViscousNasalGoo()
 	if ViscousNasalGooDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ViscousNasalGoo, ViscousNasalGooTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ViscousNasalGoo, ViscousNasalGooTarget)
 		return
 	end
 	
 	QuillSprayDesire = UseQuillSpray()
 	if QuillSprayDesire > 0 then
-		bot:Action_UseAbility(QuillSpray)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(QuillSpray)
 		return
 	end
 end
@@ -133,9 +141,31 @@ function UseQuillSpray()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
+		end
+	end
+	
+	return 0
+end
+
+function UseWarpath()
+	if not Warpath:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	if PAF.IsInTeamFight(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= (AttackRange + 150) then
+				return BOT_ACTION_DESIRE_HIGH
+			end
 		end
 	end
 	
@@ -153,6 +183,21 @@ function UseBristleback()
 		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
 		if (AoE.count >= 1) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	

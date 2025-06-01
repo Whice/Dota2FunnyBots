@@ -75,13 +75,34 @@ function X.GetHeroItemBuild()
 		"item_phase_boots",
 		"item_phylactery",
 		
-		CoreItem,
 		"item_ultimate_scepter",
 		"item_octarine_core",
 		"item_black_king_bar",
-		"item_angels_demise",
+		CoreItem,
 		"item_assault",
 		"item_ultimate_scepter_2",
+		"item_greater_crit",
+		}
+	end
+	
+	if PRoles.GetPRole(bot, bot:GetUnitName()) == "MidLane" then
+		local CoreItem = PRoles.GetAOEItem()
+		
+		ItemBuild = { 
+		"item_quelling_blade",
+	
+		"item_bottle",
+		"item_bracer",
+		"item_magic_wand",
+		"item_phase_boots",
+		
+		"item_ultimate_scepter",
+		"item_desolator",
+		"item_black_king_bar",
+		"item_sange_and_yasha",
+		"item_ultimate_scepter_2",
+		"item_butterfly",
+		"item_greater_crit",
 		}
 	end
 	

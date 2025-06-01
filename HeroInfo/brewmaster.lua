@@ -27,17 +27,17 @@ function X.GetHeroLevelPoints()
 	end
 	
 	local SkillPoints = {
-	abilities[1], -- Level 1
-	abilities[2], -- Level 2
+	abilities[2], -- Level 1
+	abilities[3], -- Level 2
 	abilities[3], -- Level 3
-	abilities[2], -- Level 4
+	abilities[1], -- Level 4
 	abilities[3], -- Level 5
 	abilities[4], -- Level 6
 	abilities[2], -- Level 7
 	abilities[2], -- Level 8
-	abilities[3], -- Level 9
+	abilities[2], -- Level 9
 	talents[1],   -- Level 10
-	abilities[3], -- Level 11
+	abilities[1], -- Level 11
 	abilities[4], -- Level 12
 	abilities[1], -- Level 13
 	abilities[1], -- Level 14
@@ -73,15 +73,15 @@ function X.GetHeroItemBuild()
 	
 		"item_bracer",
 		"item_magic_wand",
-		"item_power_treads",
-		"item_hand_of_midas",
+		"item_boots",
 		
-		CoreItem,
 		"item_radiance",
-		"item_manta",
+		"item_octarine_core",
+		CoreItem,
 		"item_assault",
-		"item_black_king_bar",
+		"item_travel_boots",
 		"item_ultimate_scepter_2",
+		"item_refresher",
 		}
 	end
 	

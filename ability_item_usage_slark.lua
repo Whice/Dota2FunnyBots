@@ -47,25 +47,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ShadowDanceDesire = UseShadowDance()
 	if ShadowDanceDesire > 0 then
-		bot:Action_UseAbility(ShadowDance)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(ShadowDance)
 		return
 	end
 	
 	DepthShroudDesire, DepthShroudTarget = UseDepthShroud()
 	if DepthShroudDesire > 0 then
-		bot:Action_UseAbilityOnLocation(DepthShroud, DepthShroudTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(DepthShroud, DepthShroudTarget)
 		return
 	end
 	
 	PounceDesire = UsePounce()
 	if PounceDesire > 0 then
-		bot:Action_UseAbility(Pounce)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Pounce)
 		return
 	end
 	
 	DarkPactDesire = UseDarkPact()
 	if DarkPactDesire > 0 then
-		bot:Action_UseAbility(DarkPact)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(DarkPact)
 		return
 	end
 end
@@ -98,6 +102,10 @@ function UseDarkPact()
 	
 		if PAF.IsRoshan(AttackTarget) then
 			return BOT_ACTION_DESIRE_VERYHIGH
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	

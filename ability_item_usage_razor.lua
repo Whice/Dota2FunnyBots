@@ -48,19 +48,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	EyeOfTheStormDesire = UseEyeOfTheStorm()
 	if EyeOfTheStormDesire > 0 then
-		bot:Action_UseAbility(EyeOfTheStorm)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(EyeOfTheStorm)
 		return
 	end
 	
 	PlasmaFieldDesire = UsePlasmaField()
 	if PlasmaFieldDesire > 0 then
-		bot:Action_UseAbility(PlasmaField)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(PlasmaField)
 		return
 	end
 	
 	StaticLinkDesire, StaticLinkTarget = UseStaticLink()
 	if StaticLinkDesire > 0 then
-		bot:Action_UseAbilityOnEntity(StaticLink, StaticLinkTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(StaticLink, StaticLinkTarget)
 		return
 	end
 end
@@ -99,6 +102,10 @@ function UsePlasmaField()
 		end
 		
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
 		end
 	end

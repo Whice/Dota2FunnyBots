@@ -65,7 +65,7 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_heart")
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_overwhelming_blink")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -95,9 +95,9 @@ function X.GetHeroItemBuild()
 		"item_power_treads",
 		
 		"item_armlet",
-		CoreItem,
 		"item_orchid",
-		"item_black_king_bar",
+		"item_manta",
+		CoreItem,
 		"item_assault",
 		"item_bloodthorn",
 		"item_ultimate_scepter_2",

@@ -45,13 +45,15 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	NoxiousPlagueDesire, NoxiousPlagueTarget = UseNoxiousPlague()
 	if NoxiousPlagueDesire > 0 then
-		bot:Action_UseAbilityOnEntity(NoxiousPlague, NoxiousPlagueTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(NoxiousPlague, NoxiousPlagueTarget)
 		return
 	end
 	
 	VenomousGaleDesire, VenomousGaleTarget = UseVenomousGale()
 	if VenomousGaleDesire > 0 then
-		bot:Action_UseAbilityOnLocation(VenomousGale, VenomousGaleTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(VenomousGale, VenomousGaleTarget)
 		return
 	end
 	
@@ -63,7 +65,8 @@ function AbilityUsageThink()
 	
 	PlagueWardDesire, PlagueWardTarget = UsePlagueWard()
 	if PlagueWardDesire > 0 then
-		bot:Action_UseAbilityOnLocation(PlagueWard, PlagueWardTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(PlagueWard, PlagueWardTarget)
 		return
 	end
 end
@@ -86,10 +89,16 @@ function UseVenomousGale()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	

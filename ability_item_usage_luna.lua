@@ -48,19 +48,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	LunarOrbitDesire = UseLunarOrbit()
 	if LunarOrbitDesire > 0 then
-		bot:Action_UseAbility(LunarOrbit)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(LunarOrbit)
 		return
 	end
 	
 	EclipseDesire = UseEclipse()
 	if EclipseDesire > 0 then
-		bot:Action_UseAbility(Eclipse)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Eclipse)
 		return
 	end
 	
 	LucentBeamDesire, LucentBeamTarget = UseLucentBeam()
 	if LucentBeamDesire > 0 then
-		bot:Action_UseAbilityOnEntity(LucentBeam, LucentBeamTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(LucentBeam, LucentBeamTarget)
 		return
 	end
 end

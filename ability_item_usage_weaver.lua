@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	TimeLapseDesire = UseTimeLapse()
 	if TimeLapseDesire > 0 then
-		bot:Action_UseAbility(TimeLapse)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(TimeLapse)
 		return
 	end
 	
 	ShukuchiDesire = UseShukuchi()
 	if ShukuchiDesire > 0 then
-		bot:Action_UseAbility(Shukuchi)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Shukuchi)
 		return
 	end
 	
 	SwarmDesire, SwarmTarget = UseSwarm()
 	if SwarmDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Swarm, SwarmTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Swarm, SwarmTarget)
 		return
 	end
 	
 	GeminateAttackDesire, GeminateAttackTarget = UseGeminateAttack()
 	if GeminateAttackDesire > 0 then
-		bot:Action_UseAbilityOnEntity(GeminateAttack, GeminateAttackTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(GeminateAttack, GeminateAttackTarget)
 		return
 	end
 end

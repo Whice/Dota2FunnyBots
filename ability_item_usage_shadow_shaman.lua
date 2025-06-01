@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	VoodooDesire, VoodooTarget = UseVoodoo()
 	if VoodooDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Voodoo, VoodooTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Voodoo, VoodooTarget)
 		return
 	end
 	
 	MassSerpentWardDesire, MassSerpentWardTarget = UseMassSerpentWard()
 	if MassSerpentWardDesire > 0 then
-		bot:Action_UseAbilityOnLocation(MassSerpentWard, MassSerpentWardTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(MassSerpentWard, MassSerpentWardTarget)
 		return
 	end
 	
 	EtherShockDesire, EtherShockTarget = UseEtherShock()
 	if EtherShockDesire > 0 then
-		bot:Action_UseAbilityOnEntity(EtherShock, EtherShockTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(EtherShock, EtherShockTarget)
 		return
 	end
 	
 	ShacklesDesire, ShacklesTarget = UseShackles()
 	if ShacklesDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Shackles, ShacklesTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Shackles, ShacklesTarget)
 		return
 	end
 end
@@ -79,6 +83,21 @@ function UseEtherShock()
 			and not PAF.IsMagicImmune(BotTarget) then
 				return BOT_ACTION_DESIRE_HIGH, BotTarget
 			end
+		end
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -191,7 +210,9 @@ function UseMassSerpentWard()
 	local attacktarget = bot:GetAttackTarget()
 	
 	if attacktarget ~= nil then
-		if attacktarget:IsBuilding() and attacktarget:GetTeam() ~= bot:GetTeam() then
+		if attacktarget:IsBuilding()
+		and attacktarget:GetTeam() ~= bot:GetTeam()
+		and attacktarget:GetHealth() >= (attacktarget:GetMaxHealth() * 0.5) then
 			return BOT_ACTION_DESIRE_HIGH, attacktarget:GetLocation()
 		end
 	end

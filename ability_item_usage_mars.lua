@@ -49,25 +49,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ArenaOfBloodDesire, ArenaOfBloodTarget = UseArenaOfBlood()
 	if ArenaOfBloodDesire > 0 then
-		bot:Action_UseAbilityOnLocation(ArenaOfBlood, ArenaOfBloodTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(ArenaOfBlood, ArenaOfBloodTarget)
 		return
 	end
 	
 	SpearDesire, SpearTarget = UseSpear()
 	if SpearDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Spear, SpearTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Spear, SpearTarget)
 		return
 	end
 	
 	GodsRebukeDesire, GodsRebukeTarget = UseGodsRebuke()
 	if GodsRebukeDesire > 0 then
-		bot:Action_UseAbilityOnLocation(GodsRebuke, GodsRebukeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(GodsRebuke, GodsRebukeTarget)
 		return
 	end
 	
 	BulwarkDesire = UseBulwark()
 	if BulwarkDesire > 0 then
-		bot:Action_UseAbility(Bulwark)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Bulwark)
 		return
 	end
 end
@@ -103,12 +107,18 @@ function UseSpear()
 		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetExtrapolatedLocation(0.5)
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetExtrapolatedLocation(0.5)
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -159,10 +169,16 @@ function UseGodsRebuke()
 			end
 		end
 		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then	
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if AttackTarget ~= nil then
+			if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+				if PAF.IsRoshan(AttackTarget)
+				and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+					return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+				end
+			end
+			
+			if PAF.IsTormentor(AttackTarget) then
+				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 			end
 		end
 	end

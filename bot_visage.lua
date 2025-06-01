@@ -18,35 +18,13 @@ function MinionThink(  hMinionUnit )
 				return
 			end
 			
-			local target = P.IllusionTarget(hMinionUnit, bot)
-		
-			if target ~= nil then
-				hMinionUnit:Action_AttackUnit(target, false)
-			else
-				if GetUnitToUnitDistance(hMinionUnit, bot) > 200 then
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation())
-				else
-					hMinionUnit:Action_MoveToLocation(bot:GetLocation()+RandomVector(200))
-				end
-			end
+			PAF.IllusionTarget(hMinionUnit, bot)
+			return
 		end
 		
 		if hMinionUnit:IsIllusion() then
-			local target = P.IllusionTarget(hMinionUnit, bot)
-		
-			if target ~= nil and bot:IsAlive() then
-				hMinionUnit:Action_AttackUnit(target, false)
-			else
-				if bot:IsAlive() then
-					if GetUnitToUnitDistance(hMinionUnit, bot) > 200 then
-						hMinionUnit:Action_MoveToLocation(bot:GetLocation())
-					else
-						hMinionUnit:Action_MoveToLocation(bot:GetLocation()+RandomVector(200))
-					end
-				else
-					hMinionUnit:Action_MoveToLocation(PAF.GetFountainLocation(bot))
-				end
-			end
+			PAF.IllusionTarget(hMinionUnit, bot)
+			return
 		end
 	end
 end

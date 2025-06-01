@@ -33,12 +33,12 @@ function X.GetHeroLevelPoints()
 	abilities[1], -- Level 5
 	abilities[4], -- Level 6
 	abilities[1], -- Level 7
-	abilities[2], -- Level 8
+	abilities[3], -- Level 8
 	abilities[3], -- Level 9
-	talents[1],   -- Level 10
+	talents[2],   -- Level 10
 	abilities[3], -- Level 11
 	abilities[4], -- Level 12
-	abilities[3], -- Level 13
+	abilities[2], -- Level 13
 	abilities[2], -- Level 14
 	talents[4],   -- Level 15
 	abilities[2], -- Level 16
@@ -50,12 +50,12 @@ function X.GetHeroLevelPoints()
 	"NoLevel",    -- Level 22
 	"NoLevel",    -- Level 23
 	"NoLevel",    -- Level 24
-	talents[7],   -- Level 25
+	talents[8],   -- Level 25
 	"NoLevel",    -- Level 26
-	talents[2],   -- Level 27
+	talents[1],   -- Level 27
 	talents[3],   -- Level 28
 	talents[5],   -- Level 29
-	talents[8]    -- Level 30
+	talents[7]    -- Level 30
 	}
 	
 	return SkillPoints
@@ -65,8 +65,9 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_skadi")
-		local SituationalItem2 = PRoles.ShouldBuyMKB("item_butterfly")
+		local SituationalItem1 = PRoles.ShouldBuySphere("item_manta")
+		local SituationalItem2 = PRoles.ShouldBuySilverEdge("item_skadi")
+		local SituationalItem3 = PRoles.ShouldBuyMKB("item_butterfly")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
@@ -75,10 +76,16 @@ function X.GetHeroItemBuild()
 		"item_magic_wand",
 		"item_phase_boots",
 		
+		"item_maelstrom",
+		"item_yasha",
 		"item_mjollnir",
-		"item_manta",
 		SituationalItem1,
+		"item_ultimate_scepter",
+		"item_blink",
+		"item_ultimate_scepter_2",
 		SituationalItem2,
+		SituationalItem3,
+		
 		"item_swift_blink",
 		}
 	end

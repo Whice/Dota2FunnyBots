@@ -43,25 +43,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ImpaleDesire, ImpaleTarget = UseImpale()
 	if ImpaleDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Impale, ImpaleTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Impale, ImpaleTarget)
 		return
 	end
 	
 	MindFlareDesire, MindFlareTarget = UseMindFlare()
 	if MindFlareDesire > 0 then
-		bot:Action_UseAbilityOnEntity(MindFlare, MindFlareTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(MindFlare, MindFlareTarget)
 		return
 	end
 	
 	SpikedCarapaceDesire = UseSpikedCarapace()
 	if SpikedCarapaceDesire > 0 then
-		bot:Action_UseAbility(SpikedCarapace)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SpikedCarapace)
 		return
 	end
 	
 	VendettaDesire, VendettaTarget = UseVendetta()
 	if VendettaDesire > 0 then
-		bot:Action_UseAbility(Vendetta)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Vendetta)
 		return
 	end
 end
@@ -88,7 +92,7 @@ function UseImpale()
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(1)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(1), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(1), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
 				end

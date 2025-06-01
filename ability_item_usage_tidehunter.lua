@@ -30,6 +30,7 @@ local Ravage = bot:GetAbilityByName("tidehunter_ravage")
 local TendrilsOfTheDeep = bot:GetAbilityByName("tidehunter_dead_in_the_water")
 
 local GushDesire = 0
+local KrakenShellDesire = 0
 local AnchorSmashDesire = 0
 local RavageDesire = 0
 local TendrilsOfTheDeepDesire = 0
@@ -44,25 +45,41 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	RavageDesire = UseRavage()
 	if RavageDesire > 0 then
-		bot:Action_UseAbility(Ravage)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Ravage)
+		return
+	end
+	
+	KrakenShellDesire = UseKrakenShell()
+	if KrakenShellDesire > 0 then
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(KrakenShell)
 		return
 	end
 	
 	TendrilsOfTheDeepDesire, TendrilsOfTheDeepTarget = UseTendrilsOfTheDeep()
 	if TendrilsOfTheDeepDesire > 0 then
-		bot:Action_UseAbilityOnEntity(TendrilsOfTheDeep, TendrilsOfTheDeepTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(TendrilsOfTheDeep, TendrilsOfTheDeepTarget)
 		return
 	end
 	
 	AnchorSmashDesire = UseAnchorSmash()
 	if AnchorSmashDesire > 0 then
-		bot:Action_UseAbility(AnchorSmash)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(AnchorSmash)
 		return
 	end
 	
 	GushDesire, GushTarget = UseGush()
 	if GushDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Gush, GushTarget)
+		if bot:HasScepter() then
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnLocation(Gush, GushTarget)
+		else
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnEntity(Gush, GushTarget)
+		end
 		return
 	end
 end
@@ -78,7 +95,11 @@ function UseGush()
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+				if bot:HasScepter() then
+					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+				else
+					return BOT_ACTION_DESIRE_HIGH, BotTarget
+				end
 			end
 		end
 	end
@@ -86,9 +107,35 @@ function UseGush()
 	local AttackTarget = bot:GetAttackTarget()
 	
 	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				if bot:HasScepter() then
+					return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+				else
+					return BOT_ACTION_DESIRE_HIGH, AttackTarget
+				end
+			end
 		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			if bot:HasScepter() then
+				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+			else
+				return BOT_ACTION_DESIRE_HIGH, AttackTarget
+			end
+		end
+	end
+	
+	return 0
+end
+
+function UseKrakenShell()
+	if not KrakenShell:IsFullyCastable() then return 0 end
+	if P.CantUseAbility(bot) then return 0 end
+	
+	if PAF.IsInTeamFight(bot) then
+		return BOT_ACTION_DESIRE_HIGH
 	end
 	
 	return 0
@@ -105,7 +152,7 @@ function UseAnchorSmash()
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= (CastRange - 50)
+			if GetUnitToUnitDistance(bot, BotTarget) <= (AttackRange + 50)
 			and not PAF.IsMagicImmune(BotTarget) then
 				return BOT_ACTION_DESIRE_HIGH
 			end
@@ -122,12 +169,16 @@ function UseAnchorSmash()
 		if AttackTarget:IsCreep() then
 			local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, true)
 			
-			if #CreepsWithinRange >= 2 then
+			if #CreepsWithinRange >= 2 and (bot:GetMana() - AnchorSmash:GetManaCost()) >= (bot:GetMaxMana() * 0.5) then
 				return BOT_ACTION_DESIRE_HIGH
 			end
 		end
 		
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
@@ -137,15 +188,14 @@ end
 
 function UseRavage()
 	if not Ravage:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = Ravage:GetSpecialValueInt("radius")
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes((CastRange - 100), true, BOT_MODE_NONE)
+	local EnemiesWithinRange = bot:GetNearbyHeroes((CastRange * 0.75), true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
 	
-	if #FilteredEnemies >= 2 then
+	if PAF.IsInTeamFight(bot) and #FilteredEnemies >= 2 then
 		return BOT_ACTION_DESIRE_HIGH
 	end
 	

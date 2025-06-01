@@ -45,31 +45,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	GravekeepersCloakDesire = UseGravekeepersCloak()
 	if GravekeepersCloakDesire > 0 then
-		bot:Action_UseAbility(GravekeepersCloak)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(GravekeepersCloak)
 		return
 	end
 	
 	SummonFamiliarsDesire = UseSummonFamiliars()
 	if SummonFamiliarsDesire > 0 then
-		bot:Action_UseAbility(SummonFamiliars)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SummonFamiliars)
 		return
 	end
 	
 	SilentAsTheGraveDesire = UseSilentAsTheGrave()
 	if SilentAsTheGraveDesire > 0 then
-		bot:Action_UseAbility(SilentAsTheGrave)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SilentAsTheGrave)
 		return
 	end
 	
 	SoulAssumptionDesire, SoulAssumptionTarget = UseSoulAssumption()
 	if SoulAssumptionDesire > 0 then
-		bot:Action_UseAbilityOnEntity(SoulAssumption, SoulAssumptionTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(SoulAssumption, SoulAssumptionTarget)
 		return
 	end
 	
 	GraveChillDesire, GraveChillTarget = UseGraveChill()
 	if GraveChillDesire > 0 then
-		bot:Action_UseAbilityOnEntity(GraveChill, GraveChillTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(GraveChill, GraveChillTarget)
 		return
 	end
 end

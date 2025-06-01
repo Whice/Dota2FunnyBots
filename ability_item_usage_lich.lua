@@ -44,35 +44,41 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ChainFrostDesire, ChainFrostTarget = UseChainFrost()
 	if ChainFrostDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ChainFrost, ChainFrostTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ChainFrost, ChainFrostTarget)
 		return
 	end
 	
 	IceSpireDesire, IceSpireTarget = UseIceSpire()
 	if IceSpireDesire > 0 then
-		bot:Action_UseAbilityOnLocation(IceSpire, IceSpireTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(IceSpire, IceSpireTarget)
 		return
 	end
 	
 	FrostNovaDesire, FrostNovaTarget = UseFrostNova()
 	if FrostNovaDesire > 0 then
-		bot:Action_UseAbilityOnEntity(FrostNova, FrostNovaTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(FrostNova, FrostNovaTarget)
 		return
 	end
 	
 	FrostShieldDesire, FrostShieldTarget = UseFrostShield()
 	if FrostShieldDesire > 0 then
-		bot:Action_UseAbilityOnEntity(FrostShield, FrostShieldTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(FrostShield, FrostShieldTarget)
 		return
 	end
 	
 	SinisterGazeDesire, SinisterGazeTarget = UseSinisterGaze()
 	if SinisterGazeDesire > 0 then
 		if bot:HasScepter() then
-			bot:Action_UseAbilityOnLocation(SinisterGaze, SinisterGazeTarget:GetLocation())
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnLocation(SinisterGaze, SinisterGazeTarget:GetLocation())
 			return
 		else
-			bot:Action_UseAbilityOnEntity(SinisterGaze, SinisterGazeTarget)
+			PAF.SwitchTreadsToInt(bot)
+			bot:ActionQueue_UseAbilityOnEntity(SinisterGaze, SinisterGazeTarget)
 			return
 		end
 	end
@@ -90,6 +96,21 @@ function UseFrostNova()
 	
 	if target ~= nil then
 		return BOT_ACTION_DESIRE_HIGH, target
+	end
+	
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+		end
 	end
 	
 	return 0

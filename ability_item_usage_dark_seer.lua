@@ -38,7 +38,6 @@ local WallComboDesire = 0
 
 local AttackRange
 local BotTarget
-local AttackRange = 0
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
@@ -49,32 +48,37 @@ function AbilityUsageThink()
 	if WallComboDesire > 0 then
 		bot:Action_ClearActions(false)
 		
-		bot:ActionQueue_UseAbilityOnLocation(WallOfReplica, WallComboTarget)
+		PAF.SwitchTreadsToInt(bot)
 		bot:ActionQueue_UseAbilityOnLocation(Vacuum, WallComboTarget)
+		bot:ActionQueue_UseAbilityOnLocation(WallOfReplica, WallComboTarget)
 		return
 	end
 	
 	WallOfReplicaDesire, WallOfReplicaTarget = UseWallOfReplica()
 	if WallOfReplicaDesire > 0 then
-		bot:Action_UseAbilityOnLocation(WallOfReplica, WallOfReplicaTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(WallOfReplica, WallOfReplicaTarget)
 		return
 	end
 	
 	IonShellDesire, IonShellTarget = UseIonShell()
 	if IonShellDesire > 0 then
-		bot:Action_UseAbilityOnEntity(IonShell, IonShellTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(IonShell, IonShellTarget)
 		return
 	end
 	
 	VacuumDesire, VacuumTarget = UseVacuum()
 	if VacuumDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Vacuum, VacuumTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Vacuum, VacuumTarget)
 		return
 	end
 	
 	SurgeDesire, SurgeTarget = UseSurge()
 	if SurgeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Surge, SurgeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Surge, SurgeTarget)
 		return
 	end
 end
@@ -109,13 +113,14 @@ function UseVacuum()
 	
 	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
 		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
-		return BOT_ACTION_DESIRE_HIGH, BotTarget:GetXUnitsTowardsLocation(PAF.GetFountainLocation(ClosestTarget), Radius)
+		local CastLoc = PAF.GetXUnitsTowardsLocation(ClosestTarget:GetLocation(), PAF.GetFountainLocation(ClosestTarget), Radius)
+		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), CastLoc, CastRange)
 	end
 	
 	if PAF.IsEngaging(bot) and not CanCastWallCombo() then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetXUnitsTowardsLocation(PAF.GetFountainLocation(bot), (Radius - 200))
+				return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(BotTarget:GetLocation(), PAF.GetFountainLocation(bot), (Radius - 200))
 			end
 		end
 	end
@@ -145,7 +150,7 @@ function UseIonShell()
 			end
 		end
 		
-		if #AlliesWithoutShell > 0 then
+		if #AlliesWithoutShell > 0 and PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			local StrongestAlly = nil
 			local StrongestPower = 0
 			
@@ -158,8 +163,7 @@ function UseIonShell()
 				end
 			end
 			
-			if PAF.IsValidHeroAndNotIllusion(BotTarget)
-			and GetUnitToUnitDistance(StrongestAlly, BotTarget) <= 1200 then
+			if GetUnitToUnitDistance(StrongestAlly, BotTarget) <= 1200 then
 				return BOT_ACTION_DESIRE_HIGH, StrongestAlly
 			end
 		end
@@ -167,8 +171,10 @@ function UseIonShell()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		if AttackTarget:GetTeam() == TEAM_NEUTRAL then
+	if bot:GetActiveMode() == BOT_MODE_FARM
+	and AttackTarget ~= nil
+	and not P.IsInLaningPhase() then
+		if AttackTarget:GetTeam() ~= TEAM_DIRE and AttackTarget:GetTeam() ~= TEAM_RADIANT then
 			return BOT_ACTION_DESIRE_HIGH, bot
 		else
 			local NearbyFriendlyLaneCreeps = bot:GetNearbyLaneCreeps(1600, false)
@@ -200,11 +206,15 @@ function UseIonShell()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget) then
+				return BOT_ACTION_DESIRE_VERYHIGH, bot
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH, bot
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, bot
 		end
 	end
 	
@@ -227,7 +237,8 @@ function UseSurge()
 	
 	local WeakestAlly = PAF.GetWeakestUnit(FilteredAllies)
 	
-	if WeakestAlly:GetHealth() < (WeakestAlly:GetMaxHealth() * 0.35)
+	if WeakestAlly ~= nil
+	and WeakestAlly:GetHealth() < (WeakestAlly:GetMaxHealth() * 0.35)
 	and WeakestAlly:WasRecentlyDamagedByAnyHero(1)
 	and WeakestAlly:IsFacingLocation(PAF.GetFountainLocation(WeakestAlly), 45) then
 		return BOT_ACTION_DESIRE_HIGH, WeakestAlly

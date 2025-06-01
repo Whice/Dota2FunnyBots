@@ -59,19 +59,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	BlinkStrikeDesire, BlinkStrikeTarget = UseBlinkStrike()
 	if BlinkStrikeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(BlinkStrike, BlinkStrikeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(BlinkStrike, BlinkStrikeTarget)
 		return
 	end
 	
 	SmokeScreenDesire, SmokeScreenTarget = UseSmokeScreen()
 	if SmokeScreenDesire > 0 then
-		bot:Action_UseAbilityOnLocation(SmokeScreen, SmokeScreenTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(SmokeScreen, SmokeScreenTarget)
 		return
 	end
 	
 	TricksOfTheTradeDesire, TricksOfTheTradeTarget = UseTricksOfTheTrade()
 	if TricksOfTheTradeDesire > 0 then
-		bot:Action_UseAbilityOnLocation(TricksOfTheTrade, TricksOfTheTradeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(TricksOfTheTrade, TricksOfTheTradeTarget)
 		return
 	end
 end

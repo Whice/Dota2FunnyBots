@@ -34,27 +34,34 @@ local OmniSlashDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = (100 + BladeFury:GetManaCost() + HealingWard:GetManaCost() + OmniSlash:GetManaCost())
 	
 	-- The order to use abilities in
 	OmniSlashDesire, OmniSlashTarget = UseOmniSlash()
 	if OmniSlashDesire > 0 then
-		bot:Action_UseAbilityOnEntity(OmniSlash, OmniSlashTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(OmniSlash, OmniSlashTarget)
 		return
 	end
 	
 	HealingWardDesire, HealingWardTarget = UseHealingWard()
 	if HealingWardDesire > 0 then
-		bot:Action_UseAbilityOnLocation(HealingWard, HealingWardTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(HealingWard, HealingWardTarget)
 		return
 	end
 	
 	BladeFuryDesire = UseBladeFury()
 	if BladeFuryDesire > 0 then
-		bot:Action_UseAbility(BladeFury)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(BladeFury)
 		return
 	end
 end
@@ -63,21 +70,32 @@ function UseBladeFury()
 	if not BladeFury:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = (AttackRange + 50)
+	local CastRange = BladeFury:GetSpecialValueInt("blade_fury_radius")
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				return 1
 			end
 		end
 	end
 	
-	local initenemies = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
-	local enemies = PAF.FilterTrueUnits(initenemies)
-	
-	if P.IsRetreating(bot) and #enemies > 0 then
-		return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsInTeamFight(bot) or bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local projectiles = bot:GetIncomingTrackingProjectiles()
+		
+		for v, proj in pairs(projectiles) do
+			if GetUnitToLocationDistance(bot, proj.location) <= 300
+			and proj.is_attack == false
+			and proj.caster ~= nil
+			and proj.caster:GetTeam() ~= bot:GetTeam() then
+				return 1
+			end
+		end
+		
+		if bot:GetActiveMode() == BOT_MODE_RETREAT and bot:WasRecentlyDamagedByAnyHero(1) then
+			return 1
+		end
 	end
 	
 	return 0
@@ -87,10 +105,18 @@ function UseHealingWard()
 	if not HealingWard:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = HealingWard:GetCastRange()
+	if PAF.IsInTeamFight(bot) or bot:GetActiveMode() == BOT_MODE_RETREAT then
+		return 1, bot:GetLocation()
+	end
 	
-	if PAF.IsInTeamFight(bot) or (bot:GetHealth() <= (bot:GetMaxHealth() * 0.5)) then
-		return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam() then
+				if bot:GetHealth() < (bot:GetMaxHealth() * 0.5) then
+					return 1, bot:GetLocation()
+				end
+			end
+		end
 	end
 	
 	return 0
@@ -102,11 +128,18 @@ function UseOmniSlash()
 	
 	local CR = OmniSlash:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local Radius = OmniSlash:GetSpecialValueInt("omni_slash_radius")
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+				local EnemyHeroesNearTarget = BotTarget:GetNearbyHeroes(Radius, false, BOT_MODE_NONE)
+				local EnemyCreepsNearTarget = BotTarget:GetNearbyCreeps(Radius, false)
+				
+				if #EnemyHeroesNearTarget <= 1
+				and #EnemyCreepsNearTarget <= 0 then
+					return 1, BotTarget
+				end
 			end
 		end
 	end

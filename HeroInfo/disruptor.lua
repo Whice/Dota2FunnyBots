@@ -5,11 +5,13 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
 local ThunderStrike = bot:GetAbilityByName("disruptor_thunder_strike")
 local Glimpse = bot:GetAbilityByName("disruptor_glimpse")
-local KineticField = bot:GetAbilityByName("disruptor_kinetic_field")
+--local KineticField = bot:GetAbilityByName("disruptor_kinetic_field")
 local StaticStorm = bot:GetAbilityByName("disruptor_static_storm")
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
+	
+	local KineticField = bot:GetAbilityInSlot(2)
 	
 	table.insert(abilities, ThunderStrike:GetName())
 	table.insert(abilities, Glimpse:GetName())
@@ -63,39 +65,25 @@ end
 
 function X.GetHeroItemBuild()
 	local ItemBuild
-
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
-		"item_magic_wand",
-		"item_tranquil_boots",
 	
-		"item_solar_crest",
-		"item_force_staff",
-		"item_ultimate_scepter",
-		"item_blink",
-		"item_ultimate_scepter_2",
-		"item_lotus_orb",
-		"item_boots_of_bearing",
-		}
-	end
+	local SupportBoots = PRoles.GetSupportBoots(bot)
+	local SupportUtility = PRoles.GetSupportUtilityItem(bot)
 	
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-		ItemBuild = { 
-		--"item_null_talisman",
+	local CoreItems = {
 		"item_magic_wand",
-		"item_arcane_boots",
+		SupportBoots,
 		
-		"item_urn_of_shadows",
-		"item_glimmer_cape",
-		"item_spirit_vessel",
-		"item_ultimate_scepter",
-		"item_blink",
+		SupportUtility,
+	}
+	
+	local LuxuryItems = {
+		"item_aether_lens",
+		"item_cyclone",
 		"item_ultimate_scepter_2",
-		"item_sheepstick",
-		"item_guardian_greaves",
-		}
-	end
+		"item_octarine_core",
+	}
+	
+	ItemBuild = PRoles.CreateSupportBuild(bot, CoreItems, LuxuryItems, 2)
 	
 	return ItemBuild
 end

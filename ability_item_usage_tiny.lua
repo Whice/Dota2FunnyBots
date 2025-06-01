@@ -46,31 +46,36 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	AvalancheDesire, AvalancheTarget = UseAvalanche()
 	if AvalancheDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Avalanche, AvalancheTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Avalanche, AvalancheTarget)
 		return
 	end
 	
 	TossDesire, TossTarget = UseToss()
 	if TossDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Toss, TossTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Toss, TossTarget)
 		return
 	end
 	
 	TreeVolleyDesire, TreeVolleyTarget = UseTreeVolley()
 	if TreeVolleyDesire > 0 then
-		bot:Action_UseAbilityOnLocation(TreeVolley, TreeVolleyTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(TreeVolley, TreeVolleyTarget)
 		return
 	end
 	
 	TossTreeDesire, TossTreeTarget = UseTossTree()
 	if TossTreeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(TossTree, TossTreeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(TossTree, TossTreeTarget)
 		return
 	end
 	
 	TreeGrabDesire, TreeGrabTarget = UseTreeGrab()
 	if TreeGrabDesire > 0 then
-		bot:Action_UseAbilityOnTree(TreeGrab, TreeGrabTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnTree(TreeGrab, TreeGrabTarget)
 		return
 	end
 end
@@ -124,6 +129,7 @@ function UseToss()
 	
 	local CR = Toss:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local GrabRadius = Toss:GetSpecialValueInt("grab_radius")
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then

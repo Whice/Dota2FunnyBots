@@ -34,27 +34,34 @@ local PhantasmDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = (100 + ChaosBolt:GetManaCost() + RealityRift:GetManaCost() + Phantasm:GetManaCost())
 	
 	-- The order to use abilities in
-	PhantasmDesire, PhantasmTarget = UsePhantasm()
+	PhantasmDesire = UsePhantasm()
 	if PhantasmDesire > 0 then
-		bot:Action_UseAbility(Phantasm)
+		PAF.SwitchTreadsToStr(bot)
+		bot:ActionQueue_UseAbility(Phantasm)
 		return
 	end
 	
 	ChaosBoltDesire, ChaosBoltTarget = UseChaosBolt()
 	if ChaosBoltDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ChaosBolt, ChaosBoltTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ChaosBolt, ChaosBoltTarget)
 		return
 	end
 	
 	RealityRiftDesire, RealityRiftTarget = UseRealityRift()
 	if RealityRiftDesire > 0 then
-		bot:Action_UseAbilityOnEntity(RealityRift, RealityRiftTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(RealityRift, RealityRiftTarget)
 		return
 	end
 end
@@ -65,37 +72,68 @@ function UseChaosBolt()
 	
 	local CR = ChaosBolt:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local Damage = ((ChaosBolt:GetSpecialValueInt("damage_min") + ChaosBolt:GetSpecialValueInt("damage_max")) / 2)
+	local DamageType = ChaosBolt:GetDamageType()
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
-	for v, enemy in pairs(FilteredEnemies) do
-		if enemy:IsChanneling() then
-			return BOT_ACTION_DESIRE_HIGH, enemy
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		if Enemy:IsChanneling() or PAF.CanDamageKillEnemy(Enemy, Damage, DamageType) then
+			return 1, Enemy
 		end
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
-			and not PAF.IsMagicImmune(BotTarget)
-			and not PAF.IsDisabled(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			and not PAF.IsMagicImmune(BotTarget) then
+				if not PAF.IsDisabled(BotTarget) then
+					return 1, BotTarget
+				else
+					local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1600, true, BOT_MODE_NONE)
+					local FilteredUnits = PAF.FilterExceptedUnit(EnemiesWithinRange, BotTarget)
+					
+					local StrongestEnemy = PAF.GetStrongestPowerUnit(FilteredUnits)
+					
+					if StrongestEnemy ~= nil
+					and not PAF.IsDisabled(StrongestEnemy)
+					and GetUnitToUnitDistance(bot, StrongestEnemy) <= CastRange then
+						return 1, StrongestEnemy
+					end
+				end
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local StrongestEnemy = PAF.GetStrongestPowerUnit(EnemiesWithinCastRange)
+		
+		if StrongestEnemy ~= nil then
+			return 1, StrongestEnemy
+		end
+	end
+	
+	local NearbyAlliedTowers = bot:GetNearbyTowers(1600, false)
+	
+	for x, Tower in pairs(NearbyAlliedTowers) do
+		local TowerTarget = Tower:GetAttackTarget()
+		
+		if PAF.IsValidHeroAndNotIllusion(TowerTarget)
+		and not PAF.IsMagicImmune(TowerTarget)
+		and not PAF.IsDisabled(TowerTarget) then
+			return 1, TowerTarget
+		end
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget
 		end
 	end
 	
@@ -111,7 +149,8 @@ function UseRealityRift()
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and GetUnitToUnitDistance(bot, BotTarget) > AttackRange then
 				if bot:GetLevel() >= 20 then
 					return BOT_ACTION_DESIRE_HIGH, BotTarget
 				else
@@ -124,11 +163,14 @@ function UseRealityRift()
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget
 		end
 	end
 	
@@ -139,34 +181,42 @@ function UsePhantasm()
 	if not Phantasm:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local enemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
-	local tableTrueEnemies = PAF.FilterTrueUnits(enemies)
+	local ManaThresholdTwo = 0
 	
-	if PAF.IsEngaging(bot) and #tableTrueEnemies > 0 then
-		if bot:FindItemSlot("item_armlet") >= 0 then
-			if bot:HasModifier("modifier_item_armlet_unholy_strength") then
-				return BOT_ACTION_DESIRE_HIGH
+	if ChaosBolt:IsFullyCastable() then
+		ManaThresholdTwo = (ManaThresholdTwo + ChaosBolt:GetManaCost())
+	end
+		
+	if RealityRift:IsFullyCastable() then
+		ManaThresholdTwo = (ManaThresholdTwo + RealityRift:GetManaCost())
+	end
+	
+	ManaThresholdTwo = (ManaThresholdTwo + Phantasm:GetManaCost())
+	
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1600
+			and bot:GetMana() >= ManaThresholdTwo then
+				if bot:FindItemSlot("item_armlet") >= 0 then
+					if bot:HasModifier("modifier_item_armlet_unholy_strength") then
+						return BOT_ACTION_DESIRE_HIGH
+					end
+				else
+					return BOT_ACTION_DESIRE_HIGH
+				end
 			end
-		else
-			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	
-	--[[if not P.IsInLaningPhase() then
-		local attacktarget = bot:GetAttackTarget()
-	
-		if attacktarget ~= nil then
-			if attacktarget:IsBuilding() then
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			if bot:FindItemSlot("item_armlet") >= 0 then
+				if bot:HasModifier("modifier_item_armlet_unholy_strength") then
+					return BOT_ACTION_DESIRE_HIGH
+				end
+			else
 				return BOT_ACTION_DESIRE_HIGH
 			end
-		end
-	end]]--
-	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
 		end
 	end
 	

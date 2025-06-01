@@ -37,8 +37,8 @@ function X.GetHeroLevelPoints()
 	abilities[1], -- Level 4
 	abilities[1], -- Level 5
 	abilities[4], -- Level 6
-	abilities[2], -- Level 7
-	abilities[1], -- Level 8
+	abilities[1], -- Level 7
+	abilities[2], -- Level 8
 	abilities[2], -- Level 9
 	talents[1],   -- Level 10
 	abilities[3], -- Level 11
@@ -70,21 +70,22 @@ function X.GetHeroItemBuild()
 	local ItemBuild
 	
 	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SafeLane" then
-		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_abyssal_blade")
-		local SituationalItem2 = PRoles.ShouldBuySphere("item_bloodthorn")
+		local SituationalItem1 = PRoles.ShouldBuySilverEdge("item_bloodthorn")
+		local SituationalItem2 = PRoles.ShouldBuyMKB("item_abyssal_blade")
 		
 		ItemBuild = { 
 		"item_quelling_blade",
 	
 		"item_bracer",
 		"item_magic_wand",
-		"item_phase_boots",
+		"item_power_treads",
 		
-		"item_soul_ring",
 		"item_radiance",
-		"item_blink",
+		"item_sange_and_yasha",
 		"item_black_king_bar",
+		"item_blink",
 		SituationalItem1,
+		
 		SituationalItem2,
 		"item_overwhelming_blink",
 		}

@@ -25,7 +25,7 @@ end
 
 local ThunderStrike = bot:GetAbilityByName("disruptor_thunder_strike")
 local Glimpse = bot:GetAbilityByName("disruptor_glimpse")
-local KineticField = bot:GetAbilityByName("disruptor_kinetic_field")
+local KineticField = bot:GetAbilityInSlot(2)
 local StaticStorm = bot:GetAbilityByName("disruptor_static_storm")
 
 local ThunderStrikeDesire = 0
@@ -42,6 +42,8 @@ local BotTarget
 local LastKineticFieldPos = Vector(-99999, -99999, -99999)
 local LastKineticFieldTime = 0
 
+local RetreatTime = 0
+
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
@@ -50,6 +52,8 @@ function AbilityUsageThink()
 	StormFieldComboDesire, StormFieldComboTarget = UseStormFieldCombo()
 	if StormFieldComboDesire > 0 then
 		bot:Action_ClearActions(false)
+		
+		PAF.SwitchTreadsToInt(bot)
 		bot:ActionQueue_UseAbilityOnLocation(KineticField, StormFieldComboTarget)
 		LastKineticFieldPos = StormFieldComboTarget
 		LastKineticFieldTime = DotaTime()
@@ -59,13 +63,15 @@ function AbilityUsageThink()
 	
 	StaticStormDesire, StaticStormTarget = UseStaticStorm()
 	if StaticStormDesire > 0 then
-		bot:Action_UseAbilityOnLocation(StaticStorm, StaticStormTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(StaticStorm, StaticStormTarget)
 		return
 	end
 	
 	KineticFieldDesire, KineticFieldTarget = UseKineticField()
 	if KineticFieldDesire > 0 then
-		bot:Action_UseAbilityOnLocation(KineticField, KineticFieldTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(KineticField, KineticFieldTarget)
 		LastKineticFieldPos = KineticFieldTarget
 		LastKineticFieldTime = DotaTime()
 		return
@@ -73,13 +79,15 @@ function AbilityUsageThink()
 	
 	GlimpseDesire, GlimpseTarget = UseGlimpse()
 	if GlimpseDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Glimpse, GlimpseTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Glimpse, GlimpseTarget)
 		return
 	end
 	
 	ThunderStrikeDesire, ThunderStrikeTarget = UseThunderStrike()
 	if ThunderStrikeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ThunderStrike, ThunderStrikeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ThunderStrike, ThunderStrikeTarget)
 		return
 	end
 end
@@ -92,7 +100,7 @@ function UseStormFieldCombo()
 	local Radius = KineticField:GetSpecialValueInt("radius")
 	
 	if PAF.IsInTeamFight(bot) then
-		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
+		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), ComboCastRange, Radius/2, 0, 0)
 		if (AoE.count >= 2) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
 		end
@@ -133,10 +141,16 @@ function UseThunderStrike()
 	
 	local AttackTarget = bot:GetAttackTarget()
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget
 		end
 	end
 	
@@ -190,13 +204,18 @@ function UseGlimpse()
 					
 					if BotTarget:GetHealth() <= OffensivePower then
 						if (DotaTime() - KineticFieldDuration) > LastKineticFieldTime
-						and GetUnitToLocationDistance(BotTarget, LastKineticFieldPos) > (KineticFieldRadius + 25) then
+						and GetUnitToLocationDistance(BotTarget, LastKineticFieldPos) > (KineticFieldRadius + 25)
+						and (DotaTime() - RetreatTime) >= 2 then
 							return BOT_ACTION_DESIRE_HIGH, BotTarget
 						end
 					end
+				else
+					RetreatTime = DotaTime()
 				end
 			end
 		end
+	else
+		RetreatTime = DotaTime()
 	end
 	
 	return 0

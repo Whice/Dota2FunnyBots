@@ -50,25 +50,29 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	FlameCloakDesire = UseFlameCloak()
 	if FlameCloakDesire > 0 then
-		bot:Action_UseAbility(FlameCloak)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(FlameCloak)
 		return
 	end
 	
 	LagunaBladeDesire, LagunaBladeTarget = UseLagunaBlade()
 	if LagunaBladeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(LagunaBlade, LagunaBladeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(LagunaBlade, LagunaBladeTarget)
 		return
 	end
 	
 	LightStrikeArrayDesire, LightStrikeArrayTarget = UseLightStrikeArray()
 	if LightStrikeArrayDesire > 0 then
-		bot:Action_UseAbilityOnLocation(LightStrikeArray, LightStrikeArrayTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(LightStrikeArray, LightStrikeArrayTarget)
 		return
 	end
 	
 	DragonSlaveDesire, DragonSlaveTarget = UseDragonSlave()
 	if DragonSlaveDesire > 0 then
-		bot:Action_UseAbilityOnLocation(DragonSlave, DragonSlaveTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(DragonSlave, DragonSlaveTarget)
 		return
 	end
 end
@@ -120,8 +124,15 @@ function UseDragonSlave()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
@@ -149,7 +160,7 @@ function UseLightStrikeArray()
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
 				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(1.5)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, bot:GetXUnitsTowardsLocation(BotTarget:GetExtrapolatedLocation(1), CastRange)
+					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(1), CastRange)
 				else
 					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1.5)
 				end
@@ -176,10 +187,16 @@ function UseLightStrikeArray()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	

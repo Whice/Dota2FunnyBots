@@ -42,19 +42,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	OverwhelmingOddsDesire = UseOverwhelmingOdds()
 	if OverwhelmingOddsDesire > 0 then
-		bot:Action_UseAbility(OverwhelmingOdds)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(OverwhelmingOdds)
 		return
 	end
 	
 	PressTheAttackDesire, PressTheAttackTarget = UsePressTheAttack()
 	if PressTheAttackDesire > 0 then
-		bot:Action_UseAbilityOnEntity(PressTheAttack, PressTheAttackTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(PressTheAttack, PressTheAttackTarget)
 		return
 	end
 	
 	DuelDesire, DuelTarget = UseDuel()
 	if DuelDesire > 0 then
-		bot:Action_UseAbilityOnEntity(Duel, DuelTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(Duel, DuelTarget)
 		return
 	end
 end
@@ -123,9 +126,11 @@ function UsePressTheAttack()
 	
 	local WeakestAlly = PAF.GetWeakestUnit(FilteredAllies)
 	
-	if WeakestAlly:GetHealth() < (WeakestAlly:GetMaxHealth() * 0.4)
-	and WeakestAlly:WasRecentlyDamagedByAnyHero(1) then
-		return BOT_ACTION_DESIRE_HIGH, WeakestAlly
+	if WeakestAlly ~= nil then
+		if WeakestAlly:GetHealth() < (WeakestAlly:GetMaxHealth() * 0.4)
+		and WeakestAlly:WasRecentlyDamagedByAnyHero(1) then
+			return BOT_ACTION_DESIRE_HIGH, WeakestAlly
+		end
 	end
 	
 	if PAF.IsInTeamFight(bot) then

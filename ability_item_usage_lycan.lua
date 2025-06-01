@@ -43,19 +43,22 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ShapeshiftDesire = UseShapeshift()
 	if ShapeshiftDesire > 0 then
-		bot:Action_UseAbility(Shapeshift)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Shapeshift)
 		return
 	end
 	
 	HowlDesire = UseHowl()
 	if HowlDesire > 0 then
-		bot:Action_UseAbility(Howl)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(Howl)
 		return
 	end
 	
 	SummonWolvesDesire = UseSummonWolves()
 	if SummonWolvesDesire > 0 then
-		bot:Action_UseAbility(SummonWolves)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(SummonWolves)
 		return
 	end
 end

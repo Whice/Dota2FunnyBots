@@ -50,13 +50,15 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	PrimalCompanionDesire = UsePrimalCompanion()
 	if PrimalCompanionDesire > 0 then
-		bot:Action_UseAbility(PrimalCompanion)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(PrimalCompanion)
 		return
 	end
 	
 	PrimalSplitDesire = UsePrimalSplit()
 	if PrimalSplitDesire > 0 then
-		bot:Action_UseAbility(PrimalSplit)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(PrimalSplit)
 		return
 	end
 	
@@ -75,13 +77,15 @@ function AbilityUsageThink()
 	
 	ThunderClapDesire = UseThunderClap()
 	if ThunderClapDesire > 0 then
-		bot:Action_UseAbility(ThunderClap)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbility(ThunderClap)
 		return
 	end
 	
 	CinderBrewDesire, CinderBrewTarget = UseCinderBrew()
 	if CinderBrewDesire > 0 then
-		bot:Action_UseAbilityOnLocation(CinderBrew, CinderBrewTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(CinderBrew, CinderBrewTarget)
 		return
 	end
 end
@@ -122,6 +126,10 @@ function UseThunderClap()
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH
 		end
+		
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH
+		end
 	end
 	
 	return 0
@@ -147,6 +155,10 @@ function UseCinderBrew()
 	
 	if AttackTarget ~= nil then
 		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+		end
+		
+		if PAF.IsTormentor(AttackTarget) then
 			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end

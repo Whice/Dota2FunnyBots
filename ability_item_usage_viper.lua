@@ -52,13 +52,15 @@ function AbilityUsageThink()
 	-- The order to use abilities in
 	ViperStrikeDesire, ViperStrikeTarget = UseViperStrike()
 	if ViperStrikeDesire > 0 then
-		bot:Action_UseAbilityOnEntity(ViperStrike, ViperStrikeTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnEntity(ViperStrike, ViperStrikeTarget)
 		return
 	end
 	
 	NetherToxinDesire, NetherToxinTarget = UseNethertoxin()
 	if NetherToxinDesire > 0 then
-		bot:Action_UseAbilityOnLocation(Nethertoxin, NetherToxinTarget)
+		PAF.SwitchTreadsToInt(bot)
+		bot:ActionQueue_UseAbilityOnLocation(Nethertoxin, NetherToxinTarget)
 		return
 	end
 	
@@ -75,10 +77,11 @@ function UsePoisonAttack()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = PoisonAttack:GetCastRange()
+	local MaxStacks = PoisonAttack:GetSpecialValueInt("max_stacks")
 	
 	if P.IsInLaningPhase() and PoisonAttack:GetLevel() >= 2 then
 		local EnemiesWithinRange = bot:GetNearbyHeroes((AttackRange + 50), true, BOT_MODE_NONE)
-		local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 		local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
 		
 		if WeakestEnemy ~= nil
@@ -88,29 +91,28 @@ function UsePoisonAttack()
 		end
 	end
 	
-	local target = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
 	
-	if target ~= nil
-	and (target:IsHero() or target:IsBuilding())
-	and not P.IsRetreating(bot) then
-		if PoisonAttack:GetAutoCastState() == false then
-			PoisonAttack:ToggleAutoCast()
-			return 0
-		end
-	end
-	
-	if target == nil then
-		if PoisonAttack:GetAutoCastState() == true then
-			PoisonAttack:ToggleAutoCast()
-			return 0
-		end
-	else
-		if not target:IsHero() and not target:IsBuilding() then
-			if PoisonAttack:GetAutoCastState() == true then
+	if AttackTarget ~= nil then
+		if AttackTarget:IsHero()
+		or AttackTarget:IsBuilding()
+		or PAF.IsRoshan(AttackTarget)
+		or PAF.IsTormentor(AttackTarget) then
+			local modifier = AttackTarget:GetModifierByName("modifier_viper_poison_attack_slow")
+			local PoisonStacks = AttackTarget:GetModifierStackCount(modifier)
+		
+			if PoisonStacks < MaxStacks and PoisonAttack:GetAutoCastState() == false then
 				PoisonAttack:ToggleAutoCast()
+				return 0
+			else
 				return 0
 			end
 		end
+	end
+	
+	if PoisonAttack:GetAutoCastState() == true then
+		PoisonAttack:ToggleAutoCast()
+		return 0
 	end
 	
 	return 0
@@ -140,18 +142,25 @@ function UseNethertoxin()
 			local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, Nethertoxin:GetSpecialValueInt("radius"))
 			
 			if AoECount >= 3
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange
+			and (bot:GetMana() - Nethertoxin:GetManaCost()) >= (bot:GetMaxMana() * 0.5) then
 				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
 			end
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local AttackTarget = bot:GetAttackTarget()
+	
+	if AttackTarget ~= nil then
+		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+			if PAF.IsRoshan(AttackTarget)
+			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
+				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+			end
+		end
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if PAF.IsTormentor(AttackTarget) then
+			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
 		end
 	end
 	
