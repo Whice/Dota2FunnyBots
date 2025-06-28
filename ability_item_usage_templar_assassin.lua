@@ -34,16 +34,27 @@ local PsionicTrapDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
 	
-	manathreshold = 100
-	manathreshold = manathreshold + Refraction:GetManaCost()
-	manathreshold = manathreshold + Meld:GetManaCost()
-	manathreshold = manathreshold + PsionicTrap:GetManaCost()
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	PsionicTrapDesire, PsionicTrapTarget = UsePsionicTrap()
@@ -62,7 +73,7 @@ function AbilityUsageThink()
 	
 	MeldDesire = UseMeld()
 	if MeldDesire > 0 then
-		PAF.SwitchTreadsToInt(bot)
+		PAF.SwitchTreadsToAgi(bot)
 		bot:ActionQueue_UseAbility(Meld)
 		return
 	end
@@ -77,26 +88,28 @@ function UseRefraction()
 	local enemies = bot:GetNearbyHeroes(1000, true, BOT_MODE_NONE)
 	
 	if (PAF.IsEngaging(bot) or (P.IsRetreating(bot)) and #enemies >= 1) then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	local projectiles = bot:GetIncomingTrackingProjectiles()
 	
 	for v, proj in pairs(projectiles) do
-		if GetUnitToLocationDistance(bot, proj.location) <= 300 then
-			return BOT_ACTION_DESIRE_HIGH
+		if GetUnitToLocationDistance(bot, proj.location) <= 300
+		and proj.caster ~= nil
+		and proj.caster:GetTeam() ~= bot:GetTeam() then
+			return 1
 		end
 	end
 	
 	if bot:WasRecentlyDamagedByAnyHero(1) then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_FARM then
 		local AttackTarget = bot:GetAttackTarget()
 		
 		if AttackTarget ~= nil and AttackTarget:IsCreep() and GetUnitToUnitDistance(bot, AttackTarget) < AttackRange and (bot:GetMana() - Refraction:GetManaCost()) > manathreshold then
-			return BOT_ACTION_DESIRE_HIGH
+			return 1
 		end
 	end
 	
@@ -104,7 +117,7 @@ function UseRefraction()
 		local AttackTarget = bot:GetAttackTarget()
 		
 		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+			return 1
 		end
 	end
 	
@@ -115,25 +128,32 @@ function UseMeld()
 	if not Meld:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local AttackTarget = bot:GetAttackTarget()
+	local ManaCost = Meld:GetManaCost()
 	
-	if AttackTarget ~= nil and GetUnitToUnitDistance(bot, AttackTarget) <= AttackRange then
-		if AttackTarget:IsHero() then
-			return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(AttackTarget) then
+			return 1
 		end
-		
-		if PAF.IsRoshan(AttackTarget) and bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-		
-		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-		
-		if AttackTarget:IsCreep() then
-			if bot:GetActiveMode() == BOT_MODE_FARM and (bot:GetMana() - Meld:GetManaCost()) > manathreshold then
-				return BOT_ACTION_DESIRE_HIGH
+	end
+	
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				return 1
 			end
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1
 		end
 	end
 	
@@ -150,7 +170,7 @@ function UsePsionicTrap()
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+				return 1, BotTarget:GetLocation()
 			end
 		end
 	end

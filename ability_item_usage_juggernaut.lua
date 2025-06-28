@@ -41,7 +41,20 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	AttackTarget = bot:GetAttackTarget()
-	ManaThreshold = (100 + BladeFury:GetManaCost() + HealingWard:GetManaCost() + OmniSlash:GetManaCost())
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	OmniSlashDesire, OmniSlashTarget = UseOmniSlash()
@@ -132,7 +145,8 @@ function UseOmniSlash()
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsReflectingSpells(BotTarget) then
 				local EnemyHeroesNearTarget = BotTarget:GetNearbyHeroes(Radius, false, BOT_MODE_NONE)
 				local EnemyCreepsNearTarget = BotTarget:GetNearbyCreeps(Radius, false)
 				

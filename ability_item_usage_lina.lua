@@ -36,16 +36,27 @@ local FlameCloakDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
 	
-	manathreshold = 100
-	manathreshold = manathreshold + DragonSlave:GetManaCost()
-	manathreshold = manathreshold + LightStrikeArray:GetManaCost()
-	manathreshold = manathreshold + LagunaBlade:GetManaCost()
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	FlameCloakDesire = UseFlameCloak()
@@ -83,13 +94,36 @@ function UseDragonSlave()
 	
 	local CR = DragonSlave:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local CastPoint = DragonSlave:GetCastPoint()
 	local Radius = DragonSlave:GetSpecialValueInt("dragon_slave_width_initial")
 	local Damage = DragonSlave:GetSpecialValueInt("dragon_slave_damage")
+	local Speed = DragonSlave:GetSpecialValueInt("dragon_slave_speed")
+	local ManaCost = DragonSlave:GetManaCost()
+	local DamageType = DragonSlave:GetDamageType()
+	
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
+	
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		if PAF.CanDamageKillEnemy(Enemy, Damage, DamageType) then
+			local ExtrapolateTime = (CastPoint + (GetUnitToUnitDistance(bot, Enemy) / Speed))
+			local ExtrapolatedLocation = Enemy:GetExtrapolatedLocation(ExtrapolateTime)
+				
+			if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+				return 1, ExtrapolatedLocation
+			end
+		end
+	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				local ExtrapolateTime = (CastPoint + (GetUnitToUnitDistance(bot, BotTarget) / Speed))
+				local ExtrapolatedLocation = BotTarget:GetExtrapolatedLocation(ExtrapolateTime)
+				
+				if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+					return 1, ExtrapolatedLocation
+				end
 			end
 		end
 	end
@@ -106,34 +140,28 @@ function UseDragonSlave()
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-
-	if bot:GetActiveMode() == BOT_MODE_FARM
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_TOP
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_MID
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_BOT then
-		if AttackTarget ~= nil 
-		and AttackTarget:IsCreep() then
-			local NearbyCreeps = bot:GetNearbyCreeps(CastRange, true)
-			local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, Radius)
-			
-			if AoECount >= 3
-			and (bot:GetMana() - DragonSlave:GetManaCost()) > manathreshold then
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local AoELocation = bot:FindAoELocation(true, false, bot:GetLocation(), CastRange, Radius, 0, 0)
+				
+				if AoELocation.count >= 3 then
+					return 1, AoELocation.targetloc
+				end
 			end
 		end
 	end
 	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
-			end
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget:GetLocation()
 		end
-		
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
 		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+			return 1, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -146,57 +174,97 @@ function UseLightStrikeArray()
 	
 	local CR = LightStrikeArray:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local CastPoint = LightStrikeArray:GetCastPoint()
+	local Radius = LightStrikeArray:GetSpecialValueInt("light_strike_array_aoe")
+	local Damage = LightStrikeArray:GetSpecialValueInt("light_strike_array_damage")
+	local Delay = LightStrikeArray:GetSpecialValueFloat("light_strike_array_delay_time")
+	local ManaCost = LightStrikeArray:GetManaCost()
+	local DamageType = LightStrikeArray:GetDamageType()
+	local ExtrapolateTime = (CastPoint + Delay)
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
-	for v, enemy in pairs(FilteredEnemies) do
-		if enemy:IsChanneling() then
-			return BOT_ACTION_DESIRE_HIGH, enemy:GetLocation()
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		if Enemy:IsChanneling() then
+			return 1, Enemy
+		end
+		
+		if PAF.CanDamageKillEnemy(Enemy, Damage, DamageType) then
+			local ExtrapolatedLocation = Enemy:GetExtrapolatedLocation(ExtrapolateTime)
+				
+			if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+				return 1, ExtrapolatedLocation
+			end
 		end
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				if GetUnitToLocationDistance(bot, BotTarget:GetExtrapolatedLocation(1.5)) > CastRange then
-					return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetExtrapolatedLocation(1), CastRange)
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				if not PAF.IsDisabled(BotTarget) then
+					local ExtrapolatedLocation = BotTarget:GetExtrapolatedLocation(ExtrapolateTime)
+			
+					if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+						return 1, ExtrapolatedLocation
+					end
 				else
-					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1.5)
+					local EnemiesWithinRange = PAF.GetNearbyFilteredHeroesForStun(bot, 1600, true, BOT_MODE_NONE)
+					local FilteredUnits = PAF.FilterExceptedUnit(EnemiesWithinRange, BotTarget)
+					
+					local StrongestEnemy = PAF.GetStrongestPowerUnit(FilteredUnits)
+					
+					if StrongestEnemy ~= nil then
+						local ExtrapolatedLocation = StrongestEnemy:GetExtrapolatedLocation(ExtrapolateTime)
+			
+						if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+							return 1, ExtrapolatedLocation
+						end
+					end
 				end
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetExtrapolatedLocation(1.5)
-	end
-	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		local Neutrals = bot:GetNearbyNeutralCreeps(CastRange)
-	
-		if AttackTarget ~= nil 
-		and AttackTarget:IsCreep() 
-		and #Neutrals >= 2
-		and (bot:GetMana() - LightStrikeArray:GetManaCost()) > manathreshold
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetExtrapolatedLocation(1.5)
-		end
-	end
-	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local AoELocation = bot:FindAoELocation(true, false, bot:GetLocation(), CastRange, Radius, 0, 0)
+				
+				if AoELocation.count >= 3 then
+					return 1, AoELocation.targetloc
+				end
 			end
 		end
+	end
+	
+	local NearbyAlliedTowers = bot:GetNearbyTowers(1600, false)
+	
+	for x, Tower in pairs(NearbyAlliedTowers) do
+		local TowerTarget = Tower:GetAttackTarget()
 		
+		if PAF.IsValidHeroAndNotIllusion(TowerTarget)
+		and not PAF.IsMagicImmune(TowerTarget)
+		and not PAF.IsDisabled(TowerTarget) then
+			local ExtrapolatedLocation = TowerTarget:GetExtrapolatedLocation(ExtrapolateTime)
+			
+			if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange
+			and GetUnitToLocationDistance(TowerTarget, ExtrapolatedLocation) then
+				return 1, ExtrapolatedLocation
+			end
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget:GetLocation()
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
 		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+			return 1, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -209,25 +277,24 @@ function UseLagunaBlade()
 	
 	local CastRange = LagunaBlade:GetCastRange()
 	local Damage = LagunaBlade:GetSpecialValueInt("damage")
+	local DamageType = LagunaBlade:GetDamageType()
 	
 	if PAF.IsInTeamFight(bot) then
-		if BotTarget ~= nil then
-			return BOT_ACTION_DESIRE_HIGH, BotTarget
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget)
+			and not PAF.IsReflectingSpells(BotTarget) then
+				return 1, BotTarget
+			end
 		end
-	end
-	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
-	local target = PAF.GetWeakestUnit(FilteredEnemies)
-	
-	local RealDamage = 0
-	
-	if target ~= nil then
-		RealDamage = target:GetActualIncomingDamage(Damage, DAMAGE_TYPE_MAGICAL)
-	end
-	
-	if target ~= nil and target:GetHealth() < RealDamage then
-		return BOT_ACTION_DESIRE_HIGH, target
+	elseif PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsReflectingSpells(BotTarget)
+			and PAF.CanDamageKillEnemy(BotTarget, Damage, DamageType) then
+				return 1, BotTarget
+			end
+		end
 	end
 	
 	return 0
@@ -238,11 +305,11 @@ function UseFlameCloak()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	if PAF.IsEngaging(bot) and GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	return 0

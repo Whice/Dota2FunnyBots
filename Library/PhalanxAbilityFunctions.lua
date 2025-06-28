@@ -545,7 +545,8 @@ function PAF.FilterUnitsForStun(units)
 	for v, unit in pairs(units) do
 		if PAF.IsValidHeroAndNotIllusion(unit)
 		and not PAF.IsDisabled(unit) 
-		and not PAF.IsMagicImmune(unit) then
+		and not PAF.IsMagicImmune(unit)
+		and not PAF.IsReflectingSpells(unit) then
 			table.insert(filteredunits, unit)
 		end
 	end
@@ -651,7 +652,8 @@ function PAF.IsPhysicalImmune(unit)
 end
 
 function PAF.IsReflectingSpells(unit)
-	if unit:HasModifier("modifier_item_lotus_orb_active") then
+	if unit:HasModifier("modifier_item_lotus_orb_active")
+	or unit:HasModifier("modifier_antimage_counterspell") then
 		return true
 	end
 	
@@ -1181,6 +1183,13 @@ end
 function PAF.GetNearbyFilteredHeroes(hUnit, nRadius, bEnemies, nMode)
 	local NearbyHeroes = hUnit:GetNearbyHeroes(nRadius, bEnemies, nMode)
 	local FilteredHeroes = PAF.FilterTrueUnits(NearbyHeroes)
+	
+	return FilteredHeroes
+end
+
+function PAF.GetNearbyFilteredHeroesForStun(hUnit, nRadius, bEnemies, nMode)
+	local NearbyHeroes = hUnit:GetNearbyHeroes(nRadius, bEnemies, nMode)
+	local FilteredHeroes = PAF.FilterUnitsForStun(NearbyHeroes)
 	
 	return FilteredHeroes
 end

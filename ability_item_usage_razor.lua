@@ -34,16 +34,27 @@ local EyeOfTheStormDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
 	
-	manathreshold = 100
-	manathreshold = manathreshold + PlasmaField:GetManaCost()
-	manathreshold = manathreshold + StaticLink:GetManaCost()
-	manathreshold = manathreshold + EyeOfTheStorm:GetManaCost()
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	EyeOfTheStormDesire = UseEyeOfTheStorm()
@@ -73,40 +84,75 @@ function UsePlasmaField()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = PlasmaField:GetSpecialValueInt("radius")
+	local MinDamage = PlasmaField:GetSpecialValueInt("damage_min")
+	local MaxDamage = PlasmaField:GetSpecialValueInt("damage_max")
+	local ManaCost = PlasmaField:GetManaCost()
+	local DamageType = PlasmaField:GetDamageType()
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
+	
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		local DistanceToEnemy = GetUnitToUnitDistance(bot, Enemy)
+		local Damage = RemapValClamped(DistanceToEnemy, 0, CastRange, MinDamage, MaxDamage)
+		
+		if PAF.CanDamageKillEnemy(Enemy, Damage, DamageType) then
+			return 1
+		end
+	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH
+				return 1
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
-		return BOT_ACTION_DESIRE_HIGH
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		if #EnemiesWithinCastRange > 0 then
+			return 1
+		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil then
-		if AttackTarget:IsCreep() then
-			local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, true)
-			
-			if #CreepsWithinRange >= 2 and (bot:GetMana() - PlasmaField:GetManaCost()) > manathreshold then
-				return BOT_ACTION_DESIRE_HIGH
+	if bot:GetActiveMode() == BOT_MODE_LANING then
+		local LaneCreepsWithinCastRange = bot:GetNearbyLaneCreeps(CastRange, true)
+		
+		for x, Creep in pairs(LaneCreepsWithinCastRange) do
+			if string.find(Creep:GetUnitName(), "ranged") then
+				local DistanceToCreep = GetUnitToUnitDistance(bot, Creep)
+				local Damage = RemapValClamped(DistanceToCreep, 0, CastRange, MinDamage, MaxDamage)
+				
+				if PAF.CanDamageKillEnemy(Creep, Damage, DamageType)
+				and GetUnitToUnitDistance(bot, Creep) > AttackRange then
+					return 1
+				end
 			end
 		end
-		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+	end
+	
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local CreepsWithinCastRange = bot:GetNearbyCreeps(CastRange, true)
+				
+				if #CreepsWithinCastRange >= 3 then
+					return 1
+				end
+			end
 		end
-		
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
 		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+			return 1
 		end
 	end
 	
@@ -120,22 +166,33 @@ function UseStaticLink()
 	local CR = StaticLink:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes((CastRange * 1.5), true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
+	local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1600, true, BOT_MODE_NONE)
 	
 	if PAF.IsEngaging(bot) then
-		local StrongestTarget = PAF.GetStrongestAttackDamageUnit(FilteredEnemies)
+		local StrongestEnemy = PAF.GetStrongestDPSUnit(EnemiesWithinRange)
 		
-		if StrongestTarget ~= nil then
-			return BOT_ACTION_DESIRE_HIGH, StrongestTarget
+		if StrongestEnemy ~= nil
+		and not PAF.IsReflectingSpells(StrongestEnemy) then
+			return 1, StrongestEnemy
 		end
 	end
 	
-	if P.IsRetreating(bot) then
-		local ClosestTarget = PAF.GetClosestUnit(bot, FilteredEnemies)
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local StrongestEnemy = PAF.GetStrongestDPSUnit(EnemiesWithinCastRange)
 		
-		if ClosestTarget ~= nil then
-			return BOT_ACTION_DESIRE_HIGH, ClosestTarget
+		if StrongestEnemy ~= nil
+		and not PAF.IsReflectingSpells(StrongestEnemy) then
+			return 1, StrongestEnemy
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_LANING then
+		local ClosestEnemy = PAF.GetClosestUnit(bot, EnemiesWithinCastRange)
+		
+		if ClosestEnemy ~= nil
+		and not PAF.IsReflectingSpells(ClosestEnemy) then
+			return 1, ClosestEnemy
 		end
 	end
 	
@@ -144,8 +201,44 @@ end
 
 function UseEyeOfTheStorm()
 	if not EyeOfTheStorm:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	return BOT_ACTION_DESIRE_HIGH
+	local Radius = EyeOfTheStorm:GetSpecialValueInt("radius")
+	local ManaCost = EyeOfTheStorm:GetManaCost()
+	
+	if PAF.IsInTeamFight(bot) then
+		return 1
+	end
+	
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam() then
+				local NeutralCreepsWithinCastRange = bot:GetNearbyNeutralCreeps(Radius)
+				
+				if #NeutralCreepsWithinCastRange >= 6
+				and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+					return 1
+				end
+				
+				if bot:HasScepter()
+				and AttackTarget:IsBuilding() then
+					return 1
+				end
+			end
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1
+		end
+	end
+	
+	return 0
 end

@@ -31,11 +31,16 @@ local Juxtapose = bot:GetAbilityByName("phantom_lancer_juxtapose")
 local SpiritLanceDesire = 0
 local DoppelGangerDesire = 0
 
-local AttackRange = 0
+local AttackRange
+local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 0.5
 	
 	-- The order to use abilities in
 	JuxtaposeDesire = UseJuxtapose()
@@ -74,29 +79,40 @@ function UseSpiritLance()
 	local CR = SpiritLance:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
-			and not PAF.IsMagicImmune(BotTarget) then
+			and not PAF.IsMagicImmune(BotTarget)
+			and not PAF.IsReflectingSpells(BotTarget) then
 				return BOT_ACTION_DESIRE_HIGH, BotTarget
 			end
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+	if bot:GetActiveMode() == BOT_MODE_LANING then
+		local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1600, true, BOT_MODE_NONE)
+		
+		local WeakestEnemy = PAF.GetWeakestUnit(EnemiesWithinRange)
+		if WeakestEnemy ~= nil then
+			if GetUnitToUnitDistance(bot, WeakestEnemy) <= CastRange
+			and not PAF.IsMagicImmune(WeakestEnemy)
+			and not PAF.IsReflectingSpells(WeakestEnemy) then
+				return 1,  WeakestEnemy
 			end
 		end
-		
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
 		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+			return 1, AttackTarget
 		end
 	end
 	
@@ -110,26 +126,30 @@ function UseDoppelGanger()
 	local CR = DoppelGanger:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
+	local projectiles = bot:GetIncomingTrackingProjectiles()
 	
-	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), CastRange)
-	end
-	
-	if PAF.IsEngaging(bot) then
-		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+	for v, proj in pairs(projectiles) do
+		if GetUnitToLocationDistance(bot, proj.location) <= 300
+		and proj.is_attack == false
+		and proj.caster ~= nil
+		and proj.caster:GetTeam() ~= bot:GetTeam() then
+			if PAF.IsEngaging(bot) then
+				if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+					return 1, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), BotTarget:GetLocation(), CastRange)
+				else
+					return 1, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), bot:GetLocation(), CastRange)
+				end
+			else
+				return 1, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), CastRange)
 			end
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1200, true, BOT_MODE_NONE)
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
+		if #EnemiesWithinRange >= 1 then
+			return 1, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), CastRange)
 		end
 	end
 	
@@ -141,7 +161,7 @@ function UsePhantomRush()
 	if P.CantUseAbility(bot) then return 0 end
 
 	if PAF.IsEngaging(bot) then
-		if PhantomRush:GetToggleState() == false and not SpiritLance:IsFullyCastable() and not DoppelGanger:IsFullyCastable() then
+		if PhantomRush:GetToggleState() == false and not SpiritLance:IsFullyCastable() then
 			return BOT_ACTION_DESIRE_HIGH
 		else
 			return 0
@@ -162,8 +182,9 @@ function UseJuxtapose()
 	if P.CantUseAbility(bot) then return 0 end
 	if Juxtapose:IsPassive() then return 0 end
 	
-	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH
+	if bot:GetActiveMode() == BOT_MODE_RETREAT
+	or bot:GetActiveMode() == BOT_MODE_ROAM then
+		return 1
 	end
 	
 	return 0

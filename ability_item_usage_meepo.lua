@@ -35,13 +35,27 @@ local DigDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
-
-	manathreshold = (bot:GetMaxMana() * 0.4)
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	DigDesire = UseDig()
@@ -72,41 +86,58 @@ function UseEarthbind()
 	
 	local CR = Earthbind:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local CastPoint = Earthbind:GetCastPoint()
+	local Speed = Earthbind:GetSpecialValueInt("speed")
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
-	
-	for v, enemy in pairs(FilteredEnemies) do
-		if enemy:IsChanneling() then
-			return BOT_ACTION_DESIRE_HIGH, enemy:GetExtrapolatedLocation(1)
-		end
-	end
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget)
+			and not PAF.IsReflectingSpells(BotTarget) then
+				if not PAF.IsDisabled(BotTarget) then
+					local ExtrapolateTime = (CastPoint + (GetUnitToUnitDistance(bot, BotTarget) / Speed))
+					local ExtrapolatedLocation = BotTarget:GetExtrapolatedLocation(ExtrapolateTime)
+				
+					if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+						return 1, ExtrapolatedLocation
+					end
+				end
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget:GetExtrapolatedLocation(1)
-	end
-	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH
-			end
-		end
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local StrongestEnemy = PAF.GetStrongestPowerUnit(EnemiesWithinCastRange)
 		
-		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+		if StrongestEnemy ~= nil
+		and not PAF.IsMagicImmune(StrongestEnemy)
+		and not PAF.IsReflectingSpells(StrongestEnemy) then
+			local ExtrapolateTime = (CastPoint + (GetUnitToUnitDistance(bot, StrongestEnemy) / Speed))
+			local ExtrapolatedLocation = StrongestEnemy:GetExtrapolatedLocation(ExtrapolateTime)
+				
+			if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+				return 1, ExtrapolatedLocation
+			end
+		end
+	end
+	
+	local NearbyAlliedTowers = bot:GetNearbyTowers(1600, false)
+	
+	for x, Tower in pairs(NearbyAlliedTowers) do
+		local TowerTarget = Tower:GetAttackTarget()
+		
+		if PAF.IsValidHeroAndNotIllusion(TowerTarget)
+		and not PAF.IsMagicImmune(TowerTarget)
+		and not PAF.IsDisabled(TowerTarget)
+		and not PAF.IsReflectingSpells(TowerTarget) then
+			local ExtrapolateTime = (CastPoint + (GetUnitToUnitDistance(bot, TowerTarget) / Speed))
+			local ExtrapolatedLocation = TowerTarget:GetExtrapolatedLocation(ExtrapolateTime)
+				
+			if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+				return 1, ExtrapolatedLocation
+			end
 		end
 	end
 	
@@ -118,6 +149,7 @@ function UsePoof()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = Poof:GetSpecialValueInt("radius")
+	local ManaCost = Poof:GetManaCost()
 	
 	local allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
 	local MeepoTable = {}
@@ -143,31 +175,32 @@ function UsePoof()
 		end
 		
 		if FurthestMeepo ~= nil and FurthestMeepo ~= bot then
-			return BOT_ACTION_DESIRE_HIGH, FurthestMeepo
+			return 1, FurthestMeepo
 		end
 	end
 	
-	local enemies = bot:GetNearbyHeroes(CastRange - 50, true, BOT_MODE_NONE)
+	local enemies = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	if #enemies >= 1 then
 		for v, enemy in pairs(enemies) do
 			if PAF.IsDisabled(enemy) then
-				return BOT_ACTION_DESIRE_HIGH, bot
+				return 1, bot
 			end
 		end
 	end
 	
 	for v, meepo in pairs(MeepoTable) do
 		if not P.IsRetreating(bot) and PAF.IsEngaging(meepo) and GetUnitToUnitDistance(bot, meepo) > 2000 then
-			return BOT_ACTION_DESIRE_HIGH, meepo
+			return 1, meepo
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM and (bot:GetMana() - Poof:GetManaCost()) > manathreshold then
+	if bot:GetActiveMode() == BOT_MODE_FARM
+	and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
 		local neutrals = bot:GetNearbyNeutralCreeps(CastRange)
 		
 		if #neutrals >= 1 then
-			return BOT_ACTION_DESIRE_HIGH, bot
+			return 1, bot
 		end
 	end
 	
@@ -216,7 +249,7 @@ function UseDig()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	if bot:GetHealth() < bot:GetMaxHealth() * 0.5 then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	return 0

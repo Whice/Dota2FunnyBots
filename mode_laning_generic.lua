@@ -220,29 +220,6 @@ function Think()
 		end
 	end
 	
-	----------------------------
-	-- HARASSING ENEMY HEROES --
-	----------------------------
-	
-	local HarassRange = (AttackRange + 50)
-	local CreepAggroRange = 500
-	
-	local NearbyEnemyHeroes = bot:GetNearbyHeroes(HarassRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterTrueUnits(NearbyEnemyHeroes)
-	local NearbyEnemyCreeps = bot:GetNearbyLaneCreeps(CreepAggroRange, true)
-	local TowersInRange = bot:GetNearbyTowers(700, true)
-	
-	if IsAttackReady(LastAttackTime, AttackPoint, SecondsPerAttack)
-	and #NearbyEnemyHeroes > 0
-	and #TowersInRange <= 0 then
-		local WeakestHero = PAF.GetWeakestUnit(FilteredEnemies)
-		
-		if #NearbyEnemyCreeps <= 3 then
-			bot:Action_AttackUnit(WeakestHero, true)
-			return
-		end
-	end
-	
 	--------------------------------
 	-- CREEP SCORE (LAST HITTING) --
 	--------------------------------
@@ -294,13 +271,9 @@ function Think()
 					
 					if ShouldPrepareToLastHitCreep(WeakestCreep, AttackingUnits, AttackDamage) then
 						local MoveToLHLoc = PAF.GetXUnitsTowardsLocation(WeakestCreep:GetLocation(), MoveToLoc, AttackRange)
-						local LastHitPos = PAF.GetXUnitsTowardsLocation(WeakestCreep:GetLocation(), MoveToLHLoc, AttackRange)
 							
 						if GetUnitToUnitDistance(bot, WeakestCreep) > AttackRange then
-							bot:Action_MoveToLocation(LastHitPos)
-							return
-						else
-							bot:Action_MoveToLocation(bot:GetLocation())
+							bot:Action_MoveToLocation(MoveToLHLoc)
 							return
 						end
 					end
@@ -345,17 +318,36 @@ function Think()
 					
 				if ShouldPrepareToLastHitCreep(WeakestCreep, AttackingUnits, AttackDamage) then
 					local MoveToLHLoc = PAF.GetXUnitsTowardsLocation(WeakestCreep:GetLocation(), MoveToLoc, AttackRange)
-					local LastHitPos = PAF.GetXUnitsTowardsLocation(WeakestCreep:GetLocation(), MoveToLHLoc, AttackRange)
 						
 					if GetUnitToUnitDistance(bot, WeakestCreep) > AttackRange then
-						bot:Action_MoveToLocation(LastHitPos)
-						return
-					else
-						bot:Action_MoveToLocation(bot:GetLocation())
+						bot:Action_MoveToLocation(MoveToLHLoc)
 						return
 					end
 				end
 			end
+		end
+	end
+	
+	----------------------------
+	-- HARASSING ENEMY HEROES --
+	----------------------------
+	
+	local HarassRange = (AttackRange + 50)
+	local CreepAggroRange = 500
+	
+	local NearbyEnemyHeroes = bot:GetNearbyHeroes(HarassRange, true, BOT_MODE_NONE)
+	local FilteredEnemies = PAF.FilterTrueUnits(NearbyEnemyHeroes)
+	local NearbyEnemyCreeps = bot:GetNearbyLaneCreeps(CreepAggroRange, true)
+	local TowersInRange = bot:GetNearbyTowers(700, true)
+	
+	if IsAttackReady(LastAttackTime, AttackPoint, SecondsPerAttack)
+	and #NearbyEnemyHeroes > 0
+	and #TowersInRange <= 0 then
+		local WeakestHero = PAF.GetWeakestUnit(FilteredEnemies)
+		
+		if #NearbyEnemyCreeps <= 3 then
+			bot:Action_AttackUnit(WeakestHero, true)
+			return
 		end
 	end
 	
@@ -461,9 +453,13 @@ function IsTowerDivingForEnemy()
 		end
 		
 		local CombinedDamageToTarget = PAF.CombineEstimatedDamage(true, AlliesAttackingTarget, BotTarget, 2.5, DAMAGE_TYPE_ALL)
+		local targetHP = BotTarget:GetHealth()
+		if BotTarget:GetUnitName() == "npc_dota_hero_medusa" then
+			targetHP = (targetHP + BotTarget:GetMana())
+		end
 		
 		if #TowersInDiveRange > 0
-		and BotTarget:GetHealth() > CombinedDamageToTarget then
+		and targetHP > CombinedDamageToTarget then
 			LastTowerDive = DotaTime()
 		end
 	end

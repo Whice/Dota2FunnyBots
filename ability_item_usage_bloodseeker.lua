@@ -43,7 +43,20 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	AttackTarget = bot:GetAttackTarget()
-	ManaThreshold = (100 + BloodBath:GetManaCost() + Rupture:GetManaCost())
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	RuptureDesire, RuptureTarget = UseRupture()
@@ -201,7 +214,8 @@ function UseRupture()
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				if not BotTarget:HasModifier("modifier_bloodseeker_rupture") then
+				if not BotTarget:HasModifier("modifier_bloodseeker_rupture")
+				and not PAF.IsReflectingSpells(BotTarget) then
 					return 1, BotTarget
 				else
 					local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1600, true, BOT_MODE_NONE)
@@ -215,7 +229,8 @@ function UseRupture()
 					
 					local StrongestEnemy = PAF.GetStrongestPowerUnit(ViableRuptureTargets)
 					
-					if GetUnitToUnitDistance(bot, StrongestEnemy) <= CastRange then
+					if GetUnitToUnitDistance(bot, StrongestEnemy) <= CastRange
+					and not PAF.IsReflectingSpells(StrongestEnemy) then
 						return 1, StrongestEnemy
 					end
 				end

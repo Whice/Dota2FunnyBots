@@ -29,6 +29,8 @@ local EssenceShift = bot:GetAbilityByName("slark_essence_shift")
 local DepthShroud = bot:GetAbilityByName("slark_depth_shroud")
 local ShadowDance = bot:GetAbilityByName("slark_shadow_dance")
 
+local Barracuda = bot:GetAbilityByName("slark_barracuda") -- Innate Ability
+
 local DarkPactDesire = 0
 local PounceDesire = 0
 local DepthShroudDesire = 0
@@ -36,13 +38,27 @@ local ShadowDanceDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
 	
-	manathreshold = (bot:GetMaxMana() * 0.4)
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	ShadowDanceDesire = UseShadowDance()
@@ -78,34 +94,47 @@ function UseDarkPact()
 	if not DarkPact:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = DarkPact:GetSpecialValueInt("radius")
+	local Radius = DarkPact:GetSpecialValueInt("radius")
+	local ManaCost = DarkPact:GetManaCost()
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			if GetUnitToUnitDistance(bot, BotTarget) <= Radius
 			and not PAF.IsMagicImmune(BotTarget) then
 				return BOT_ACTION_DESIRE_HIGH
 			end
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if not P.IsInLaningPhase() and AttackTarget ~= nil then
-		local creeps = bot:GetNearbyCreeps(CastRange, true)
-		
-		if AttackTarget:IsCreep()
-		and #creeps >= 2
-		and (bot:GetMana() - DarkPact:GetManaCost()) > manathreshold then
-			return BOT_ACTION_DESIRE_VERYHIGH
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local CreepsWithinCastRange = bot:GetNearbyCreeps(Radius, true)
+				
+				if #CreepsWithinCastRange >= 2 then
+					return 1
+				end
+			end
 		end
+	end
 	
+	if bot:IsDisarmed()
+	or bot:IsRooted()
+	or bot:IsBlind()
+	or (bot:GetCurrentMovementSpeed() <= 300 and not P.IsInLaningPhase()) then
+		return 1
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
+			return 1
 		end
-		
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
 		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget
+			return 1
 		end
 	end
 	
@@ -122,20 +151,18 @@ function UsePounce()
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if bot:IsFacingLocation(BotTarget:GetLocation(), 10)
-			and GetUnitToUnitDistance(bot, BotTarget) < (CastRange + Radius)
-			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_VERYHIGH
+			and GetUnitToUnitDistance(bot, BotTarget) < CastRange then
+				return 1
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) then
-		local EnemiesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
-		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 		
-		if #FilteredEnemies > 0 then
+		if #EnemiesWithinRange > 0 then
 			if bot:IsFacingLocation(PAF.GetFountainLocation(bot), 20) then
-				return BOT_ACTION_DESIRE_VERYHIGH
+				return 1
 			end
 		end
 	end
@@ -147,8 +174,13 @@ function UseShadowDance()
 	if not ShadowDance:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_VERYHIGH
+	local RegenPerSecond = (Barracuda:GetSpecialValueInt("bonus_regen") + bot:GetHealthRegen())
+	local Duration = ShadowDance:GetSpecialValueInt("duration")
+	local TotalHeals = (RegenPerSecond + Duration)
+	
+	if bot:GetActiveMode() == BOT_MODE_RETREAT
+	and bot:GetHealth() <= (bot:GetMaxHealth() - TotalHeals) then
+		return 1
 	end
 	
 	return 0
@@ -160,12 +192,11 @@ function UseDepthShroud()
 	local CR = DepthShroud:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
-	local AlliesWithinRange = bot:GetNearbyHeroes(CastRange, false, BOT_MODE_NONE)
-	local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
+	local AlliesWithinRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, false, BOT_MODE_NONE)
 	
-	for v, Ally in pairs(FilteredAllies) do
+	for v, Ally in pairs(AlliesWithinRange) do
 		if Ally:GetHealth() <= (Ally:GetMaxHealth() * 0.4) and Ally:WasRecentlyDamagedByAnyHero(2) then
-			return BOT_ACTION_DESIRE_ABSOLUTE, Ally:GetLocation()
+			return 1, Ally:GetLocation()
 		end
 	end
 	

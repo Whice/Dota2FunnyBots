@@ -36,16 +36,27 @@ local CounterSpellAllyDesire = 0
 
 local AttackRange
 local BotTarget
-
-local RadiantBase = Vector(-7171.12, -7261.72, 1469.28)
-local DireBase = Vector(6977.84, 5797.69, 1357.99)
-local team = bot:GetTeam()
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
 	
-	AttackRange = bot:GetAttackRange()
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	SpellShieldDesire = UseSpellShield()
@@ -88,7 +99,7 @@ function UseBlink()
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
 	if P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_ABSOLUTE, PAF.GetFountainLocation(bot)
+		return 1, PAF.GetFountainLocation(bot)
 	end
 	
 	if PAF.IsEngaging(bot) then
@@ -98,7 +109,7 @@ function UseBlink()
 			if EstimatedDamage > BotTarget:GetHealth() then
 				if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 				and GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
-					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+					return 1, BotTarget:GetLocation()
 				end
 			end
 			
@@ -107,7 +118,7 @@ function UseBlink()
 				
 				if AoECount <= 2 then
 					if GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
-						return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
+						return 1, BotTarget:GetExtrapolatedLocation(1)
 					end
 				end
 			end
@@ -128,7 +139,7 @@ function UseSpellShield()
 		and proj.is_attack == false
 		and proj.caster ~= nil
 		and proj.caster:GetTeam() ~= bot:GetTeam() then
-			return BOT_ACTION_DESIRE_HIGH
+			return 1
 		end
 	end
 	
@@ -161,7 +172,8 @@ function UseManaVoid()
 			
 			if RealDamage >= enemy:GetHealth() 
 			and PAF.IsValidHeroTarget(enemy) 
-			and not PAF.IsMagicImmune(enemy) then
+			and not PAF.IsMagicImmune(enemy)
+			and not PAF.IsReflectingSpells(enemy) then
 				target = enemy
 				break
 			end
@@ -169,7 +181,7 @@ function UseManaVoid()
 	end
 	
 	if target ~= nil then
-		return BOT_ACTION_DESIRE_HIGH, target
+		return 1, target
 	end
 	
 	return 0
@@ -191,7 +203,7 @@ function UseCounterSpellAlly()
 			
 			for v, proj in pairs(projectiles) do
 				if GetUnitToLocationDistance(Ally, proj.location) <= 300 and proj.is_attack == false then
-					return BOT_ACTION_DESIRE_HIGH, Ally
+					return 1, Ally
 				end
 			end
 		end

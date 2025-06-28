@@ -34,6 +34,7 @@ local TeamHealthyForTormentor = true
 local TormentorAvailable = false
 local TormentorSpawnTime = (20 * 60)
 local TormentorRespawnTimer = (10 * 60)
+local AliveAllies = 0
 
 local AllyLotusPoolCount = 0
 local EnemyLotusPoolCount = 0
@@ -147,7 +148,11 @@ function GetDesire()
 	end
 	
 	if ShouldTeamDoTormentor() then
-		return BOT_MODE_DESIRE_VERYHIGH
+		if isHumanOnTeam() then
+			return BOT_MODE_DESIRE_VERYHIGH
+		else
+			return BOT_MODE_DESIRE_HIGH
+		end
 	end
 	
 	return BOT_MODE_DESIRE_NONE
@@ -172,7 +177,8 @@ function Think()
 		
 		if IsRadiusVisible(TormentorLoc, 300)
 		and GetUnitToLocationDistance(bot, TormentorLoc) <= 500 then
-			if AlliesInTormentorAttackRange >= GetNumberOfBots() then
+			if AlliesInTormentorAttackRange >= GetNumberOfBots()
+			or isHumanOnTeam() and (AlliesInTormentorAttackRange >= AliveAllies) then
 				local Neutrals = bot:GetNearbyNeutralCreeps(1600)
 			
 				if #Neutrals > 0 then
@@ -480,13 +486,11 @@ function UpdateTormentorAvailability()
 			if Tormentor == nil then
 				TormentorSpawnTime = (DotaTime() + TormentorRespawnTimer)
 				TormentorAvailable = false
-				print("No tormentor available")
 				return
 			else
 				if Tormentor:IsAlive() == false then
 					TormentorSpawnTime = (DotaTime() + TormentorRespawnTimer)
 					TormentorAvailable = false
-					print("No tormentor available")
 					return
 				end
 			end
@@ -513,31 +517,69 @@ function GetHighestLevelBot()
 end
 
 function ShouldTeamDoTormentor()
+	
+	
 	if TormentorAvailable and TeamHealthyForTormentor then
-		local AlliesNearby = 0
-		local AlliesInRange = 0
-		
-		local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
-		local FilteredAllies = PAF.FilterTrueUnits(Allies)
-		
-		for v, Ally in pairs(FilteredAllies) do
-			if Ally:IsBot()
-			and not P.IsMeepoClone(Ally)
-			and not Ally:HasModifier("modifier_arc_warden_tempest_double") then
-				if GetUnitToLocationDistance(Ally, TormentorLoc) <= 12800 then
-					AlliesNearby = (AlliesNearby + 1)
-				end
-				
-				if GetUnitToLocationDistance(Ally, TormentorLoc) <= 1200 then
-					AlliesInRange = (AlliesInRange + 1)
+		if isHumanOnTeam() then
+			local AlliesInRange = 0
+			
+			local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
+			local FilteredAllies = PAF.FilterTrueUnits(Allies)
+			
+			for v, Ally in pairs(FilteredAllies) do
+				if Ally:IsBot()
+				and not P.IsMeepoClone(Ally)
+				and not Ally:HasModifier("modifier_arc_warden_tempest_double") then
+					if GetUnitToLocationDistance(Ally, TormentorLoc) <= 1200 then
+						AlliesInRange = (AlliesInRange + 1)
+					end
 				end
 			end
-		end
-		
-		AlliesInTormentorAttackRange = AlliesInRange
-		
-		if AlliesNearby >= GetNumberOfBots() then
-			return true
+			
+			AlliesInTormentorAttackRange = AlliesInRange
+			local aliveHeroes = 0
+			
+			for x, Player in pairs(GetTeamPlayers(bot:GetTeam())) do
+				if IsHeroAlive(Player) then
+					aliveHeroes = (aliveHeroes + 1)
+				end
+			end
+			
+			AliveAllies = aliveHeroes
+			
+			for x, Human in pairs(PAF.GetAllyHumanHeroes()) do
+				local LastPing = Human:GetMostRecentPing()
+				if (GameTime() - LastPing.time) < 180
+				and P.GetDistance(TormentorLoc, LastPing.location) <= 300 then
+					return true
+				end
+			end
+		else
+			local AlliesNearby = 0
+			local AlliesInRange = 0
+			
+			local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
+			local FilteredAllies = PAF.FilterTrueUnits(Allies)
+			
+			for v, Ally in pairs(FilteredAllies) do
+				if Ally:IsBot()
+				and not P.IsMeepoClone(Ally)
+				and not Ally:HasModifier("modifier_arc_warden_tempest_double") then
+					if GetUnitToLocationDistance(Ally, TormentorLoc) <= 12800 then
+						AlliesNearby = (AlliesNearby + 1)
+					end
+					
+					if GetUnitToLocationDistance(Ally, TormentorLoc) <= 1200 then
+						AlliesInRange = (AlliesInRange + 1)
+					end
+				end
+			end
+			
+			AlliesInTormentorAttackRange = AlliesInRange
+			
+			if AlliesNearby >= GetNumberOfBots() then
+				return true
+			end
 		end
 	end
 	
@@ -554,4 +596,15 @@ function GetNumberOfBots()
 	end
 	
 	return NumBots
+end
+
+function isHumanOnTeam()
+	local teamPlayers = GetTeamPlayers(bot:GetTeam())
+	for x, ID in pairs(teamPlayers) do
+		if not IsPlayerBot(ID) then
+			return true
+		end
+	end
+	
+	return false
 end

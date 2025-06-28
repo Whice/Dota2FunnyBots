@@ -36,13 +36,30 @@ local ConcussiveGrenadeDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 local LastShrapnelLoc = Vector(-99999, -99999, -99999)
-local LastFarmShrapnelTime = -90
+local LastShrapnelTime = -90
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	AssassinateDesire, AssassinateTarget = UseAssassinate()
@@ -63,6 +80,7 @@ function AbilityUsageThink()
 	if ShrapnelDesire > 0 then
 		PAF.SwitchTreadsToInt(bot)
 		bot:ActionQueue_UseAbilityOnLocation(Shrapnel, ShrapnelTarget)
+		LastShrapnelTime = DotaTime()
 		LastShrapnelLoc = ShrapnelTarget
 		return
 	end
@@ -84,57 +102,60 @@ function UseShrapnel()
 	local Radius = Shrapnel:GetSpecialValueInt("radius")
 	local CastPoint = Shrapnel:GetCastPoint()
 	local DamageDelay = Shrapnel:GetSpecialValueFloat("damage_delay")
-	local FarmDuration = Shrapnel:GetSpecialValueInt("AbilityChargeRestoreTime")
-	--local FarmDuration = Shrapnel:GetSpecialValueInt("duration")
+	local RestoreTime = Shrapnel:GetSpecialValueInt("AbilityChargeRestoreTime")
+	local ExtrapolateTime = (CastPoint + DamageDelay)
+	local ManaCost = Shrapnel:GetManaCost()
 	
-	local ShouldCastShrapnel = false
-	local target = nil
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
-	if PAF.IsEngaging(bot) then
+	if PAF.IsInTeamFight(bot) then
+		local AoELocation = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius, ExtrapolateTime, 0)
+		
+		if AoELocation.count >= 2
+		and (DotaTime() - LastShrapnelTime) >= 3 then
+			return 1, AoELocation.targetloc
+		end
+	elseif PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				target = BotTarget
-			end
-		end
-	end
-	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget) then
-				return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget:GetLocation()
-			end
-		end
-		
-		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
-		end
-		
-		if bot:GetActiveMode() == BOT_MODE_FARM and not P.IsInLaningPhase() then
-			if AttackTarget:IsCreep() and AttackTarget:GetTeam() ~= bot:GetTeam() then
-				local NearbyCreeps = bot:GetNearbyCreeps(CastRange, true)
-				local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, Radius)
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				local ExtrapolatedLocation = BotTarget:GetExtrapolatedLocation(ExtrapolateTime)
 				
-				if AoECount >= 3
-				and (bot:GetMana() - Shrapnel:GetManaCost()) > (bot:GetMaxMana() * 0.5)
-				and (DotaTime() - LastFarmShrapnelTime) >= FarmDuration then
-					LastFarmShrapnelTime = DotaTime()
-					return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+				if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange
+				and GetUnitToLocationDistance(BotTarget, LastShrapnelLoc) > Radius
+				and (DotaTime() - LastShrapnelTime) >= ExtrapolateTime then
+					return 1, ExtrapolatedLocation
 				end
 			end
 		end
 	end
 	
-	if target ~= nil then
-		local distancediff = GetUnitToLocationDistance(target, LastShrapnelLoc)
-		if distancediff > Radius then
-			ShouldCastShrapnel = true
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local AoELocation = bot:FindAoELocation(true, false, bot:GetLocation(), CastRange, Radius, 0, 0)
+				
+				if AoELocation.count >= 3
+				and (DotaTime() - LastShrapnelTime) >= RestoreTime then
+					return 1, AoELocation.targetloc
+				end
+			end
 		end
 	end
 	
-	if target ~= nil and ShouldCastShrapnel == true then
-		return BOT_ACTION_DESIRE_HIGH, target:GetExtrapolatedLocation(CastPoint + DamageDelay)
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget)
+		and (DotaTime() - LastShrapnelTime) >= RestoreTime then
+			return 1, AttackTarget:GetLocation()
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget)
+		and (DotaTime() - LastShrapnelTime) >= RestoreTime then
+			return 1, AttackTarget:GetLocation()
+		end
 	end
 	
 	return 0
@@ -144,35 +165,28 @@ function UseTakeAim()
 	if not TakeAim:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local BonusRange = TakeAim:GetSpecialValueInt("bonus_attack_range")
+	local BonusRange = TakeAim:GetSpecialValueInt("active_attack_range_bonus")
+	local TotalAttackRange = (AttackRange + BonusRange)
+	local ManaCost = TakeAim:GetManaCost()
 	
-	if PAF.IsEngaging(bot) then
+	if PAF.IsInTeamFight(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= (AttackRange + BonusRange) then
-				return BOT_ACTION_DESIRE_HIGH
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+				return 1
 			end
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if AttackTarget ~= nil and AttackTarget:IsCreep() then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget) then
-				return BOT_ACTION_DESIRE_VERYHIGH
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local CreepsWithinAttackRange = bot:GetNearbyCreeps(TotalAttackRange, true)
+				
+				if #CreepsWithinAttackRange >= 3 then
+					return 1
+				end
 			end
-		end
-		
-		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 	
@@ -227,13 +241,13 @@ function UseConcussiveGrenade()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = ConcussiveGrenade:GetCastRange()
+	local Radius = ConcussiveGrenade:GetSpecialValueInt("radius")
 	
-	local initenemies = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local enemies = PAF.FilterTrueUnits(initenemies)
-	local target = PAF.GetWeakestUnit(enemies)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
+	local ClosestEnemy = PAF.GetClosestUnit(bot, EnemiesWithinCastRange)
 	
-	if target ~= nil then
-		return BOT_ACTION_DESIRE_HIGH, target:GetLocation()
+	if ClosestEnemy ~= nil then
+		return 1, PAF.GetXUnitsTowardsLocation(ClosestEnemy:GetLocation(), bot:GetLocation(), (Radius / 2))
 	end
 	
 	return 0

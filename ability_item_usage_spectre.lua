@@ -38,6 +38,8 @@ local RealityDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 local HauntDuration
 local HauntTime = 0
@@ -47,6 +49,21 @@ local StepTarget = nil
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	HauntDuration = Haunt:GetSpecialValueFloat("duration")
 	
@@ -100,9 +117,18 @@ function UseSpectralDagger()
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsReflectingSpells(BotTarget) then
+				return 1, BotTarget
 			end
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1200, true, BOT_MODE_NONE)
+		
+		if #EnemiesWithinRange > 0 then
+			return 1, PAF.GetXUnitsTowardsLocation(bot:GetLocation(), PAF.GetFountainLocation(bot), CastRange)
 		end
 	end
 	
@@ -115,7 +141,7 @@ function UseDispersion()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	if (PAF.IsEngaging(bot) or P.IsRetreating(bot)) and bot:WasRecentlyDamagedByAnyHero(2) then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	return 0
@@ -136,7 +162,7 @@ function UseHaunt()
 			local target = PAF.GetWeakestUnit(enemies)
 			
 			if target ~= nil and not P.IsRetreating(bot) and not PAF.IsEngaging(bot) and GetUnitToUnitDistance(bot, target) > SpectralDagger:GetCastRange() then
-				return BOT_ACTION_DESIRE_HIGH
+				return 1
 			end
 		end
 	end
@@ -163,14 +189,14 @@ function UseShadowStep()
 			and not PAF.IsEngaging(bot)
 			and GetUnitToUnitDistance(bot, target) > 1600
 			and not Haunt:IsFullyCastable() then
-				return BOT_ACTION_DESIRE_HIGH, target
+				return 1, target
 			end
 		end
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if GetUnitToUnitDistance(bot, BotTarget) > SpectralDagger:GetCastRange() then
-			return BOT_ACTION_DESIRE_HIGH, BotTarget
+			return 1, BotTarget
 		end
 	end
 	
@@ -192,7 +218,7 @@ function UseReality()
 				local target = PAF.GetWeakestUnit(enemies)
 				
 				if target ~= nil and not P.IsRetreating(bot) and not PAF.IsEngaging(bot) and GetUnitToUnitDistance(bot, target) > 1600 then
-					return BOT_ACTION_DESIRE_HIGH, target:GetLocation()
+					return 1, target:GetLocation()
 				end
 			end
 		end
@@ -204,7 +230,7 @@ function UseReality()
 	
 	if (DotaTime() - ShadowStepTime) < HauntDuration then
 		if StepTarget ~= nil and GetUnitToUnitDistance(bot, StepTarget) > 1000 then
-			return BOT_ACTION_DESIRE_HIGH, StepTarget:GetLocation()
+			return 1, StepTarget:GetLocation()
 		end
 	end
 	

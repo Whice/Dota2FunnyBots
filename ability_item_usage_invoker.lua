@@ -124,7 +124,9 @@ function AbilityUsageThink()
 		LastTornadoTime = DotaTime()
 		bot:ActionQueue_UseAbilityOnLocation(EMP, TornadoComboTarget)
 		InvokeSpell(ChaosMeteor)
-		bot:ActionQueue_UseAbilityOnLocation(ChaosMeteor, TornadoComboTarget)
+		local distToLoc = GetUnitToLocationDistance(bot, TornadoComboTarget)
+		local meteorLoc = PAF.GetXUnitsTowardsLocation(bot:GetLocation(), TornadoComboTarget, (distToLoc / 2))
+		bot:ActionQueue_UseAbilityOnLocation(ChaosMeteor, meteorLoc)
 		return
 	end
 	
@@ -187,7 +189,9 @@ function AbilityUsageThink()
 	
 		if IsActiveAbility(ChaosMeteor) then
 			PAF.SwitchTreadsToInt(bot)
-			bot:ActionQueue_UseAbilityOnLocation(ChaosMeteor, ChaosMeteorTarget)
+			local distToLoc = GetUnitToLocationDistance(bot, ChaosMeteorTarget)
+			local meteorLoc = PAF.GetXUnitsTowardsLocation(bot:GetLocation(), ChaosMeteorTarget, (distToLoc / 2))
+			bot:ActionQueue_UseAbilityOnLocation(ChaosMeteor, meteorLoc)
 			return
 		end
 	end

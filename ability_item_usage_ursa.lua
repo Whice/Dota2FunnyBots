@@ -34,10 +34,27 @@ local EnrageDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	EnrageDesire = UseEnrage()
@@ -66,39 +83,43 @@ function UseEarthshock()
 	if not Earthshock:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CR = Earthshock:GetSpecialValueInt("hop_distance")
-	local CastRange = PAF.GetProperCastRange(CR)
+	local CastRange = Earthshock:GetSpecialValueInt("hop_distance")
 	local Radius = Earthshock:GetSpecialValueInt("shock_radius")
 	
-	if PAF.IsEngaging(bot) or P.IsRetreating(bot) then
+	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if bot:IsFacingLocation(BotTarget:GetLocation(), 10)
-			and GetUnitToUnitDistance(bot, BotTarget) < (CastRange + Radius)
-			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_VERYHIGH
+			and GetUnitToUnitDistance(bot, BotTarget) < (CastRange + Radius) then
+				return 1
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) then
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
 		local EnemiesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
 		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 		
 		if #FilteredEnemies > 0 then
 			if bot:IsFacingLocation(PAF.GetFountainLocation(bot), 20) then
-				return BOT_ACTION_DESIRE_VERYHIGH
+				return 1
 			end
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if not P.IsInLaningPhase() and AttackTarget ~= nil then
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		if PAF.IsRoshan(AttackTarget) then
 			if bot:IsFacingLocation(AttackTarget:GetLocation(), 10)
-			and GetUnitToUnitDistance(bot, AttackTarget) < (CastRange + Radius)
-			and not PAF.IsMagicImmune(AttackTarget) then
-				return BOT_ACTION_DESIRE_VERYHIGH
+			and GetUnitToUnitDistance(bot, AttackTarget) < (CastRange + Radius) then
+				return 1
+			end
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			if bot:IsFacingLocation(AttackTarget:GetLocation(), 10)
+			and GetUnitToUnitDistance(bot, AttackTarget) < (CastRange + Radius) then
+				return 1
 			end
 		end
 	end
@@ -111,25 +132,37 @@ function UseOverpower()
 	if P.CantUseAbility(bot) then return 0 end
 	if bot:HasModifier("modifier_ursa_overpower") then return 0 end
 	
+	local ManaCost = Overpower:GetManaCost()
+	
 	if PAF.IsEngaging(bot) then
-		return BOT_ACTION_DESIRE_VERYHIGH
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1600 then
+				return 1
+			end
+		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if not P.IsInLaningPhase() and AttackTarget ~= nil then
-		local creeps = bot:GetNearbyCreeps((AttackRange + 300), true)
-		
-		if AttackTarget:IsCreep() and #creeps >= 2 then
-			return BOT_ACTION_DESIRE_VERYHIGH
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				if AttackTarget:IsCreep()
+				or AttackTarget:IsBuilding() then
+					return 1
+				end
+			end
 		end
+	end
 	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
+			return 1
 		end
-		
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
 		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+			return 1
 		end
 	end
 	
@@ -140,15 +173,29 @@ function UseEnrage()
 	if not Enrage:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	if PAF.IsInTeamFight(bot) or (bot:GetActiveMode() == BOT_MODE_RETREAT and bot:GetActiveModeDesire() >= 0.8) then
-		return BOT_ACTION_DESIRE_VERYHIGH
+	if bot:GetHealth() <= (bot:GetMaxHealth() * 0.75)
+	and WasRecentlyDamagedByAnyHero(1) then
+		return 1
 	end
 	
-	if not P.IsInLaningPhase() and AttackTarget ~= nil then
-		local AttackTarget = bot:GetAttackTarget()
-		
+	local projectiles = bot:GetIncomingTrackingProjectiles()
+	
+	for v, proj in pairs(projectiles) do
+		if GetUnitToLocationDistance(bot, proj.location) <= 300
+		and proj.is_attack == false
+		and proj.caster ~= nil
+		and proj.caster:GetTeam() ~= bot:GetTeam() then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
 		if PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_VERYHIGH
+			local RoshanTarget = AttackTarget:GetAttackTarget()
+			
+			if RoshanTarget == bot then
+				return 1
+			end
 		end
 	end
 	

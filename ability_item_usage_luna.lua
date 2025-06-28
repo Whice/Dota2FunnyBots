@@ -34,16 +34,27 @@ local LunarOrbitDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
 	
-	manathreshold = 100
-	manathreshold = manathreshold + LucentBeam:GetManaCost()
-	manathreshold = manathreshold + Eclipse:GetManaCost()
-	manathreshold = manathreshold + LunarOrbit:GetManaCost()
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	LunarOrbitDesire = UseLunarOrbit()
@@ -74,35 +85,83 @@ function UseLucentBeam()
 	
 	local CR = LucentBeam:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local Damage = LucentBeam:GetSpecialValueInt("beam_damage")
+	local DamageType = LucentBeam:GetDamageType()
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
-	for v, enemy in pairs(FilteredEnemies) do
-		if enemy:IsChanneling() then
-			return BOT_ACTION_DESIRE_HIGH, enemy
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		if (Enemy:IsChanneling() or PAF.CanDamageKillEnemy(Enemy, Damage, DamageType))
+		and not PAF.IsReflectingSpells(Enemy) then
+			return 1, Enemy
 		end
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				if not PAF.IsDisabled(BotTarget) then
+					return 1, BotTarget
+				else
+					local EnemiesWithinRange = PAF.GetNearbyFilteredHeroesForStun(bot, 1600, true, BOT_MODE_NONE)
+					local FilteredUnits = PAF.FilterExceptedUnit(EnemiesWithinRange, BotTarget)
+					
+					local StrongestEnemy = PAF.GetStrongestPowerUnit(FilteredUnits)
+					
+					if StrongestEnemy ~= nil
+					and GetUnitToUnitDistance(bot, StrongestEnemy) <= CastRange then
+						return 1, StrongestEnemy
+					end
+				end
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
+	if bot:GetActiveMode() == BOT_MODE_LANING then
+		local CreepsWithinRange = bot:GetNearbyLaneCreeps(CastRange, true)
+		
+		for x, Creep in pairs(CreepsWithinRange) do
+			if string.find(Creep:GetUnitName(), "ranged")
+			and PAF.CanDamageKillEnemy(Creep, Damage, DamageType)
+			and GetUnitToUnitDistance(bot, Creep) > AttackRange then
+				return 1, Creep
+			end
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local StrongestEnemy = PAF.GetStrongestPowerUnit(EnemiesWithinCastRange)
+		
+		if StrongestEnemy ~= nil
+		and not PAF.IsMagicImmune(StrongestEnemy)
+		and not PAF.IsReflectingSpells(StrongestEnemy) then
+			return 1, StrongestEnemy
+		end
+	end
+	
+	local NearbyAlliedTowers = bot:GetNearbyTowers(1600, false)
+	
+	for x, Tower in pairs(NearbyAlliedTowers) do
+		local TowerTarget = Tower:GetAttackTarget()
+		
+		if PAF.IsValidHeroAndNotIllusion(TowerTarget)
+		and not PAF.IsMagicImmune(TowerTarget)
+		and not PAF.IsDisabled(TowerTarget)
+		and not PAF.IsReflectingSpells(TowerTarget) then
+			return 1, TowerTarget
+		end
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget
 		end
 	end
 	
@@ -111,14 +170,16 @@ end
 
 function UseEclipse()
 	if not Eclipse:IsFullyCastable() then return 0 end
-	if not PAF.IsInTeamFight(bot) then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local Radius = Eclipse:GetSpecialValueInt("radius")
-	local EnemiesWithinRange = bot:GetNearbyHeroes(Radius, true, BOT_MODE_NONE)
 	
-	if #EnemiesWithinRange >= 2 then
-		return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsInTeamFight(bot) then
+		local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, Radius, true, BOT_MODE_NONE)
+		
+		if #EnemiesWithinCastRange >= 1 then
+			return 1
+		end
 	end
 	
 	return 0
@@ -128,17 +189,18 @@ function UseLunarOrbit()
 	if not LunarOrbit:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local Radius = LunarOrbit:GetSpecialValueInt("rotating_glaives_movement_radius")
-	local EnemiesWithinRange = bot:GetNearbyHeroes(Radius, true, BOT_MODE_NONE)
+	local MovementRadius = LunarOrbit:GetSpecialValueInt("rotating_glaives_movement_radius")
+	local CollisionRadius = LunarOrbit:GetSpecialValueInt("rotating_glaives_hit_radius")
+	local Radius = (MovementRadius + CollisionRadius)
 	
-	if PAF.IsEngaging(bot) then
-		if #EnemiesWithinRange >= 1 then
-			return BOT_ACTION_DESIRE_HIGH
-		end
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, Radius, true, BOT_MODE_NONE)
+	
+	if #EnemiesWithinCastRange >= 1 then
+		return 1
 	end
 	
-	if P.IsRetreating(bot) and bot:WasRecentlyDamagedByAnyHero(2) then
-		return BOT_ACTION_DESIRE_HIGH
+	if bot:GetHealth() < (bot:GetMaxHealth() * 0.8) and bot:WasRecentlyDamagedByAnyHero(1) then
+		return 1
 	end
 	
 	return 0

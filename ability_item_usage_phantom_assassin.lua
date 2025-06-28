@@ -48,7 +48,20 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	AttackTarget = bot:GetAttackTarget()
-	ManaThreshold = (100 + StiflingDagger:GetManaCost() + PhantomStrike:GetManaCost() + Blur:GetManaCost() + FanOfKnives:GetManaCost())
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	if team == TEAM_RADIANT then
 		base = RadiantBase
@@ -102,14 +115,16 @@ function UseStiflingDagger()
 	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	for x, Enemy in pairs(EnemiesWithinCastRange) do
-		if PAF.CanDamageKillEnemy(Enemy, DaggerDamage, DamageType) then
+		if PAF.CanDamageKillEnemy(Enemy, DaggerDamage, DamageType)
+		and not PAF.IsReflectingSpells(Enemy) then
 			return 1
 		end
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsReflectingSpells(BotTarget) then
 				return 1, BotTarget
 			end
 		end
@@ -262,7 +277,7 @@ function UseFanOfKnives()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = FanOfKnives:GetSpecialValueInt("radius")
-	local ManaCost = FanOfKnives:GetManaCost
+	local ManaCost = FanOfKnives:GetManaCost()
 	local DamageType = FanOfKnives:GetDamageType()
 	
 	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)

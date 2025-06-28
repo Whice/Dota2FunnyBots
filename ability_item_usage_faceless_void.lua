@@ -34,16 +34,27 @@ local ChronosphereDesire = 0
 
 local AttackRange
 local BotTarget
-
-local RadiantBase = Vector(-7171.12, -7261.72, 1469.28)
-local DireBase = Vector(6977.84, 5797.69, 1357.99)
-local team = bot:GetTeam()
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
 	
-	AttackRange = bot:GetAttackRange()
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	TimeDilationDesire = UseTimeDilation()
@@ -74,9 +85,9 @@ function UseTimeWalk()
 	
 	local CR = TimeWalk:GetSpecialValueInt("range")
 	local CastRange = PAF.GetProperCastRange(CR)
+	local CastPoint = TimeWalk:GetCastPoint()
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	if P.IsRetreating(bot) then
 		return BOT_ACTION_DESIRE_ABSOLUTE, PAF.GetFountainLocation(bot)
@@ -89,7 +100,7 @@ function UseTimeWalk()
 			if EstimatedDamage > BotTarget:GetHealth() then
 				if GetUnitToUnitDistance(bot, BotTarget) < CastRange
 				and GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
-					return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+					return 1, BotTarget:GetLocation()
 				end
 			end
 			
@@ -98,18 +109,18 @@ function UseTimeWalk()
 				local ChronosphereRadius = Chronosphere:GetSpecialValueInt("radius")
 				SearchRange = (CastRange + Chronosphere:GetCastRange())
 			
-				local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), SearchRange, ChronosphereRadius/2, 0, 0)
+				local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), SearchRange, ChronosphereRadius, CastPoint, 0)
 				if (AoE.count >= 2) then
-					return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
+					return 1, AoE.targetloc
 				end
 			end
 			
 			if PAF.IsChasing(bot, BotTarget) then
-				local AoECount = PAF.GetUnitsNearTarget(BotTarget:GetLocation(), FilteredEnemies, 800)
+				local AoECount = PAF.GetUnitsNearTarget(BotTarget:GetLocation(), EnemiesWithinCastRange, 800)
 				
 				if AoECount <= 2 then
 					if GetUnitToUnitDistance(bot, BotTarget) > (AttackRange + 150) then
-						return BOT_ACTION_DESIRE_HIGH, BotTarget:GetExtrapolatedLocation(1)
+						return 1, BotTarget:GetExtrapolatedLocation(1)
 					end
 				end
 			end
@@ -125,28 +136,24 @@ function UseTimeDilation()
 	
 	local CastRange = TimeDilation:GetSpecialValueInt("radius")
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= (CastRange - 50)
-			and not PAF.IsMagicImmune(BotTarget)
-			and not PAF.IsDisabled(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH
+			and not PAF.IsMagicImmune(BotTarget) then
+				return 1
 			end
 		end
 	end
 	
-	if #FilteredEnemies >= 1 and P.IsRetreating(bot) then
-		return BOT_ACTION_DESIRE_HIGH
+	if #EnemiesWithinCastRange >= 1 and P.IsRetreating(bot) then
+		return 1
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil and not P.IsInLaningPhase() then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
 		end
 	end
 	
@@ -162,7 +169,7 @@ function UseChronosphere()
 	local Radius = Chronosphere:GetSpecialValueInt("radius")
 	
 	if PAF.IsEngaging(bot) then
-		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius/2, 0, 0)
+		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius, 0, 0)
 		if (AoE.count >= 2) then
 			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
 		end

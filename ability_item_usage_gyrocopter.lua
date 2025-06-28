@@ -35,10 +35,27 @@ local CallDownDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	CallDownDesire, CallDownTarget = UseCallDown()
@@ -85,19 +102,23 @@ function UseRocketBarrage()
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget)
-			and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_VERYHIGH
-			end
-		end
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1200, true, BOT_MODE_NONE)
 		
-		if PAF.IsTormentor(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_HIGH
+		if #EnemiesWithinRange > 0 then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1
 		end
 	end
 	
@@ -110,36 +131,72 @@ function UseHomingMissile()
 	
 	local CR = HomingMissile:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local Damage = HomingMissile:GetSpecialValueInt("hit_damage")
+	local DamageType = HomingMissile:GetDamageType()
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
-	for v, enemy in pairs(FilteredEnemies) do
-		if enemy:IsChanneling() then
-			return BOT_ACTION_DESIRE_HIGH, enemy
+	for x, Enemy in pairs(EnemiesWithinCastRange) do
+		if (Enemy:IsChanneling() or PAF.CanDamageKillEnemy(Enemy, Damage, DamageType))
+		and not PAF.IsReflectingSpells(Enemy) then
+			return 1, Enemy
 		end
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
-			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			and not PAF.IsMagicImmune(BotTarget)
+			and not PAF.IsReflectingSpells(BotTarget) then
+				if not PAF.IsDisabled(BotTarget) then
+					return 1, BotTarget
+				else
+					local EnemiesWithinRange = PAF.GetNearbyFilteredHeroesForStun(bot, 1600, true, BOT_MODE_NONE)
+					local FilteredUnits = PAF.FilterExceptedUnit(EnemiesWithinRange, BotTarget)
+					
+					local StrongestEnemy = PAF.GetStrongestPowerUnit(FilteredUnits)
+					
+					if StrongestEnemy ~= nil
+					and GetUnitToUnitDistance(bot, StrongestEnemy) <= CastRange then
+						return 1, StrongestEnemy
+					end
+				end
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local StrongestEnemy = PAF.GetStrongestPowerUnit(EnemiesWithinCastRange)
+		
+		if StrongestEnemy ~= nil
+		and not PAF.IsMagicImmune(StrongestEnemy)
+		and not PAF.IsReflectingSpells(StrongestEnemy) then
+			return 1, StrongestEnemy
+		end
+	end
+	
+	local NearbyAlliedTowers = bot:GetNearbyTowers(1600, false)
+	
+	for x, Tower in pairs(NearbyAlliedTowers) do
+		local TowerTarget = Tower:GetAttackTarget()
+		
+		if PAF.IsValidHeroAndNotIllusion(TowerTarget)
+		and not PAF.IsMagicImmune(TowerTarget)
+		and not PAF.IsDisabled(TowerTarget)
+		and not PAF.IsReflectingSpells(TowerTarget) then
+			return 1, TowerTarget
+		end
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
-		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget
 		end
 	end
 	
@@ -163,7 +220,6 @@ function UseFlakCannon()
 	end
 	
 	if P.IsPushing(bot) or bot:GetActiveMode() == BOT_MODE_FARM then
-		local AttackTarget = bot:GetAttackTarget()
 		if AttackTarget ~= nil then
 			if AttackTarget:IsCreep() and AttackTarget:GetTeam() ~= bot:GetTeam() then
 				local NearbyCreeps = bot:GetNearbyCreeps(radius, true)

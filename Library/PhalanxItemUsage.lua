@@ -1237,7 +1237,7 @@ PIU.Use['item_power_treads'] = function(item, bot, mode, extra_range)
 		and #FilteredEnemies > 0 then
 			if TreadStat ~= 0 then
 				PAF.SwitchTreadsToStr(bot)
-				return
+				return BOT_ACTION_DESIRE_NONE
 			else
 				return BOT_ACTION_DESIRE_NONE
 			end
@@ -1246,7 +1246,7 @@ PIU.Use['item_power_treads'] = function(item, bot, mode, extra_range)
 		and (bot:GetHealth() < bot:GetMaxHealth() * 0.98) then
 			if TreadStat ~= 2 then
 				PAF.SwitchTreadsToAgi(bot)
-				return
+				return BOT_ACTION_DESIRE_NONE
 			else
 				return BOT_ACTION_DESIRE_NONE
 			end
@@ -1255,7 +1255,7 @@ PIU.Use['item_power_treads'] = function(item, bot, mode, extra_range)
 		and (bot:GetMana() < bot:GetMaxMana() * 0.98) then
 			if TreadStat ~= 2 then
 				PAF.SwitchTreadsToAgi(bot)
-				return
+				return BOT_ACTION_DESIRE_NONE
 			else
 				return BOT_ACTION_DESIRE_NONE
 			end
@@ -1269,7 +1269,7 @@ PIU.Use['item_power_treads'] = function(item, bot, mode, extra_range)
 					PAF.SwitchTreadsToAgi(bot)
 				end
 				
-				return
+				return BOT_ACTION_DESIRE_NONE
 			end
 		end
 	end

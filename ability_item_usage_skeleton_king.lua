@@ -41,7 +41,20 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	AttackTarget = bot:GetAttackTarget()
-	ManaThreshold = (100 + HellfireBlast:GetManaCost() + BoneGuard:GetManaCost())
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	if Reincarnation:IsTrained() then
 		ReincarnationMC = Reincarnation:GetManaCost()
@@ -80,7 +93,8 @@ function UseHellfireBlast()
 	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	for x, Enemy in pairs(EnemiesWithinCastRange) do
-		if Enemy:IsChanneling() or PAF.CanDamageKillEnemy(Enemy, TotalDamage, DamageType) then
+		if (Enemy:IsChanneling() or PAF.CanDamageKillEnemy(Enemy, TotalDamage, DamageType))
+		and not PAF.IsReflectingSpells(Enemy) then
 			return 1, Enemy
 		end
 	end
@@ -88,17 +102,18 @@ function UseHellfireBlast()
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
-			and not PAF.IsMagicImmune(BotTarget) then
+			and not PAF.IsMagicImmune(BotTarget)
+			and not PAF.IsReflectingSpells(BotTarget) then
 				if not PAF.IsDisabled(BotTarget) then
 					return 1, BotTarget
 				else
-					local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1600, true, BOT_MODE_NONE)
+					local EnemiesWithinRange = PAF.GetNearbyFilteredHeroesForStun(bot, 1600, true, BOT_MODE_NONE)
 					local FilteredUnits = PAF.FilterExceptedUnit(EnemiesWithinRange, BotTarget)
 					
 					local StrongestEnemy = PAF.GetStrongestPowerUnit(FilteredUnits)
 					
 					if StrongestEnemy ~= nil
-					and not PAF.IsDisabled(StrongestEnemy)
+					and not PAF.IsReflectingSpells(StrongestEnemy)
 					and GetUnitToUnitDistance(bot, StrongestEnemy) <= CastRange then
 						return 1, StrongestEnemy
 					end
@@ -110,7 +125,9 @@ function UseHellfireBlast()
 	if bot:GetActiveMode() == BOT_MODE_RETREAT then
 		local StrongestEnemy = PAF.GetStrongestPowerUnit(EnemiesWithinCastRange)
 		
-		if StrongestEnemy ~= nil then
+		if StrongestEnemy ~= nil
+		and not PAF.IsMagicImmune(StrongestEnemy)
+		and not PAF.IsReflectingSpells(StrongestEnemy) then
 			return 1, StrongestEnemy
 		end
 	end
@@ -122,7 +139,8 @@ function UseHellfireBlast()
 		
 		if PAF.IsValidHeroAndNotIllusion(TowerTarget)
 		and not PAF.IsMagicImmune(TowerTarget)
-		and not PAF.IsDisabled(TowerTarget) then
+		and not PAF.IsDisabled(TowerTarget)
+		and not PAF.IsReflectingSpells(TowerTarget) then
 			return 1, TowerTarget
 		end
 	end

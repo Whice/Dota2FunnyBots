@@ -44,7 +44,20 @@ function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
 	AttackTarget = bot:GetAttackTarget()
-	ManaThreshold = (100 + Reflection:GetManaCost() + ConjureImage:GetManaCost() + Metamorphosis:GetManaCost() + Sunder:GetManaCost())
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	SunderDesire, SunderTarget = UseSunder()
@@ -149,7 +162,8 @@ function UseSunder()
 	if bot:GetHealth() <= (bot:GetMaxHealth() * 0.35) then
 		local HealthiestEnemy = PAF.GetHealthiestUnit(EnemiesWithinCastRange)
 		
-		if HealthiestEnemy ~= nil then
+		if HealthiestEnemy ~= nil
+		and not PAF.IsReflectingSpells(HealthiestEnemy) then
 			return 1, HealthiestEnemy
 		end
 	end

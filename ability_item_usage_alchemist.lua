@@ -38,13 +38,29 @@ local UnstableConcoctionThrowDesire = 0
 
 local AttackRange
 local BotTarget
-local AttackRange = 0
+local AttackTarget
+local ManaThreshold
 
 local UCTime = 0
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	UnstableConcoctionThrowDesire, UnstableConcoctionThrowTarget = UseUnstableConcoctionThrow()
@@ -90,35 +106,51 @@ function UseAcidSpray()
 	
 	local CR = AcidSpray:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
-	local AcidRadius = AcidSpray:GetSpecialValueInt("radius")
+	local CastPoint = AcidSpray:GetCastPoint()
+	local ManaCost = AcidSpray:GetManaCost()
+	local Radius = AcidSpray:GetSpecialValueInt("radius")
 	
-	if PAF.IsEngaging(bot) then
-		local AoE = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, AcidRadius/2, 0, 0)
-		if (AoE.count >= 1) then
-			return BOT_ACTION_DESIRE_HIGH, AoE.targetloc
+	if PAF.IsInTeamFight(bot) then
+		local AoELocation = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius, CastPoint, 0)
+		
+		if AoELocation.count >= 2 then
+			return 1, AoELocation.targetloc
+		end
+	elseif PAF.IsEngaging(bot) then
+		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				local ExtrapolatedLocation = BotTarget:GetExtrapolatedLocation(CastPoint)
+				
+				if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+					return 1, ExtrapolatedLocation
+				end
+			end
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local AoELocation = bot:FindAoELocation(true, false, bot:GetLocation(), CastRange, Radius, 0, 0)
+				
+				if AoELocation.count >= 3 then
+					return 1, AoELocation.targetloc
+				end
+			end
+		end
+	end
 	
-	if AttackTarget ~= nil then
-		if bot:GetActiveMode() == BOT_MODE_FARM then
-			local NearbyCreeps = bot:GetNearbyCreeps((CastRange + AcidRadius), true)
-			local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, AcidRadius)
-			
-			if AoECount >= 3 then
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
-			end
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget:GetLocation()
 		end
-		
-		if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-			if PAF.IsRoshan(AttackTarget) then
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
-			end
-		end
-		
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
 		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+			return 1, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -134,7 +166,7 @@ function UseUnstableConcoction()
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH
+				return 1
 			end
 		end
 	end
@@ -146,19 +178,42 @@ function UseChemicalRage()
 	if not ChemicalRage:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
+	local ManaCost = ChemicalRage:GetManaCost()
+	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= 500 then
-				return BOT_ACTION_DESIRE_HIGH
+			if GetUnitToUnitDistance(bot, BotTarget) <= 1200 then
+				return 1
 			end
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() == TEAM_NEUTRAL
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local NeutralCreepsWithinRange = bot:GetNearbyNeutralCreeps(300)
+				
+				if #NeutralCreepsWithinCastRange >= 3 then
+					return 1
+				end
+			end
+		end
+	end
 	
-	if AttackTarget ~= nil then
-		if PAF.IsTormentor(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH
+	if bot:IsDisarmed()
+	or bot:IsRooted()
+	or bot:IsBlind()
+	or (bot:GetCurrentMovementSpeed() <= 300 and not P.IsInLaningPhase()) then
+		return 1
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1200, true, BOT_MODE_NONE)
+		local EnemyPower = PAF.CombineEnemyEstimatedOffensivePower(EnemiesWithinRange)
+		
+		if EnemyPower >= bot:GetHealth() then
+			return 1
 		end
 	end
 	
@@ -174,21 +229,21 @@ function UseUnstableConcoctionThrow()
 	
 	if (DotaTime() - UCTime) > 3 then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			return BOT_ACTION_DESIRE_HIGH, BotTarget
+			return 1, BotTarget
 		else -- If desperate to throw
 			local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
 			local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 			
 			if #FilteredEnemies > 0 then
 				local WeakestEnemy = PAF.GetWeakestUnit(FilteredEnemies)
-				return BOT_ACTION_DESIRE_HIGH, WeakestEnemy
+				return 1, WeakestEnemy
 			end
 		end
 	end
 	
 	if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 		if (DotaTime() - UCTime) >= 2 and GetUnitToUnitDistance(bot, BotTarget) > (CastRange - 200) then
-			return BOT_ACTION_DESIRE_HIGH, BotTarget
+			return 1, BotTarget
 		end
 	end
 	
@@ -206,17 +261,17 @@ function UseBerserkPotion()
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
 	if P.IsRetreating(bot) and #FilteredEnemies > 0 then
-		return BOT_ACTION_DESIRE_HIGH, bot
+		return 1, bot
 	end
 	
 	local AlliesWithinRange = bot:GetNearbyHeroes(CastRange, false, BOT_MODE_NONE)
 	local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
 	
-	local StrongestAlly = PAF.GetStrongestAttackDamageUnit(FilteredAllies)
+	local StrongestAlly = PAF.GetStrongestDPSUnit(FilteredAllies)
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			return BOT_ACTION_DESIRE_HIGH, StrongestAlly
+			return 1, StrongestAlly
 		end
 	end
 	

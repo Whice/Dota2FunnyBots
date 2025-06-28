@@ -33,11 +33,11 @@ function X.GetHeroLevelPoints()
 	abilities[1], -- Level 4
 	abilities[3], -- Level 5
 	abilities[4], -- Level 6
-	abilities[2], -- Level 7
+	abilities[3], -- Level 7
 	abilities[2], -- Level 8
 	abilities[2], -- Level 9
 	talents[1],   -- Level 10
-	abilities[1], -- Level 11
+	abilities[2], -- Level 11
 	abilities[4], -- Level 12
 	abilities[1], -- Level 13
 	abilities[1], -- Level 14

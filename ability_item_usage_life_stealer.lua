@@ -36,10 +36,27 @@ local ConsumeDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	ConsumeDesire = UseConsume()
@@ -75,22 +92,21 @@ function UseRage()
 	if P.CantUseAbility(bot) then return 0 end
 	if Rage:IsHidden() then return 0 end
 	
-	if PAF.IsInTeamFight(bot) then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-	
 	local projectiles = bot:GetIncomingTrackingProjectiles()
 	
 	for v, proj in pairs(projectiles) do
-		if GetUnitToLocationDistance(bot, proj.location) <= 300 and proj.is_attack == false then
-			return BOT_ACTION_DESIRE_HIGH
+		if GetUnitToLocationDistance(bot, proj.location) <= 300
+		and proj.is_attack == false
+		and proj.caster ~= nil
+		and proj.caster:GetTeam() ~= bot:GetTeam() then
+			return 1
 		end
 	end
 	
-	local enemies = bot:GetNearbyHeroes(800, true, BOT_MODE_NONE)
-	
-	if P.IsRetreating(bot) and #enemies >= 1 then
-		return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsInTeamFight(bot) or bot:GetActiveMode() == BOT_MODE_RETREAT then
+		if bot:WasRecentlyDamagedByAnyHero(1) then
+			return 1
+		end
 	end
 	
 	return 0
@@ -102,25 +118,34 @@ function UseInfest()
 	if Infest:IsHidden() then return 0 end
 	
 	if bot:HasScepter() then
-		local EnemiesWithinRange = bot:GetNearbyHeroes(700, true, BOT_MODE_NONE)
-		local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
+		local MaxHPRegenRate = ((Infest:GetSpecialValueInt("self_regen") * 2) / 100)
+		local EnemyDuration = Infest:GetSpecialValueInt("infest_duration_enemy")
+		local RegenPerSecond = (bot:GetMaxHealth() * MaxHPRegenRate)
+		local TotalRegen = (RegenPerSecond * EnemyDuration)
 		
-		local ClosestEnemy = PAF.GetClosestUnit(bot, FilteredEnemies)
-		
-		if ClosestEnemy ~= nil then
-			if bot:GetHealth() < (bot:GetMaxHealth() * 0.3) then
-				return 1, ClosestEnemy
+		if bot:GetHealth() <= (bot:GetMaxHealth() - TotalRegen) then
+			if PAF.IsEngaging(bot) then
+				if PAF.IsValidHeroAndNotIllusion(BotTarget) then
+					return 1, BotTarget
+				end
+			else
+				local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1200, true, BOT_MODE_NONE)
+				
+				local WeakestEnemy = PAF.GetHealthiestUnit(EnemiesWithinRange)
+				if WeakestEnemy ~= nil
+				and PAF.IsValidHeroAndNotIllusion(WeakestEnemy) then
+					return 1, BotTarget
+				end
 			end
 		end
 	end
 	
-	local AlliesWithinRange = bot:GetNearbyHeroes(700, false, BOT_MODE_NONE)
-	local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
-	
-	local ClosestAlly = PAF.GetClosestUnit(bot, FilteredAllies)
-	
-	if ClosestAlly ~= nil then
-		if bot:GetHealth() < (bot:GetMaxHealth() * 0.3) then
+	if bot:GetHealth() <= (bot:GetMaxHealth() * 0.25) then
+		local AlliesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1200, false, BOT_MODE_NONE)
+		local FilteredAllies = PAF.FilterExceptedUnit(AlliesWithinRange, bot)
+		local ClosestAlly = PAF.GetClosestUnit(bot, FilteredAllies)
+		
+		if ClosestAlly ~= nil then
 			return 1, ClosestAlly
 		end
 	end
@@ -131,8 +156,8 @@ end
 function UseConsume()
 	if Consume:IsHidden() then return 0 end
 	
-	if bot:GetHealth() >= (bot:GetMaxHealth() * 0.8) then
-		return BOT_ACTION_DESIRE_HIGH
+	if bot:GetHealth() >= (bot:GetMaxHealth() * 0.95) then
+		return 1
 	end
 	
 	return 0
@@ -148,8 +173,10 @@ function UseOpenWounds()
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget)
+			and not PAF.IsReflectingSpells(BotTarget) then
+				return 1, BotTarget
 			end
 		end
 	end

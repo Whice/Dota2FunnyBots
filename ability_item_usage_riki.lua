@@ -34,12 +34,8 @@ local TricksOfTheTradeDesire = 0
 
 local AttackRange
 local BotTarget
-local manathreshold = 0
-
-local RadiantBase = Vector(-7171.12, -7261.72, 1469.28)
-local DireBase = Vector(6977.84, 5797.69, 1357.99)
-local base
-local team = bot:GetTeam()
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
@@ -49,12 +45,6 @@ function AbilityUsageThink()
 	manathreshold = manathreshold + SmokeScreen:GetManaCost()
 	manathreshold = manathreshold + (BlinkStrike:GetManaCost() * 2)
 	manathreshold = manathreshold + TricksOfTheTrade:GetManaCost()
-	
-	if team == TEAM_RADIANT then
-		base = RadiantBase
-	elseif team == TEAM_DIRE then
-		base = DireBase
-	end
 	
 	-- The order to use abilities in
 	BlinkStrikeDesire, BlinkStrikeTarget = UseBlinkStrike()
@@ -85,11 +75,24 @@ function UseSmokeScreen()
 	
 	local CR = SmokeScreen:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local CastPoint = SmokeScreen:GetCastPoint()
+	local Radius = SmokeScreen:GetSpecialValueInt("radius")
 	
-	if PAF.IsEngaging(bot) then
+	if PAF.IsInTeamFight(bot) then
+		local AoELocation = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius, CastPoint, 0)
+		
+		if AoELocation.count >= 2 then
+			return 1, AoELocation.targetloc
+		end
+	elseif PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				local ExtrapolatedLocation = BotTarget:GetExtrapolatedLocation(CastPoint)
+				
+				if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+					return 1, ExtrapolatedLocation
+				end
 			end
 		end
 	end
@@ -103,7 +106,6 @@ function UseBlinkStrike()
 	
 	local CR = BlinkStrike:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
---	local Charges = BlinkStrike:GetCurrentCharges()
 	
 	local allies = bot:GetNearbyHeroes(CastRange, false, BOT_MODE_NONE)
 	local creeps = bot:GetNearbyCreeps(CastRange, false)
@@ -118,14 +120,14 @@ function UseBlinkStrike()
 		local AllyClosestToBaseDist = 99999
 		
 		for v, ally in pairs(allies) do
-			if ally ~= bot and GetUnitToLocationDistance(ally, base) < AllyClosestToBaseDist then
+			if ally ~= bot and GetUnitToLocationDistance(ally, PAF.GetFountainLocation(bot)) < AllyClosestToBaseDist then
 				AllyClosestToBase = ally
-				AllyClosestToBaseDist = GetUnitToLocationDistance(ally, base)
+				AllyClosestToBaseDist = GetUnitToLocationDistance(ally, PAF.GetFountainLocation(bot))
 			end
 		end
 		
-		if AllyClosestToBase ~= nil and AllyClosestToBaseDist < GetUnitToLocationDistance(bot, base) and GetUnitToUnitDistance(bot, AllyClosestToBase) > 300 then
-			return BOT_ACTION_DESIRE_HIGH, AllyClosestToBase
+		if AllyClosestToBase ~= nil and AllyClosestToBaseDist < GetUnitToLocationDistance(bot, PAF.GetFountainLocation(bot)) and GetUnitToUnitDistance(bot, AllyClosestToBase) > 300 then
+			return 1, AllyClosestToBase
 		end
 	end
 	
@@ -133,7 +135,7 @@ function UseBlinkStrike()
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange 
 			and GetUnitToUnitDistance(bot, BotTarget) >= 300 then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+				return 1, BotTarget
 			end
 		end
 	end
@@ -147,28 +149,39 @@ function UseTricksOfTheTrade()
 	
 	local CR = TricksOfTheTrade:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
+	local CastPoint = TricksOfTheTrade:GetCastPoint()
+	local Radius = TricksOfTheTrade:GetSpecialValueInt("radius")
 	
-	if PAF.IsEngaging(bot) then
+	if PAF.IsInTeamFight(bot)
+	and not SmokeScreen:IsFullyCastable() then
+		local AoELocation = bot:FindAoELocation(true, true, bot:GetLocation(), CastRange, Radius, CastPoint, 0)
+		
+		if AoELocation.count >= 2 then
+			return 1, AoELocation.targetloc
+		end
+	elseif PAF.IsEngaging(bot)
+	and not SmokeScreen:IsFullyCastable() then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget) then
+				local ExtrapolatedLocation = BotTarget:GetExtrapolatedLocation(CastPoint)
+				
+				if GetUnitToLocationDistance(bot, ExtrapolatedLocation) <= CastRange then
+					return 1, ExtrapolatedLocation
+				end
 			end
 		end
 	end
 	
-	local AttackTarget = bot:GetAttackTarget()
-	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		local Neutrals = bot:GetNearbyNeutralCreeps(CastRange)
-		
-		if AttackTarget ~= nil and AttackTarget:IsCreep() and #Neutrals >= 2 then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget:GetLocation()
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget:GetLocation()
 		end
 	end
 	

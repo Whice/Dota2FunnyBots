@@ -36,10 +36,27 @@ local UBattleTranceDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	BattleTranceDesire = UseBattleTrance()
@@ -95,14 +112,14 @@ function UseBerserkersRage()
 		and BaseMovementSpeed <= BotTarget:GetCurrentMovementSpeed()
 		and not PAF.IsDisabled(BotTarget) then
 			if BerserkersRage:GetToggleState() == true then
-				return BOT_ACTION_DESIRE_HIGH
+				return 1
 			else
 				return 0
 			end
 		end
 	else
 		if BerserkersRage:GetToggleState() == false then
-			return BOT_ACTION_DESIRE_HIGH
+			return 1
 		else
 			return 0
 		end
@@ -120,12 +137,13 @@ function UseWhirlingAxesRanged()
 	local CastRange = PAF.GetProperCastRange(CR)
 	local Damage = WhirlingAxesRanged:GetSpecialValueInt("axe_damage")
 	local Radius = WhirlingAxesRanged:GetSpecialValueInt("axe_width")
+	local ManaCost = WhirlingAxesRanged:GetManaCost()
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget:GetLocation()
+				return 1, BotTarget:GetLocation()
 			end
 		end
 	end
@@ -137,30 +155,33 @@ function UseWhirlingAxesRanged()
 	
 		for v, enemy in pairs(FilteredEnemies) do
 			if PAF.CanLastHitCreepAndHarass(bot, enemy, Radius, Damage, DAMAGE_TYPE_MAGICAL) then
-				return BOT_ACTION_DESIRE_HIGH, enemy:GetLocation()
+				return 1, enemy:GetLocation()
 			end
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_TOP
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_MID
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_BOT then
-		if AttackTarget ~= nil 
-		and AttackTarget:IsCreep() then
-			local NearbyCreeps = bot:GetNearbyCreeps(CastRange, true)
-			local AoECount = PAF.GetUnitsNearTarget(AttackTarget:GetLocation(), NearbyCreeps, Radius)
-			
-			if AoECount >= 3
-			and (bot:GetMana() - WhirlingAxesRanged:GetManaCost()) > (bot:GetMaxMana() * 0.5) then
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local AoELocation = bot:FindAoELocation(true, false, bot:GetLocation(), CastRange, Radius, 0, 0)
+				
+				if AoELocation.count >= 3 then
+					return 1, AoELocation.targetloc
+				end
 			end
 		end
 	end
 	
 	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if AttackTarget ~= nil and PAF.IsRoshan(AttackTarget) then
-			return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+		if PAF.IsRoshan(AttackTarget) then
+			return 1, AttackTarget:GetLocation()
+		end
+	end
+	
+	if bot:GetActiveMode() == BOT_MODE_SIDE_SHOP then
+		if PAF.IsTormentor(AttackTarget) then
+			return 1, AttackTarget:GetLocation()
 		end
 	end
 	
@@ -172,35 +193,34 @@ function UseWhirlingAxesMelee()
 	if P.CantUseAbility(bot) then return 0 end
 	
 	local CastRange = WhirlingAxesMelee:GetSpecialValueFloat("max_range")
+	local ManaCost = WhirlingAxesMelee:GetManaCost()
 	
 	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
 	local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
 	
 	if P.IsRetreating(bot)
 	and #FilteredEnemies > 0 then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsMagicImmune(BotTarget) then
-				return BOT_ACTION_DESIRE_HIGH
+				return 1
 			end
 		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_FARM
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_TOP
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_MID
-	or bot:GetActiveMode() == BOT_MODE_PUSH_TOWER_BOT then
-		if AttackTarget ~= nil 
-		and AttackTarget:IsCreep() then
-			local NearbyCreeps = bot:GetNearbyCreeps(CastRange, true)
-			
-			if NearbyCreeps >= 3
-			and (bot:GetMana() - WhirlingAxesMelee:GetManaCost()) > (bot:GetMaxMana() * 0.5) then
-				return BOT_ACTION_DESIRE_HIGH, AttackTarget:GetLocation()
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				local CreepsWithinRange = bot:GetNearbyCreeps(CastRange, true)
+				
+				if #CreepsWithinRange >= 3 then
+					return 1
+				end
 			end
 		end
 	end
@@ -225,7 +245,7 @@ function UseBattleTrance()
 			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
 			and not PAF.IsPhysicalImmune(BotTarget)
 			and BotTarget:GetHealth() <= EstimatedDamage then
-				return BOT_ACTION_DESIRE_HIGH
+				return 1
 			end
 		end
 	end
@@ -236,14 +256,14 @@ function UseBattleTrance()
 		if GetUnitToLocationDistance(bot, proj.location) <= 300
 		and proj.is_attack == false
 		and bot:GetHealth() < (bot:GetMaxHealth() * 0.35) then
-			return BOT_ACTION_DESIRE_HIGH
+			return 1
 		end
 	end
 	
 	if bot:GetHealth() < (bot:GetMaxHealth() * 0.35)
 	and bot:WasRecentlyDamagedByAnyHero(1)
 	and #FilteredEnemies > 0 then
-		return BOT_ACTION_DESIRE_HIGH
+		return 1
 	end
 	
 	return 0

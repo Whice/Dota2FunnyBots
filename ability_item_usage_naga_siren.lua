@@ -35,10 +35,27 @@ local SongOfTheSirenDesire = 0
 
 local AttackRange
 local BotTarget
+local AttackTarget
+local ManaThreshold
 
 function AbilityUsageThink()
 	AttackRange = bot:GetAttackRange()
 	BotTarget = bot:GetTarget()
+	AttackTarget = bot:GetAttackTarget()
+	ManaThreshold = 100
+	
+	for x = 5, 1, -1 do
+		local hAbility = bot:GetAbilityInSlot(x)
+		if hAbility ~= nil
+		and hAbility:IsTrained()
+		and not hAbility:IsHidden() then
+			local nManaCost = hAbility:GetManaCost()
+			
+			if nManaCost > 0 then
+				ManaThreshold = (ManaThreshold + nManaCost)
+			end
+		end
+	end
 	
 	-- The order to use abilities in
 	--[[RiptideDesire = UseRiptide()
@@ -74,29 +91,23 @@ function UseMirrorImage()
 	if not MirrorImage:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
+	local ManaCost = MirrorImage:GetManaCost()
+	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			return BOT_ACTION_DESIRE_HIGH, BotTarget
+			return 1, BotTarget
 		end
 	end
 	
-	local attacktarget = bot:GetAttackTarget()
-	
-	if attacktarget ~= nil then
-		if attacktarget:IsBuilding() then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-	
-	if bot:GetActiveMode() == BOT_MODE_FARM then
-		if attacktarget ~= nil and attacktarget:IsCreep() then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		if attacktarget ~= nil and PAF.IsRoshan(attacktarget) then
-			return BOT_ACTION_DESIRE_HIGH
+	if PAF.IsInCreepAttackingMode(bot) then
+		if PAF.IsValidCreepTarget(AttackTarget) then
+			if AttackTarget:GetTeam() ~= bot:GetTeam()
+			and PAF.ShouldCastAbilityToFarm(bot, ManaCost, ManaThreshold, false) then
+				if AttackTarget:IsCreep()
+				or AttackTarget:IsBuilding() then
+					return 1
+				end
+			end
 		end
 	end
 	
@@ -110,34 +121,40 @@ function UseEnsnare()
 	local CR = Ensnare:GetCastRange()
 	local CastRange = PAF.GetProperCastRange(CR)
 	
-	local EnemiesWithinRange = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	local FilteredEnemies = PAF.FilterUnitsForStun(EnemiesWithinRange)
-	
-	for v, enemy in pairs(FilteredEnemies) do
-		if enemy:IsChanneling() then
-			return BOT_ACTION_DESIRE_HIGH, enemy
-		end
-	end
+	local EnemiesWithinCastRange = PAF.GetNearbyFilteredHeroes(bot, CastRange, true, BOT_MODE_NONE)
 	
 	if PAF.IsEngaging(bot) then
 		if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange then
-				return BOT_ACTION_DESIRE_HIGH, BotTarget
+			if GetUnitToUnitDistance(bot, BotTarget) <= CastRange
+			and not PAF.IsMagicImmune(BotTarget)
+			and not PAF.IsReflectingSpells(BotTarget) then
+				if not PAF.IsDisabled(BotTarget) then
+					return 1, BotTarget
+				end
 			end
 		end
 	end
 	
-	if P.IsRetreating(bot) and #EnemiesWithinRange > 0 then
-		local ClosestTarget = PAF.GetClosestUnit(bot, EnemiesWithinRange)
-		return BOT_ACTION_DESIRE_HIGH, ClosestTarget
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local StrongestEnemy = PAF.GetStrongestPowerUnit(EnemiesWithinCastRange)
+		
+		if StrongestEnemy ~= nil
+		and not PAF.IsMagicImmune(StrongestEnemy)
+		and not PAF.IsReflectingSpells(StrongestEnemy) then
+			return 1, StrongestEnemy
+		end
 	end
 	
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN then
-		local AttackTarget = bot:GetAttackTarget()
+	local NearbyAlliedTowers = bot:GetNearbyTowers(1600, false)
+	
+	for x, Tower in pairs(NearbyAlliedTowers) do
+		local TowerTarget = Tower:GetAttackTarget()
 		
-		if PAF.IsRoshan(AttackTarget)
-		and GetUnitToUnitDistance(bot, AttackTarget) <= CastRange then
-			return BOT_ACTION_DESIRE_VERYHIGH, AttackTarget
+		if PAF.IsValidHeroAndNotIllusion(TowerTarget)
+		and not PAF.IsMagicImmune(TowerTarget)
+		and not PAF.IsDisabled(TowerTarget)
+		and not PAF.IsReflectingSpells(TowerTarget) then
+			return 1, TowerTarget
 		end
 	end
 	
@@ -166,11 +183,14 @@ function UseSongOfTheSiren()
 	if not SongOfTheSiren:IsFullyCastable() then return 0 end
 	if P.CantUseAbility(bot) then return 0 end
 	
-	local CastRange = SongOfTheSiren:GetSpecialValueInt("radius")
-	local enemies = bot:GetNearbyHeroes(CastRange, true, BOT_MODE_NONE)
-	
-	if P.IsRetreating(bot) and #enemies >= 1 then
-		return BOT_ACTION_DESIRE_HIGH
+	if bot:GetActiveMode() == BOT_MODE_RETREAT then
+		local EnemiesWithinRange = PAF.GetNearbyFilteredHeroes(bot, 1200, true, BOT_MODE_NONE)
+		
+		if #EnemiesWithinRange >= 1 then
+			if bot:GetHealth() <= (bot:GetMaxHealth() * 0.25) then
+				return 1
+			end
+		end
 	end
 	
 	return 0

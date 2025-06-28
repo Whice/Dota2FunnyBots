@@ -5,9 +5,8 @@ local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
 
 local StiflingDagger = bot:GetAbilityByName("phantom_assassin_stifling_dagger")
 local PhantomStrike = bot:GetAbilityByName("phantom_assassin_phantom_strike")
-local Immaterial = bot:GetAbilityByName("phantom_assassin_immaterial")
+local Immaterial = bot:GetAbilityInSlot(4)
 local CoupDeGrace = bot:GetAbilityByName("phantom_assassin_coup_de_grace")
-local FanOfKnives = bot:GetAbilityByName("phantom_assassin_fan_of_knives")
 
 function X.GetHeroLevelPoints()
 	local abilities = {}
