@@ -1,0 +1,8 @@
+function GetDesire()
+    local gameTime = DotaTime() / 60
+    if gameTime >= 5 and gameTime < 10 then
+        return BOT_MODE_DESIRE_VERYHIGH
+    else
+        return BOT_MODE_DESIRE_NONE
+    end
+end

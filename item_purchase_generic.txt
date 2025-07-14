@@ -1,0 +1,32 @@
+local itemList = {
+    "item_boots",
+    "item_wind_lace",
+    "item_power_treads",
+    "item_ring_of_health",
+    "item_vanguard",
+    "item_void_stone",
+    "item_sphere"
+}
+
+function HasItem(bot, itemName)
+    for i = 0, 8 do
+        local item = bot:GetItemInSlot(i)
+        if item and item:GetName() == itemName then
+            return true
+        end
+    end
+    return false
+end
+
+function ItemPurchaseThink()
+    local bot = GetBot()
+    for _, itemName in ipairs(itemList) do
+        if not HasItem(bot, itemName) then
+            local cost = GetItemCost(itemName)
+            if bot:GetGold() >= cost then
+                bot:ActionImmediate_PurchaseItem(itemName)
+            end
+            break
+        end
+    end
+end

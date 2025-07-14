@@ -1,0 +1,9 @@
+function GetDesire()
+    local bot = GetBot()
+    local healthPercent = bot:GetHealth() / bot:GetMaxHealth()
+    if healthPercent < 0.2 then
+        return BOT_MODE_DESIRE_ABSOLUTE
+    else
+        return BOT_MODE_DESIRE_NONE
+    end
+end

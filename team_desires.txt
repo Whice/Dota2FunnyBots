@@ -1,0 +1,12 @@
+function UpdatePushLaneDesires()
+    local gameTime = DotaTime() / 60
+    if gameTime > 10 then
+        if GetTeam() == TEAM_RADIANT then
+            return {1.0, 0.0, 0.0}  -- High desire for top lane (hard lane for Radiant)
+        else
+            return {0.0, 0.0, 1.0}  -- High desire for bot lane (hard lane for Dire)
+        end
+    else
+        return {0.0, 0.0, 0.0}  -- No push desire before 10 minutes
+    end
+end
