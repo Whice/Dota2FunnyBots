@@ -11,9 +11,12 @@ function ItemPurchaseThink()
     }
 
     for _, itemName in ipairs(itemsToBuy) do
-        if bot:GetGold() >= GetItemCost(itemName) and not bot:HasItemInSlot(0, itemName) then
-            ActionImmediate_PurchaseItem(itemName)
-            return
+        if bot:GetGold() >= GetItemCost(itemName) then
+            local itemInSlot = bot:GetItemInSlot(0)
+            if itemInSlot == nil or itemInSlot:GetName() ~= itemName then
+                ActionImmediate_PurchaseItem(itemName)
+                return
+            end
         end
     end
 end
