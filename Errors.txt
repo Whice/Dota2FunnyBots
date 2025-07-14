@@ -1,8 +1,9 @@
-[VScript] Script Runtime Error: ...ame\dota\scripts\vscripts\bots\item_purchase_generic.lua:14: attempt to call method 'HasItemInSlot' (a nil value)
-stack traceback:
-	...ame\dota\scripts\vscripts\bots\item_purchase_generic.lua:14: in function <...ame\dota\scripts\vscripts\bots\item_purchase_generic.lua:1>
+
 [VScript] Script Runtime Error: ...a 2 beta\game\dota\scripts\vscripts\bots\bot_generic.lua:15: module 'mode_laning_generic' not found:
 	no field package.preload['mode_laning_generic']Failed to find scripts\vscripts\mode_laning_generic.lua
 stack traceback:
 	[C]: in function 'require'
 	...a 2 beta\game\dota\scripts\vscripts\bots\bot_generic.lua:15: in function <...a 2 beta\game\dota\scripts\vscripts\bots\bot_generic.lua:1>
+[VScript] Script Runtime Error: ...ame\dota\scripts\vscripts\bots\item_purchase_generic.lua:17: attempt to call global 'ActionImmediate_PurchaseItem' (a nil value)
+stack traceback:
+	...ame\dota\scripts\vscripts\bots\item_purchase_generic.lua:17: in function <...ame\dota\scripts\vscripts\bots\item_purchase_generic.lua:1>
