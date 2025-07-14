@@ -11,6 +11,9 @@ local item_sequence = {
 function ItemPurchaseThink()
     local bot = GetBot()
     
+    for _, item_name in ipairs(item_sequence) do
+        if bot:FindItemSlot(item_name) == -1 then
+            if bot:GetGold() >= GetItemCost(item_name) then
                 bot:ActionImmediate_PurchaseItem(item_name)
                 return
             end
