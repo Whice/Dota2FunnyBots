@@ -1,66 +1,7 @@
-
+Это документация по созданию ботов.
 Dota Bot Scripting
 Jump to navigationJump to search
 
-Contents
-1	Overview
-1.1	Team Level
-1.2	Mode Level
-1.3	Action Level
-2	Directory Structure
-2.1	Complete takeover
-2.2	Mode Override
-2.3	Ability and Item usage
-2.4	Minion Control
-2.5	Item Purchasing
-2.6	Team Level Desires
-2.7	Hero Selection
-3	Uploading scripts to the Workshop
-4	API Reference
-4.1	GLOBAL FUNCTIONS
-4.2	UNIT SCOPED FUNCTIONS
-4.3	Ability-Scoped
-5	Bot Difficulties
-5.1	Passive
-5.2	Easy
-5.3	Medium
-5.4	Hard
-5.5	Unfair
-5.6	New Player
-6	Debugging
-7	Potential Locations
-8	Hero Power
-9	Appendix A - Chaining to a generic implementation in Lua
-10	Appendix B - List of available constants
-10.1	Bot Modes
-10.2	Action Desires
-10.3	Mode Desires
-10.4	Damage Types
-10.5	Unit Types
-10.6	Difficulties
-10.7	Attribute Types
-10.8	Item Purchase Results
-10.9	Game Modes
-10.10	Teams
-10.11	Lanes
-10.12	Game States
-10.13	Hero Pick States
-10.14	Rune Types
-10.15	Rune Status
-10.16	Rune Locations
-10.17	Item Slot Types
-10.18	Action Types
-10.19	Courier Actions and States
-10.20	Towers
-10.21	Barracks
-10.22	Shrines
-10.23	Shops
-10.24	Ability Target Teams
-10.25	Ability Target Types
-10.26	Ability Target Flags
-10.27	Ability Behavior Bitfields
-10.28	Misc Constants
-10.29	Animation Activities
 Overview
 Bot scripting in Dota is done via lua scripting. This is done at the server level, so there's no need to do things like examine screen pixels or simulate mouse clicks; instead scripts can query the game state and issue orders directly to units. Scripts have full access to all the entity locations, cooldowns, mana values, etc that a player on that team would expect to. The API is restricted such that scripts can't cheat -- units in FoW can't be queried, commands can't be issued to units the script doesn't control, etc.
 
