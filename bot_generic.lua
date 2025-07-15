@@ -90,9 +90,10 @@ function Think()
     
     for _, creep in ipairs(allyCreeps) do
         if creep:GetTeam() == GetTeam() then
-            local creepLanePos = GetLocationAlongLane(lane, creep:GetLocation())
-            if creepLanePos > maxLanePos then
-                maxLanePos = creepLanePos
+            -- Исправлено: используем GetAmountAlongLane вместо GetLocationAlongLane
+            local laneAmount, _ = GetAmountAlongLane(lane, creep:GetLocation())
+            if laneAmount > maxLanePos then
+                maxLanePos = laneAmount
                 frontCreep = creep
             end
         end
@@ -101,7 +102,7 @@ function Think()
     -- Логика позиционирования
     if frontCreep then
         -- Позиция за дальним крипом (200 единиц ближе к базе)
-        local baseLoc = GetLocationAlongLane(lane, 0.0)
+        local baseLoc = GetLocationAlongLane(lane, 0.0)  -- Корректный вызов
         local creepLoc = frontCreep:GetLocation()
         local dir = (creepLoc - baseLoc):Normalized()
         local targetLoc = creepLoc - dir * 200
@@ -121,7 +122,7 @@ function Think()
             bot:Action_MoveToLocation(safeLoc)
         else
             -- Если уже у башни, патрулировать небольшую зону
-            local patrolPoint = GetLocationAlongLane(lane, 0.35)
+            local patrolPoint = GetLocationAlongLane(lane, 0.35)  -- Корректный вызов
             if GetUnitToLocationDistance(bot, patrolPoint) > 200 then
                 bot:Action_MoveToLocation(patrolPoint)
             end
