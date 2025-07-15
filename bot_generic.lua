@@ -26,19 +26,62 @@ function GetSafeLocation(lane)
     return GetLocationAlongLane(lane, 0.3) -- Отступ к базе если башен нет
 end
 
--- Функция для атаки вражеских крипов в безопасной зоне
-function AttackEnemyCreepsNearSafeLocation(safeLoc, attackRange)
-    -- Поиск вражеских крипов в радиусе атаки + небольшой запас
-    local enemyCreeps = bot:GetNearbyLaneCreeps(attackRange + 200, true)
+-- Функция для выбора цели для атаки с учетом last hit и deny
+function GetTargetToAttack(enemyCreeps, alliedCreeps, bot, priorityFunction)
+    local botDamage = bot:GetAttackDamage()
     
+    -- Проверка вражеских крипов для last hit
+    local lastHitEnemies = {}
+    for _, creep in ipairs(enemyCreeps) do
+        if creep:IsAlive() then
+            local actualDamage = creep:GetActualIncomingDamage(botDamage, DAMAGE_TYPE_PHYSICAL)
+            if creep:GetHealth() <= actualDamage then
+                table.insert(lastHitEnemies, {creep = creep, health = creep:GetHealth()})
+            end
+        end
+    end
+    if #lastHitEnemies > 0 then
+        table.sort(lastHitEnemies, function(a, b) return a.health < b.health end)
+        return lastHitEnemies[1].creep
+    end
+
+    -- Проверка союзных крипов для deny
+    local denyAllies = {}
+    for _, creep in ipairs(alliedCreeps) do
+        if creep:IsAlive() and creep:GetHealth() < 0.5 * creep:GetMaxHealth() then
+            local actualDamage = creep:GetActualIncomingDamage(botDamage, DAMAGE_TYPE_PHYSICAL)
+            if creep:GetHealth() <= actualDamage then
+                table.insert(denyAllies, {creep = creep, health = creep:GetHealth()})
+            end
+        end
+    end
+    if #denyAllies > 0 then
+        table.sort(denyAllies, function(a, b) return a.health < b.health end)
+        return denyAllies[1].creep
+    end
+
+    -- Если нет возможностей для last hit или deny, атаковать вражеского крипа с наивысшим приоритетом
     if #enemyCreeps > 0 then
-        -- Сортировка по расстоянию до безопасной точки
-        table.sort(enemyCreeps, function(a, b)
-            return GetUnitToLocationDistance(a, safeLoc) < GetUnitToLocationDistance(b, safeLoc)
-        end)
-        
-        -- Атака ближайшего к башне вражеского крипа
-        bot:Action_AttackUnit(enemyCreeps[1], false)
+        table.sort(enemyCreeps, function(a, b) return priorityFunction(a) > priorityFunction(b) end)
+        return enemyCreeps[1]
+    end
+
+    return nil
+end
+
+-- Функция для атаки крипов в безопасной зоне с учетом last hit и deny
+function AttackEnemyCreepsNearSafeLocation(safeLoc, attackRange)
+    local enemyCreeps = bot:GetNearbyLaneCreeps(attackRange + 200, true)
+    local alliedCreeps = bot:GetNearbyLaneCreeps(attackRange + 200, false)
+    
+    local priorityFunction = function(creep)
+        return -GetUnitToLocationDistance(creep, safeLoc)
+    end
+    
+    local target = GetTargetToAttack(enemyCreeps, alliedCreeps, bot, priorityFunction)
+    
+    if target then
+        bot:Action_AttackUnit(target, false)
         return true
     end
     return false
@@ -76,7 +119,7 @@ function Think()
     local distToSafe = GetUnitToLocationDistance(bot, safeLoc)
     local attackRange = bot:GetAttackRange()
     
-    -- Если бот в безопасной зоне, атаковать вражеских крипов
+    -- Если бот в безопасной зоне, атаковать крипов с учетом last hit и deny
     if distToSafe < 600 then
         if AttackEnemyCreepsNearSafeLocation(safeLoc, attackRange) then
             return
@@ -99,6 +142,8 @@ function Think()
         end
     end
 
+彼此
+
     -- Логика позиционирования
     if frontCreep then
         -- Позиция за дальним крипом (200 единиц ближе к базе)
@@ -110,10 +155,18 @@ function Think()
         if GetUnitToLocationDistance(bot, targetLoc) > 50 then
             bot:Action_MoveToLocation(targetLoc)
         else
-            -- Если уже на позиции, атаковать вражеских крипов
+            -- Если уже на позиции, атаковать крипов с учетом last hit и deny
             local enemyCreeps = bot:GetNearbyLaneCreeps(attackRange + 100, true)
-            if #enemyCreeps > 0 then
-                bot:Action_AttackUnit(enemyCreeps[1], false)
+            local alliedCreeps = bot:GetNearbyLaneCreeps(attackRange + 100, false)
+            
+            local priorityFunction = function(creep)
+                return -GetUnitToUnitDistance(creep, bot)
+            end
+            
+            local target = GetTargetToAttack(enemyCreeps, alliedCreeps, bot, priorityFunction)
+            
+            if target then
+                bot:Action_AttackUnit(target, false)
             end
         end
     else
