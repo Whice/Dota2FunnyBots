@@ -1,7 +1,10 @@
-local PDefend = require(GetScriptDirectory() .. "/Library/PhalanxDefend")
-
-local bot = GetBot()
+local Defend = require(GetScriptDirectory() .. '/FunLib/aba_defend')
 
 function GetDesire()
-  return PDefend.GetDefendDesire(bot, LANE_MID)
+    GetBot().DefendLaneDesire[LANE_MID] = Defend.GetDefendDesire(GetBot(), LANE_MID)
+    return GetBot().DefendLaneDesire[LANE_MID]
 end
+
+-- function Think()
+--     Defend.DefendThink(GetBot(), LANE_MID)
+-- end

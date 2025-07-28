@@ -1,180 +1,575 @@
-local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
-local PHC = require(GetScriptDirectory() .. "/Library/PhalanxHeroCounters")
+local X = {}
+local sSelectHero = "npc_dota_hero_zuus"
+local fLastSlectTime, fLastRand = -100, 0
+local nDelayTime = nil
+local nHumanCount = 0
+local sBanList = {}
+local sSelectList = {}
+local tSelectPoolList = {}
+local tLaneAssignList = {}
 
-local bn = {"Aquila", "Commodus", "Buteo", "Aurelius", "Priscus", "Modius", "Cassius", "Galeo", "Nerva", "Rufius", "Paetus", "Claudius", "Corvus", "Cornelius", "Verus", "Strabo", "Maximus", "Lucinius", "Flavius", "Severus", "Calidus", "Agrippa", "Tiberus", "Cicurinius"}
-local prefixes = {"B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "W"}
+local bUserMode = false
+local bLaneAssignActive = true
+local bLineupReserve = false
 
-local prefix
-local suffix
-
-if GetTeam() == TEAM_RADIANT then
-	suffix = "I"
-elseif GetTeam() == TEAM_DIRE then
-	suffix = "V"
+local nDireFirstLaneType = 1
+if pcall(require, 'game/bot_dire_first_lane_type')
+then
+    nDireFirstLaneType = require('game/bot_dire_first_lane_type')
 end
 
-local randomname = RandomInt(1, #bn)
-prefix = prefixes[RandomInt(1, #prefixes)]
-local botname1 = (prefix..". "..bn[randomname].." "..suffix)
-table.remove(bn, randomname)
+require(GetScriptDirectory() .. '/API/api_global')
 
-randomname = RandomInt(1, #bn)
-prefix = prefixes[RandomInt(1, #prefixes)]
-local botname2 = (prefix..". "..bn[randomname].." "..suffix)
-table.remove(bn, randomname)
+local matchups  = require(GetScriptDirectory() .. '/Buff/script/matchups_data')
+local U         = require(GetScriptDirectory() .. '/FunLib/lua_util')
+local N         = require(GetScriptDirectory() .. '/FunLib/bot_names')
+local Role      = require(GetScriptDirectory() .. '/FunLib/aba_role')
+local Chat      = require(GetScriptDirectory() .. '/FunLib/aba_chat')
+local HeroSet   = {}
 
-randomname = RandomInt(1, #bn)
-prefix = prefixes[RandomInt(1, #prefixes)]
-local botname3 = (prefix..". "..bn[randomname].." "..suffix)
-table.remove(bn, randomname)
+local sHeroList = { -- pos  1, 2, 3, 4, 5
+    { name = 'npc_dota_hero_abaddon',             role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_abyssal_underlord',   role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_alchemist',           role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_ancient_apparition',  role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_antimage',            role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_arc_warden',          role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_axe',                 role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_bane',                role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_batrider',            role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_beastmaster',         role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_bloodseeker',         role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_bounty_hunter',       role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_brewmaster',          role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_bristleback',         role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_broodmother',         role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_centaur',             role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_chaos_knight',        role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_chen',                role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_clinkz',              role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_crystal_maiden',      role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_dark_seer',           role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_dark_willow',         role = { 0, 0, 0, 100, 100 },    weak = true },
+    { name = 'npc_dota_hero_dawnbreaker',         role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_dazzle',              role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_death_prophet',       role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_disruptor',           role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_doom_bringer',        role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_dragon_knight',       role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_drow_ranger',         role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_earth_spirit',        role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_earthshaker',         role = { 0, 100, 100, 0, 0 } },
+    -- { name = 'npc_dota_hero_elder_titan',         role = { 0, 0, 100, 0, 0 },       weak = true }, -- Buggy: always pick wrong lane
+    { name = 'npc_dota_hero_ember_spirit',        role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_enchantress',         role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_enigma',              role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_faceless_void',       role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_furion',              role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_grimstroke',          role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_gyrocopter',          role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_hoodwink',            role = { 0, 0, 0, 100, 100 },    weak = true },
+    { name = 'npc_dota_hero_huskar',              role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_invoker',             role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_jakiro',              role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_juggernaut',          role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_keeper_of_the_light', role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_kez',                 role = { 100, 0, 100, 0, 0 },    weak = true },
+    { name = 'npc_dota_hero_kunkka',              role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_legion_commander',    role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_leshrac',             role = { 0, 100, 0, 100, 0 } },
+    { name = 'npc_dota_hero_lich',                role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_life_stealer',        role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_lina',                role = { 0, 100, 0, 100, 0 } },
+    { name = 'npc_dota_hero_lion',                role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_lone_druid',          role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_luna',                role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_lycan',               role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_magnataur',           role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_marci',               role = { 100, 0, 100, 0, 0 } }, -- weak = true
+    { name = 'npc_dota_hero_mars',                role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_medusa',              role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_meepo',               role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_mirana',              role = { 0, 100, 0, 100, 0 } },
+    { name = 'npc_dota_hero_monkey_king',         role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_morphling',           role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_muerta',              role = { 100, 100, 0, 0, 0 },    weak = true },
+    { name = 'npc_dota_hero_naga_siren',          role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_necrolyte',           role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_nevermore',           role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_night_stalker',       role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_nyx_assassin',        role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_obsidian_destroyer',  role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_ogre_magi',           role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_omniknight',          role = { 0, 0, 100, 50, 50 } },
+    { name = 'npc_dota_hero_oracle',              role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_pangolier',           role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_phantom_assassin',    role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_phantom_lancer',      role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_phoenix',             role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_primal_beast',        role = { 0, 100, 100, 0, 0 },     weak = true },
+    { name = 'npc_dota_hero_puck',                role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_pudge',               role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_pugna',               role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_queenofpain',         role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_rattletrap',          role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_razor',               role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_riki',                role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_ringmaster',          role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_rubick',              role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_sand_king',           role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_shadow_demon',        role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_shadow_shaman',       role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_shredder',            role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_silencer',            role = { 0, 100, 0, 100, 0 } },
+    { name = 'npc_dota_hero_skeleton_king',       role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_skywrath_mage',       role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_slardar',             role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_slark',               role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_snapfire',            role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_sniper',              role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_spectre',             role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_spirit_breaker',      role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_storm_spirit',        role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_sven',                role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_techies',             role = { 0, 100, 100, 50, 0 } },
+    { name = 'npc_dota_hero_templar_assassin',    role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_terrorblade',         role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_tidehunter',          role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_tinker',              role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_tiny',                role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_treant',              role = { 0, 0, 100, 100, 0 } },
+    { name = 'npc_dota_hero_troll_warlord',       role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_tusk',                role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_undying',             role = { 0, 100, 100, 0, 0 } },
+    { name = 'npc_dota_hero_ursa',                role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_vengefulspirit',      role = { 0, 0, 100, 100, 0 } },
+    { name = 'npc_dota_hero_venomancer',          role = { 0, 0, 100, 100, 0 } },
+    { name = 'npc_dota_hero_viper',               role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_visage',              role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_void_spirit',         role = { 100, 0, 100, 0, 0 } },
+    { name = 'npc_dota_hero_warlock',             role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_weaver',              role = { 100, 100, 0, 0, 0 } },
+    { name = 'npc_dota_hero_windrunner',          role = { 0, 100, 0, 100, 0 } },
+    { name = 'npc_dota_hero_winter_wyvern',       role = { 0, 0, 0, 100, 100 } },
+    -- { name = 'npc_dota_hero_wisp',                role = { 0, 0, 0, 100, 100 },        weak = true }, -- Buggy: always pick wrong lane
+    { name = 'npc_dota_hero_witch_doctor',        role = { 0, 0, 0, 100, 100 } },
+    { name = 'npc_dota_hero_zuus',                role = { 100, 100, 0, 0, 0 } },
+}
 
-randomname = RandomInt(1, #bn)
-prefix = prefixes[RandomInt(1, #prefixes)]
-local botname4 = (prefix..". "..bn[randomname].." "..suffix)
-table.remove(bn, randomname)
+local function GetHeroList(pos)
+    local sTempList = {}
 
-randomname = RandomInt(1, #bn)
-prefix = prefixes[RandomInt(1, #prefixes)]
-local botname5 = (prefix..". "..bn[randomname].." "..suffix)
-table.remove(bn, randomname)
+    for i = 1, #sHeroList
+    do
+        if sHeroList[i] ~= nil and sHeroList[i].role[pos] > 0
+        then
+            table.insert(sTempList, sHeroList[i].name)
+        end
+    end
+
+    return sTempList
+end
+
+-- p(x)=(weight)*(1/#adjPoolList)
+local function GetAdjustedPool(pos)
+    local sTempList = {}
+
+    local heroList = GetHeroList(pos)
+
+    for i = 1, #heroList
+    do
+        for _, hero in pairs(sHeroList)
+        do
+            if hero.name == heroList[i]
+                and hero.role[pos] >= RandomInt(0, 100)
+            then
+                table.insert(sTempList, hero.name)
+            end
+        end
+    end
+
+    if #sTempList == 0
+    then
+        table.insert(sTempList, heroList[RandomInt(1, #heroList)])
+    end
+
+    return sTempList
+end
+
+local sPos1List = GetAdjustedPool(1)
+local sPos2List = GetAdjustedPool(2)
+local sPos3List = GetAdjustedPool(3)
+local sPos4List = GetAdjustedPool(4)
+local sPos5List = GetAdjustedPool(5)
+
+tSelectPoolList = {
+    [1] = sPos1List,
+    [2] = sPos2List,
+    [3] = sPos3List,
+    [4] = sPos4List,
+    [5] = sPos5List,
+}
+
+sSelectList = {
+    [1] = tSelectPoolList[1][RandomInt(1, #tSelectPoolList[1])],
+    [2] = tSelectPoolList[2][RandomInt(1, #tSelectPoolList[2])],
+    [3] = tSelectPoolList[3][RandomInt(1, #tSelectPoolList[3])],
+    [4] = tSelectPoolList[4][RandomInt(1, #tSelectPoolList[4])],
+    [5] = tSelectPoolList[5][RandomInt(1, #tSelectPoolList[5])],
+}
+
+if GetTeam() == TEAM_RADIANT
+then
+    local nRadiantLane = {
+        [1] = LANE_BOT, -- Pos 1: Hard Carry (safe lane)
+        [2] = LANE_MID, -- Pos 2: Mid Lane
+        [3] = LANE_TOP, -- Pos 3: Off Lane
+        [4] = LANE_TOP, -- Pos 4: Soft Support (off lane)
+        [5] = LANE_BOT, -- Pos 5: Hard Support (safe lane)
+    }
+
+    tLaneAssignList = nRadiantLane
+else
+    local nDireLane = {
+        [1] = LANE_TOP, -- Pos 1: Hard Carry (safe lane for Dire)
+        [2] = LANE_MID, -- Pos 2: Mid Lane
+        [3] = LANE_BOT, -- Pos 3: Off Lane (for Dire)
+        [4] = LANE_BOT, -- Pos 4: Soft Support (off lane for Dire)
+        [5] = LANE_TOP, -- Pos 5: Hard Support (safe lane for Dire)
+    }
+
+    tLaneAssignList = nDireLane
+end
+
+-- if nDireFirstLaneType == 2 and GetTeam() == TEAM_DIRE
+-- then
+--     sSelectList[1], sSelectList[2] = sSelectList[2], sSelectList[1]
+--     tSelectPoolList[1], tSelectPoolList[2] = tSelectPoolList[2], tSelectPoolList[1]
+--     tLaneAssignList[1], tLaneAssignList[2] = tLaneAssignList[2], tLaneAssignList[1]
+-- end
+
+-- if nDireFirstLaneType == 3 and GetTeam() == TEAM_DIRE
+-- then
+--     sSelectList[1], sSelectList[3] = sSelectList[3], sSelectList[1]
+--     tSelectPoolList[1], tSelectPoolList[3] = tSelectPoolList[3], tSelectPoolList[1]
+--     tLaneAssignList[1], tLaneAssignList[3] = tLaneAssignList[3], tLaneAssignList[1]
+-- end
+
+function X.GetMoveTable(nTable)
+    local nLenth = #nTable
+    local temp = nTable[nLenth]
+
+    table.remove(nTable, nLenth)
+    table.insert(nTable, 1, temp)
+
+    return nTable
+end
+
+function X.IsExistInTable(sString, sStringList)
+    for _, sTemp in pairs(sStringList)
+    do
+        if sString == sTemp then return true end
+    end
+
+    return false
+end
+
+function X.IsHumanNotReady(nTeam)
+    if GameTime() > 20 or bLineupReserve then return false end
+
+    local humanCount, readyCount = 0, 0
+    local nIDs = GetTeamPlayers(nTeam)
+    for i, id in pairs(nIDs)
+    do
+        if not IsPlayerBot(id)
+        then
+            humanCount = humanCount + 1
+            if GetSelectedHeroName(id) ~= ""
+            then
+                readyCount = readyCount + 1
+            end
+        end
+    end
+
+    if (readyCount >= humanCount)
+    then
+        return false
+    end
+
+    return true
+end
+
+function X.GetNotRepeatHero(nTable)
+    local sHero = nTable[1]
+    local maxCount = #nTable
+    local nRand = 0
+    local bRepeated = false
+
+    for count = 1, maxCount
+    do
+        nRand = RandomInt(1, #nTable)
+        sHero = nTable[nRand]
+        bRepeated = false
+        for id = 0, 20
+        do
+            if (IsTeamPlayer(id) and GetSelectedHeroName(id) == sHero)
+                or (sHero ~= "npc_dota_hero_ringmaster"
+                    and sHero ~= "npc_dota_hero_kez"
+                    and IsCMBannedHero(sHero))
+                or (X.IsBanByChat(sHero))
+            then
+                bRepeated = true
+                table.remove(nTable, nRand)
+                break
+            end
+        end
+        if not bRepeated then break end
+    end
+
+    return sHero
+end
+
+function X.IsRepeatHero(sHero)
+    for id = 0, 20
+    do
+        if (IsTeamPlayer(id) and GetSelectedHeroName(id) == sHero)
+            or (sHero ~= "npc_dota_hero_ringmaster"
+                and sHero ~= "npc_dota_hero_kez"
+                and IsCMBannedHero(sHero))
+            or (X.IsBanByChat(sHero))
+        then
+            return true
+        end
+    end
+
+    return false
+end
+
+if bUserMode and HeroSet['JinYongAI'] ~= nil
+then
+    sBanList = Chat.GetHeroSelectList(HeroSet['JinYongAI'])
+end
+
+function X.SetChatHeroBan(sChatText)
+    sBanList[#sBanList + 1] = string.lower(sChatText)
+end
+
+function X.IsBanByChat(sHero)
+    for i = 1, #sBanList
+    do
+        if sBanList[i] ~= nil
+            and string.find(sHero, sBanList[i])
+        then
+            return true
+        end
+    end
+
+    return false
+end
+
+function X.GetRandomNameList(sStarList)
+    local sNameList = { sStarList[1] }
+    table.remove(sStarList, 1)
+
+    for i = 1, 4
+    do
+        local nRand = RandomInt(1, #sStarList)
+        table.insert(sNameList, sStarList[nRand])
+        table.remove(sStarList, nRand)
+    end
+
+    return sNameList
+end
+
+local tIDs = U.shuffleWeighted({ 1, 2, 3, 4, 5 }, { 1, 1.5, 3, 6, 6 })
+print(tIDs[1], tIDs[2], tIDs[3], tIDs[4], tIDs[5], GetTeam())
+print('====')
+function Think()
+    if GetGameState() == GAME_STATE_HERO_SELECTION then
+        InstallChatCallback(function(tChat) X.SetChatHeroBan(tChat.string) end)
+    end
+
+    if (GameTime() < 3.0 and not bLineupReserve)
+        or fLastSlectTime > GameTime() - fLastRand
+        or X.IsHumanNotReady(GetTeam())
+        or X.IsHumanNotReady(GetOpposingTeam())
+    then
+        if GetGameMode() ~= 23 then return end
+    end
+
+    -- init IDs for Dire
+    local nIDs = GetTeamPlayers(GetTeam())
+    if GetTeam() == TEAM_DIRE
+    then
+        -- Update Lane Roles for Dire (corrected mapping)
+        local pRoles = {
+            [nIDs[1]] = LANE_TOP, -- Pos 1: Hard Carry (safe lane for Dire)
+            [nIDs[2]] = LANE_MID, -- Pos 2: Mid Lane
+            [nIDs[3]] = LANE_BOT, -- Pos 3: Off Lane (for Dire)
+            [nIDs[4]] = LANE_BOT, -- Pos 4: Soft Support (off lane for Dire)
+            [nIDs[5]] = LANE_TOP, -- Pos 5: Hard Support (safe lane for Dire)
+        }
+
+        local temp = {}
+        for i, v in ipairs(nIDs) do temp[i] = v end
+
+        table.sort(temp)
+
+        tLaneAssignList = {
+            [1] = pRoles[temp[1]],
+            [2] = pRoles[temp[2]],
+            [3] = pRoles[temp[3]],
+            [4] = pRoles[temp[4]],
+            [5] = pRoles[temp[5]],
+        }
+    end
+
+    if nDelayTime == nil then
+        nDelayTime = GameTime()
+        fLastRand = RandomInt(12, 34) / 10
+    end
+    if nDelayTime ~= nil and nDelayTime > GameTime() - fLastRand then return end
+
+    local nOwnTeam = X.GetCurrentTeam(GetTeam())
+    local nEnmTeam = X.GetCurrentTeam(GetOpposingTeam())
+
+    local IDMap = {
+        [1] = 1, -- Pos 1: Hard Carry
+        [2] = 2, -- Pos 2: Mid Lane
+        [3] = 3, -- Pos 3: Off Lane
+        [4] = 4, -- Pos 4: Soft Support
+        [5] = 5, -- Pos 5: Hard Support
+    }
+
+    if #nOwnTeam <= #nEnmTeam then
+        for i = 1, #nIDs do
+            local botID = nIDs[IDMap[tIDs[i]]]
+            local poolID = IDMap[tIDs[i]]
+
+            if IsPlayerBot(botID) and GetSelectedHeroName(botID) == '' then
+                if (#nOwnTeam == 0 and #nEnmTeam == 0) then
+                    sSelectHero = X.GetNotRepeatHero(tSelectPoolList[poolID])
+                else
+                    local hSelectionTable = {}
+                    local topHeroes = {}
+                    for _, sName in ipairs(tSelectPoolList[poolID]) do
+                        if not X.IsRepeatHero(sName) then
+                            local score = 0
+                            if not hSelectionTable[sName] then hSelectionTable[sName] = 0 end
+
+                            for m = 1, #nEnmTeam do
+                                if matchups[sName] and matchups[sName][nEnmTeam[m]] then
+                                    score = score + matchups[sName][nEnmTeam[m]] * -1
+                                end
+                            end
+
+                            -- reduce chances of multiple weak heroes getting picked
+                            for _, hero in pairs(sHeroList) do
+                                if hero.name and hero.weak then
+                                    if hero.name == sName then
+                                        score = score * (1 - Min((X.CountWeakHeroesSelected() / 4), 1))
+                                    end
+                                end
+                            end
+
+                            table.insert(topHeroes, { name = sName, score = score })
+                            table.sort(topHeroes, function(a, b) return a.score > b.score end)
+                            if #topHeroes > 3 then
+                                table.remove(topHeroes)
+                            end
+                        end
+                    end
+
+                    -- print
+                    for q = 1, #topHeroes do
+                        print(q, topHeroes[q].score, topHeroes[q].name)
+                    end
+                    print('====')
+
+                    -- 'fuzz'
+                    if #topHeroes >= 1 then
+                        local roll = (RandomInt(0, 100) / 100)
+                        if roll <= 0.5 then
+                            sSelectHero = topHeroes[1].name
+                        elseif roll <= 0.75 and topHeroes[2] then
+                            sSelectHero = topHeroes[2].name
+                        elseif topHeroes[3] then
+                            sSelectHero = topHeroes[3].name
+                        else
+                            sSelectHero = topHeroes[1].name
+                        end
+                    else
+                        sSelectHero = 'npc_dota_hero_tiny'
+                    end
+                end
+
+                SelectHero(botID, sSelectHero)
+                if Role["bLobbyGame"] == false then Role["bLobbyGame"] = true end
+                fLastSlectTime = GameTime()
+                fLastRand = RandomInt(8, 28) / 10
+                break
+            end
+        end
+    end
+end
+
+function X.GetCurrentTeam(nTeam)
+    local nHeroList = {}
+    for _, id in pairs(GetTeamPlayers(nTeam)) do
+        local hName = GetSelectedHeroName(id)
+        if hName ~= nil and hName ~= '' then
+            table.insert(nHeroList, hName)
+        end
+    end
+
+    return nHeroList
+end
+
+function X.CountWeakHeroesSelected()
+    local count = 0
+    for _, id in pairs(GetTeamPlayers(GetTeam())) do
+        local sHeroName = GetSelectedHeroName(id)
+        if sHeroName ~= nil then
+            for _, hero in pairs(sHeroList) do
+                if hero.name and hero.weak then
+                    if hero.name == sHeroName then
+                        count = count + 1
+                    end
+                end
+            end
+        end
+    end
+    for _, id in pairs(GetTeamPlayers(GetOpposingTeam())) do
+        local sHeroName = GetSelectedHeroName(id)
+        if sHeroName ~= nil then
+            for _, hero in pairs(sHeroList) do
+                if hero.name and hero.weak then
+                    if hero.name == sHeroName then
+                        count = count + 1
+                    end
+                end
+            end
+        end
+    end
+
+    return count
+end
 
 function GetBotNames()
-	return {botname1, botname2, botname3, botname4, botname5}
+    return N.GetBotNames()
 end
 
---[[ EDIT BY: Manslaughter ]]--
-
-local SafeLanePool = PRoles["SafeLane"]
-local MidLanePool = PRoles["MidLane"]
-local OffLanePool = PRoles["OffLane"]
-local SoftSupportPool = PRoles["SoftSupport"]
-local HardSupportPool = PRoles["HardSupport"]
-
-local pools = {SafeLanePool, MidLanePool, OffLanePool, SoftSupportPool, HardSupportPool}
-
-local PickableHeroes = {}
-local HeroesToAvoid = {}
-
-local lastpicktime = -70
-local delaytime = RandomInt(7, 14)
-
-function Think()
-	local playerIDs = GetTeamPlayers(GetTeam())
-
-	if GetGameMode() == GAMEMODE_AP then
-		local TableIDs = GetTeamPlayers(GetTeam())
-		local RandomID = RandomInt(1, #TableIDs)
-		
-		if IsPlayerInHeroSelectionControl(TableIDs[RandomID]) and IsPlayerBot(TableIDs[RandomID]) and (GetSelectedHeroName(TableIDs[RandomID]) == "" or GetSelectedHeroName(TableIDs[RandomID]) == nil) and (DotaTime() - lastpicktime) >= delaytime then
-			UncounteredHeroes = {}
-			PickableHeroes = {}
-			
-			local HeroPicks = GetPicks()
-			local EnemyHeroPicks = GetEnemyPicks(TableIDs[RandomID])
-			
-			if #EnemyHeroPicks >= 1 then
-				for v, pick in pairs(EnemyHeroPicks) do
-					local CounteredHeroes = PHC[pick]
-					
-					if CounteredHeroes ~= nil then
-						for i, hero in pairs(pools[RandomID]) do
-							local IsHeroCountered = false
-							
-							for x, ch in pairs(CounteredHeroes) do
-								if hero == ch then
-									IsHeroCountered = true
-									break
-								end
-							end
-							
-							if not IsHeroCountered then
-								table.insert(UncounteredHeroes, hero)
-							end
-						end
-					end
-				end
-			else
-				UncounteredHeroes = pools[RandomID]
-			end
-			
-			if #UncounteredHeroes <= 0 then
-				UncounteredHeroes = pools[RandomID]
-			end
-			
-			if #HeroPicks <= 0 then
-				PickableHeroes = pools[RandomID]
-			else
-				for v, uch in pairs(UncounteredHeroes) do
-					local IsHeroPicked = false
-				
-					for x, pick in pairs(HeroPicks) do
-						if pick == uch then
-							IsHeroPicked = true
-							break
-						end
-					end
-					
-					if not IsHeroPicked then
-						table.insert(PickableHeroes, uch)
-					end
-				end
-			end
-			
-			SelectHero(TableIDs[RandomID], PickableHeroes[RandomInt(1, #PickableHeroes)])
-			lastpicktime = DotaTime()
-			delaytime = RandomInt(5, 14)
-		end
-	elseif GetGameMode() == GAMEMODE_CM then
-		
-	end
-end
-
-function UpdateLaneAssignments() 
-	if ( GetTeam() == TEAM_RADIANT )
-	then
-		return {
-		[1] = LANE_BOT, -- Position 1 (Safe Lane)
-		[2] = LANE_MID, -- Position 2 (Mid Lane)
-		[3] = LANE_TOP, -- Position 3 (Off Lane)
-		[4] = LANE_TOP, -- Position 4 (Soft Support)
-		[5] = LANE_BOT, -- Position 5 (Hard Support)
-}
-	elseif ( GetTeam() == TEAM_DIRE )
-	then
-		return {
-		[1] = LANE_TOP, -- Position 1 (Safe Lane)
-		[2] = LANE_MID, -- Position 2 (Mid Lane)
-		[3] = LANE_BOT, -- Position 3 (Off Lane)
-		[4] = LANE_BOT, -- Position 4 (Soft Support)
-		[5] = LANE_TOP, -- Position 5 (Hard Support)
-}
-	end
-end
-
-function GetPicks()
-    local selectedHeroes = {}
-	
-	for i=0,20,1 do
-		if IsTeamPlayer(i)==true then
-			local hName = GetSelectedHeroName(i)
-			if hName ~= "" and hName ~= nil then
-				table.insert(selectedHeroes,hName)
-			end
-		end
+local bPvNLaneAssignDone = false
+function UpdateLaneAssignments()
+    if DotaTime() > 0
+        and nHumanCount == 0
+        and Role.IsPvNMode()
+        and not bLaneAssignActive
+        and not bPvNLaneAssignDone
+    then
+        if RandomInt(1, 8) > 4 then tLaneAssignList[4] = LANE_MID else tLaneAssignList[5] = LANE_MID end
+        bPvNLaneAssignDone = true
     end
-	
-    return selectedHeroes
-end
 
-function GetEnemyPicks(id)
-    local selectedHeroes = {}
-	
-	for v, i in pairs(GetTeamPlayers(GetOpposingTeam())) do
-		local hName = GetSelectedHeroName(i)
-		if hName ~= "" and hName ~= nil then
-			table.insert(selectedHeroes,hName)
-		end
-    end
-	
-    return selectedHeroes
+    return tLaneAssignList
 end

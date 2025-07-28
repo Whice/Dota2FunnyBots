@@ -1,244 +1,231 @@
-local bot = GetBot()
-
-local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
-local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
-local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
-
-local BuildingTarget = nil
-
-local ShouldKillTormentor = false
-local WisdomRuneSpawned = false
-local ClosestAllyToWisdomRune
-
-local TeamTormentor
-local RT = Vector( -8122, -1218, 256 )
-local DT = Vector( 8127, 1025, 256 )
-
-local TeamWisdomRune
-local RWR = Vector( -8126, -320, 256 )
-local DWR = Vector( 8319, 266, 256 )
-
-local LastTormentorTime = 0
-local LastWisdomRuneTime = 0
-local TeamWisdomTimer = 0
-
-local LastMessageTime = DotaTime()
-
-function GetDesire()
-	if bot:GetTeam() == TEAM_RADIANT then
-		TeamWisdomRune = RWR
-		TeamTormentor = RT
-	elseif bot:GetTeam() == TEAM_DIRE then
-		TeamWisdomRune = DWR
-		TeamTormentor = DT
-	end
-	
-	CheckWisdomRuneAvailability()
-	
-	ClosestAllyToWisdomRune = GetClosestAllyToWisdomRune()
-	if WisdomRuneSpawned and ClosestAllyToWisdomRune ~= nil then
-		if GetUnitToLocationDistance(ClosestAllyToWisdomRune, TeamWisdomRune) > 200 then
-			TeamWisdomTimer = DotaTime()
-		else
-			if (DotaTime() - TeamWisdomTimer) > 1 then
-				WisdomRuneSpawned = false
-			end
-		end
-	end
-	
-	if ClosestAllyToWisdomRune == bot then
-		if WisdomRuneSpawned then
-			return 0.81
-		end
-	end
-	
-	ShouldKillTormentor = IsTormentorAlive()
-	
-	if ShouldKillTormentor then
-		return 0.81
-	end
-	
-	return BOT_MODE_DESIRE_NONE
+if GetBot():IsInvulnerable() or not GetBot():IsHero() or not string.find(GetBot():GetUnitName(), "hero") or GetBot():IsIllusion() then
+    return;
 end
 
-function Think()
-	if bot:GetTeam() == TEAM_RADIANT then
-		TeamWisdomRune = RWR
-		TeamTormentor = RT
-	elseif bot:GetTeam() == TEAM_DIRE then
-		TeamWisdomRune = DWR
-		TeamTormentor = DT
-	end
-	
-	if WisdomRuneSpawned then
-		if ClosestAllyToWisdomRune == bot then
-			bot:Action_MoveToLocation(TeamWisdomRune)
-			return
-		end
-	end
+local BotBuild = require(GetScriptDirectory() .. "/BotLib/" .. string.gsub(GetBot():GetUnitName(), "npc_dota_", ""))
+if BotBuild == nil then return end
+local sItemSellList = BotBuild['sSellList']
 
-	if ShouldKillTormentor then
-		if GetUnitToLocationDistance(bot, TeamTormentor) > 700 then
-			bot:Action_MoveToLocation(TeamTormentor)
-			return
-		else
-			local NC = bot:GetNearbyNeutralCreeps(450)
-			
-			for v, creep in pairs(NC) do
-				if string.find(creep:GetUnitName(), "miniboss") then
-					if IsReadyToAttackTormentor() then
-						bot:Action_AttackUnit(creep, false)
-					end
-					
-					if (DotaTime() - LastMessageTime) > 30 then
-						LastMessageTime = DotaTime()
-						bot:ActionImmediate_Chat("Let's kill the Tormentor!", false)
-						bot:ActionImmediate_Ping(creep:GetLocation().x, creep:GetLocation().y, true)
-					end
-					
-					return
-				end
-			end
-		end
-		return
-	end
+local J = require(GetScriptDirectory() .. '/FunLib/jmz_func')
+local Item = require(GetScriptDirectory() .. '/FunLib/aba_item')
+local bot = GetBot();
+local X = {}
+local preferedShop = nil;
+local RAD_SECRET_SHOP = GetShopLocation(GetTeam(), SHOP_SECRET)
+local DIRE_SECRET_SHOP = GetShopLocation(GetTeam(), SHOP_SECRET2)
+local hasItemToSell = false;
+local itemSlot = nil
+local itemSlotFromSellList = { nil, -1 }
+
+local sell_time = -90
+
+function GetDesire()
+    preferedShop = X.GetPreferedSecretShop()
+
+    if not bot:IsAlive() or J.IsModeTurbo() or not X.IsSuitableToBuy() then
+        return BOT_MODE_DESIRE_NONE;
+    end
+
+    local invFull = true;
+
+    for i = 0, 8 do
+        if bot:GetItemInSlot(i) == nil then
+            invFull = false;
+        end
+    end
+
+    if DotaTime() > 0 and not J.IsInLaningPhase() then
+        if (bot:GetItemInSlot(6) ~= nil or bot:GetItemInSlot(7) ~= nil or bot:GetItemInSlot(8) ~= nil) or (not J.IsModeTurbo() and bot:GetUnitName() == 'npc_dota_hero_lone_druid') then
+            if bot.sItemSellList ~= nil then
+                for i = #bot.sItemSellList, 2, -2 do
+                    local nItemToSellSlot = bot:FindItemSlot(bot.sItemSellList[i - 1])
+                    local nItemToCheckSlot = bot:FindItemSlot(bot.sItemSellList[i])
+
+                    local nItemToCheckSlot_lastComponent = -1
+                    local tItemComponent = GetItemComponents(bot.sItemSellList[i])[1]
+                    if tItemComponent ~= nil then
+                        nItemToCheckSlot_lastComponent = bot:FindItemSlot(tItemComponent[#tItemComponent])
+                    end
+
+                    if (nItemToCheckSlot >= 0 or nItemToCheckSlot_lastComponent >= 0) and nItemToSellSlot >= 0
+                    then
+                        itemSlotFromSellList = { nItemToSellSlot, i }
+                        return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 6000, 0, 0.75, 0.95);
+                    end
+                end
+            end
+
+            if (Item.HasItem(bot, "item_travel_boots") or Item.HasItem(bot, "item_travel_boots_2"))
+            then
+                for i = 1, #Item['tEarlyBoots'] do
+                    local bootsSlot = bot:FindItemSlot(Item['tEarlyBoots'][i])
+                    if bootsSlot >= 0 then
+                        itemSlot = bootsSlot
+                        return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 6000, 0, 0.75, 0.95)
+                    end
+                end
+            end
+
+            if Item.HasItem(bot, 'item_mask_of_madness') and Item.HasItem(bot, 'item_satanic') then
+                itemSlot = bot:FindItemSlot('item_mask_of_madness')
+                return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 6000, 0, 0.75, 0.95)
+            end
+        end
+
+        if Item['tEarlyItem'] ~= nil then
+            for _, item in pairs(Item['tEarlyItem']) do
+                local slot = bot:FindItemSlot(item)
+                if slot >= 6 and slot <= 8 then
+                    if preferedShop ~= nil then
+                        itemSlot = slot
+                        return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 6000, 0, 0.75, 0.90)
+                    end
+                end
+            end
+        end
+
+        if J.IsLateGame() then
+            local smokeSlot = bot:FindItemSlot('item_smoke_of_deceit')
+            if smokeSlot >= 6 and smokeSlot <= 8 then
+                itemSlot = smokeSlot
+                return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 6000, 0, 0.75, 0.90)
+            end
+        end
+    end
+
+    if invFull then
+        if bot:GetLevel() >= 6 and bot:FindItemSlot("item_aegis") < 0 then
+            hasItemToSell, itemSlot = X.HaveItemToSell();
+            if hasItemToSell then
+                if preferedShop ~= nil then
+                    return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 6000, 0, 0.75, 0.95);
+                end
+            end
+        end
+        return BOT_MODE_DESIRE_NONE;
+    end
+
+    local npcCourier = bot.theCourier
+    local cState = GetCourierState(npcCourier);
+
+    if bot.SecretShop and cState ~= COURIER_STATE_MOVING then
+        if preferedShop ~= nil and cState == COURIER_STATE_DEAD then
+            return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 6000, 0, 0.7, 0.85);
+        else
+            if preferedShop ~= nil and GetUnitToLocationDistance(bot, preferedShop) <= 3200 then
+                return RemapValClamped(GetUnitToLocationDistance(bot, preferedShop), 3200, 0, 0.7, 0.85);
+            end
+        end
+    end
+
+    return BOT_MODE_DESIRE_NONE
+end
+
+function OnStart()
+
 end
 
 function OnEnd()
-	BuildingTarget = nil
+
 end
 
-function IsTormentorAlive()
-	if DotaTime() >= (20 * 60) and ShouldCheckTormentor() then
-		if IsLocationVisible(TeamTormentor) and IsAllyChecking(TeamTormentor) then
-			local NeutralCreeps = GetUnitList(UNIT_LIST_NEUTRAL_CREEPS)
-			
-			for v, Creep in pairs(NeutralCreeps) do
-				if string.find(Creep:GetUnitName(), "miniboss") and GetUnitToLocationDistance(Creep, TeamTormentor) <= 200 then
-					return true
-				end
-			end
-			
-			LastTormentorTime = DotaTime()
-			return false
-		else
-			return true -- If we don't have vision on the tormentor, assume it's alive and go to check
-		end
-	else
-		return false
-	end
+function Think()
+    if bot:IsChanneling()
+        or bot:NumQueuedActions() > 0
+        or bot:IsCastingAbility()
+        or bot:IsUsingAbility()
+    then
+        return
+    end
+
+    if bot:DistanceFromSecretShop() <= 200 and DotaTime() > sell_time + 1.0 then
+        if bot.sItemSellList ~= nil then
+            if itemSlotFromSellList[1] ~= nil and bot:GetItemInSlot(itemSlotFromSellList[1]) ~= nil then
+                bot:ActionImmediate_SellItem(bot:GetItemInSlot(itemSlotFromSellList[1]))
+                if bot.secret_shop_succesful == true then
+                    table.remove(sItemSellList, itemSlotFromSellList[2])
+                    table.remove(sItemSellList, itemSlotFromSellList[2] - 1)
+                end
+                itemSlot = nil
+                itemSlotFromSellList = { nil, -1 }
+                return
+            end
+        end
+
+        if itemSlot ~= nil and bot:GetItemInSlot(itemSlot) ~= nil then
+            bot:ActionImmediate_SellItem(bot:GetItemInSlot(itemSlot))
+            itemSlot = nil
+            itemSlotFromSellList = { nil, -1 }
+            return
+        end
+        sell_time = DotaTime()
+
+        -- if itemSlot ~= nil and itemSlot >= 0 and bot:DistanceFromSecretShop() <= 200 then
+        -- 	print('debug 2', itemSlot, bot:GetUnitName())
+        -- 	bot:ActionImmediate_SellItem(bot:GetItemInSlot(itemSlot))
+        -- 	itemSlot = nil
+        -- 	return
+        -- end
+    end
+
+    if bot:DistanceFromSecretShop() > 0
+    then
+        bot:Action_MoveToLocation(preferedShop + RandomVector(20));
+        return;
+    end
 end
 
-function ShouldCheckTormentor()
-	if (DotaTime() - LastTormentorTime) > 600
-	and bot:GetHealth() > (bot:GetMaxHealth() * 0.25)
-	and IsTeamSuitableToTormentor() then
-		return true
-	else
-		return false
-	end
+function X.HaveItemToSell()
+    if Item['tEarlyItem'] ~= nil then
+        for _, item in pairs(Item['tEarlyItem'])
+        do
+            local slot = bot:FindItemSlot(item)
+            if slot >= 0 and slot <= 8 then
+                return true, slot
+            end
+        end
+    end
+
+    return false, nil
 end
 
-function IsAllyChecking(loc)
-	local allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
-	
-	for v, ally in pairs(allies) do
-		if GetUnitToLocationDistance(ally, loc) <= 450 then
-			return true
-		end
-	end
-	
-	return false
+function X.GetPreferedSecretShop()
+    if GetTeam() == TEAM_RADIANT then
+        if GetUnitToLocationDistance(bot, DIRE_SECRET_SHOP) <= 3800 then
+            return DIRE_SECRET_SHOP;
+        else
+            return RAD_SECRET_SHOP;
+        end
+    elseif GetTeam() == TEAM_DIRE then
+        if GetUnitToLocationDistance(bot, RAD_SECRET_SHOP) <= 3800 then
+            return RAD_SECRET_SHOP;
+        else
+            return DIRE_SECRET_SHOP;
+        end
+    end
+    return nil;
 end
 
-function IsTeamSuitableToTormentor()
-	local allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
-	for v, allyhero in pairs(allies) do
-		if P.IsDefending(allyhero) then
-			return false
-		end
-	end
-	
-	local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
-	local FilteredAllies = PAF.FilterTrueUnits(Allies)
-	
-	for v, ally in pairs(FilteredAllies) do
-		if ally:IsAlive() and GetUnitToLocationDistance(ally, TeamTormentor) <= 7000 then
-			AliveAllies = (AliveAllies + 1)
-		end
-	end
-	
-	return false
+function X.IsSuitableToBuy()
+    local mode = bot:GetActiveMode();
+    local Enemies = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE);
+    if not bot:IsAlive()
+        or bot:HasModifier("modifier_item_shadow_amulet_fade")
+        or (mode == BOT_MODE_RETREAT and bot:GetActiveModeDesire() >= BOT_MODE_DESIRE_HIGH)
+        or mode == BOT_MODE_ATTACK
+        or mode == BOT_MODE_DEFEND_ALLY
+        or (Enemies ~= nil and #Enemies >= 2)
+        or (J.IsValid(Enemies[1]) and X.IsStronger(bot, Enemies[1]))
+        or GetUnitToUnitDistance(bot, GetAncient(GetTeam())) < 2300
+        or GetUnitToUnitDistance(bot, GetAncient(GetOpposingTeam())) < 3500
+    then
+        return false;
+    end
+    return true;
 end
 
-function IsReadyToAttackTormentor()
-	local BotAllies = 0
-	
-	local IDs = GetTeamPlayers(GetTeam())
-	for v, id in pairs(IDs) do
-		if IsPlayerBot(id) then
-			BotAllies = BotAllies + 1
-		end
-	end
-	
-	local allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
-	local NearAllies = 0
-	
-	for v, allyhero in pairs(allies) do
-		if allyhero:IsAlive()
-		and not PAF.IsPossibleIllusion(allyhero)
-		and not P.IsMeepoClone(allyhero)
-		and not allyhero:HasModifier("modifier_arc_warden_tempest_double") then
-			if GetUnitToUnitDistance(allyhero, bot) <= 800 then
-				NearAllies = (NearAllies + 1)
-			end
-		end
-	end
-	
-	if (BotAllies - NearAllies) <= 1 then
-		return true
-	else
-		return false
-	end
-end
-
-function CheckWisdomRuneAvailability()
-	if not WisdomRuneSpawned then
-		if DotaTime() - LastWisdomRuneTime >= 420 then
-			LastWisdomRuneTime = DotaTime()
-			WisdomRuneSpawned = true
-		end
-	end
-end
-
-function GetClosestAllyToWisdomRune()
-	local Allies = GetUnitList(UNIT_LIST_ALLIED_HEROES)
-	local FilteredAllies = PAF.FilterTrueUnits(Allies)
-	
-	if P.IsInLaningPhase() then
-		for v, Ally in pairs(FilteredAllies) do
-			if PRoles.GetPRole(Ally, Ally:GetUnitName()) == "SoftSupport" then
-				return Ally
-			--[[elseif PRoles.GetPRole(Ally, Ally:GetUnitName()) == "OffLane"
-			and Ally:IsAlive() then
-				return Ally]]--
-			end
-		end
-	else
-		local ClosestAlly = bot
-		local ClosestDistance = 99999
-		
-		for v, Ally in pairs(FilteredAllies) do
-			if Ally:IsAlive() then
-				if GetUnitToLocationDistance(Ally, TeamWisdomRune) < ClosestDistance then
-					ClosestAlly = Ally
-					ClosestDistance = GetUnitToLocationDistance(Ally, TeamWisdomRune)
-				end
-			end
-		end
-		
-		return ClosestAlly
-	end
-	
-	return bot
+function X.IsStronger(bot, enemy)
+    local BPower = bot:GetEstimatedDamageToTarget(true, enemy, 4.0, DAMAGE_TYPE_ALL);
+    local EPower = enemy:GetEstimatedDamageToTarget(true, bot, 4.0, DAMAGE_TYPE_ALL);
+    return EPower > BPower;
 end

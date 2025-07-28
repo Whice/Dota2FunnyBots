@@ -1,23 +1,10 @@
-local PPush = require(GetScriptDirectory() .. "/Library/PhalanxPush")
+local Push = require(GetScriptDirectory() .. '/FunLib/aba_push')
 
-local LastMessageTime = DotaTime()
-local bot = GetBot()
-
---[[function GetDesire()
-	if GetTeam() == TEAM_RADIANT then
-		return PPush.GetPushDesire(bot, LANE_BOT)
-	elseif GetTeam() == TEAM_DIRE then
-		return PPush.GetPushDesire(bot, LANE_BOT)
-	end
-end]]--
-
-function OnStart()
-	if (DotaTime() - LastMessageTime) > 30 then
-		LastMessageTime = DotaTime()
-		bot:ActionImmediate_Chat("Pushing bottom", false)
-	end
+function GetDesire()
+    GetBot().PushLaneDesire[LANE_BOT] = Push.GetPushDesire(GetBot(), LANE_BOT)
+    return GetBot().PushLaneDesire[LANE_BOT]
 end
 
 function Think()
-	PPush.PushThink(bot, LANE_BOT)
+    Push.PushThink(GetBot(), LANE_BOT)
 end

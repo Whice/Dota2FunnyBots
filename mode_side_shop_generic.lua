@@ -1,497 +1,471 @@
+local X = {}
+
 local bot = GetBot()
+local J = require(GetScriptDirectory() .. '/FunLib/jmz_func')
 
-local PRoles = require(GetScriptDirectory() .. "/Library/PhalanxRoles")
-local P = require(GetScriptDirectory() ..  "/Library/PhalanxFunctions")
-local PAF = require(GetScriptDirectory() ..  "/Library/PhalanxAbilityFunctions")
+local Tormentor = nil
+local TormentorLocation = 0
+local vWaitingLocation = 0
 
-local target = nil
-local PATarget = nil
-local desiremode = ""
-local StartRunTime = 0
-local RetreatTime = 0
-local itemtarget = nil
+local tormentorMessageTime = 0
+local canDoTormentor = false
 
-local StuckTime = 0 
-local StuckLocation = Vector(0,0,0)
+if bot.tormentor_state == nil then bot.tormentor_state = false end
+if bot.tormentor_kill_time == nil then bot.tormentor_kill_time = 0 end
+
+local nCoreCountInLoc = 0
+local nSuppCountInLoc = 0
+local bHumanInTeam = false
 
 function GetDesire()
-	local allycreeps = bot:GetNearbyLaneCreeps(1000, false)
-	local enemycreeps = bot:GetNearbyLaneCreeps(1000, true)
-	local neutralcreeps = bot:GetNearbyNeutralCreeps(1000)
-	
-	target = nil
-	
-	local attackdmg = bot:GetAttackDamage()
-	local StuckNearbyHeroes = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
-	local StuckNearbyCreeps = bot:GetNearbyLaneCreeps(1200, true)
-	
-	if DotaTime() > 10 then
-		if bot:GetActiveMode() == BOT_MODE_ATTACK
-		or bot:GetActiveMode() == BOT_MODE_SECRET_SHOP
-		or bot:GetAttackTarget() ~= nil
-		or not bot:IsAlive()
-		or bot:DistanceFromFountain() <= 100 then
-			StuckTime = DotaTime()
-			StuckLocation = Vector(0,0,0)
-		else
-			if GetUnitToLocationDistance(bot, StuckLocation) > 100
-			or #StuckNearbyHeroes > 0
-			or #StuckNearbyCreeps > 0 then
-				StuckTime = DotaTime()
-				StuckLocation = bot:GetLocation()
-			else
-				if DotaTime() - StuckTime > 15 then
-					desiremode = "unstuck"
-					return BOT_MODE_DESIRE_ABSOLUTE * 1.3
-				end
-			end
-		end
-	end
-	
-	
-	if DotaTime() > 0 and not P.IsRetreating(bot) then
-		ShouldRetreat()
-		if (DotaTime() - StartRunTime) < RetreatTime then
-			desiremode = "ForceRetreat"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.2
-		end
-	end
-	
-	--[[if bot:DistanceFromFountain() < 10 then
-		local DroppedItems = GetDroppedItemList()
-		for v, ditem in pairs(DroppedItems) do
-			if GetUnitToLocationDistance(bot, ditem.location) <= 700 then
-				itemtarget = ditem.item
-				desiremode = "AttackItem"
-				return BOT_MODE_DESIRE_ABSOLUTE * 1.21
-			end
-		end
-	end]]--
-	
-	if bot:GetUnitName() == "npc_dota_hero_shadow_shaman" then
-		local Shackles = bot:GetAbilityByName("shadow_shaman_shackles")
-		if Shackles:IsInAbilityPhase() or Shackles:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_drow_ranger" then
-		local Multishot = bot:GetAbilityByName("drow_ranger_multishot")
-		if Multishot:IsInAbilityPhase() or Multishot:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_enigma" then
-		local BlackHole = bot:GetAbilityByName("enigma_black_hole")
-		if BlackHole:IsInAbilityPhase() or BlackHole:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_pugna" then
-		local LifeDrain = bot:GetAbilityByName("pugna_life_drain")
-		if LifeDrain:IsInAbilityPhase() or LifeDrain:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_bane" then
-		local FiendsGrip = bot:GetAbilityByName("bane_fiends_grip")
-		if FiendsGrip:IsInAbilityPhase() or FiendsGrip:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_pudge" then
-		local Dismember = bot:GetAbilityByName("pudge_dismember")
-		if Dismember:IsInAbilityPhase() or Dismember:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_riki" then
-		local TricksOfTheTrade = bot:GetAbilityByName("riki_tricks_of_the_trade")
-		if TricksOfTheTrade:IsInAbilityPhase() or TricksOfTheTrade:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_sand_king" then
-		local Epicenter = bot:GetAbilityByName("sandking_epicenter")
-		if Epicenter:IsInAbilityPhase() or Epicenter:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_tiny" then
-		local TreeVolley = bot:GetAbilityByName("tiny_tree_channel")
-		if TreeVolley:IsInAbilityPhase() or TreeVolley:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	if bot:GetUnitName() == "npc_dota_hero_oracle" then
-		local FortunesEnd = bot:GetAbilityByName("oracle_fortunes_end")
-		if FortunesEnd:IsInAbilityPhase() or FortunesEnd:IsChanneling() or bot:IsChanneling() then
-			desiremode = "AbilityChannel"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.1
-		end
-	end
-	
-	if P.IsInLaningPhase() then
-		if IsSuitableToLastHit() then
-			if CanLastHitCreep(enemycreeps) and not IsCoreNearby() then
-				desiremode = "LH"
-				return 0.56
-			end
-			if CanLastHitCreep(allycreeps) then
-				desiremode = "Deny"
-				return 0.56
-			end
-		end
-	end
-	
-	local AlliesWithinRange = bot:GetNearbyHeroes(1000, false, BOT_MODE_NONE)
-	local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
-	
-	if IsSuitableToLastHit()
-	and not IsCoreNearby()
-	and bot:GetActiveMode() ~= BOT_MODE_DEFEND_TOWER_TOP
-	and bot:GetActiveMode() ~= BOT_MODE_DEFEND_TOWER_MID
-	and bot:GetActiveMode() ~= BOT_MODE_DEFEND_TOWER_BOT then
-		if CanLastHitCreep(enemycreeps) then
-			desiremode = "LH"
-			return BOT_MODE_DESIRE_ABSOLUTE * 1.12
-		end
-	end
-	
-	local Courier = GetCourier(bot.courierID)
-	if bot:GetCourierValue() >= 25
-	and Courier:IsAlive()
-	and GetUnitToUnitDistance(bot, Courier) <= 1600
-	and GetCourierState(Courier) == COURIER_STATE_DELIVERING_ITEMS
-	and Courier:IsFacingLocation(bot:GetLocation(), 45)
-	and P.IsInLaningPhase() then
-		desiremode = "CourierRetrieve"
-		return BOT_MODE_DESIRE_HIGH
-	end
-	
-	return 0
+    TormentorLocation = J.GetTormentorLocation(GetTeam())
+    vWaitingLocation = J.GetTormentorWaitingLocation(GetTeam())
+
+    local tAllyInTormentorLocation = J.GetAlliesNearLoc(TormentorLocation, 900)
+    local tAllyInTormentorWaitLocation = J.GetAlliesNearLoc(vWaitingLocation, 900)
+    local tInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), 1600)
+    local nAliveAlly = 0
+
+    local nTormentorSpawnInterval = J.IsModeTurbo() and 5 or 10
+    local nTormentorSpawnTime = J.IsModeTurbo() and 10 or 20
+
+    local nHumanCountInLoc = 0
+    local nAttackingTormentorCount = 0
+
+    local nAveCoreLevel = 0
+    local nAveSuppLevel = 0
+
+    -- update vars
+    local tAliveAllies = {}
+    for i = 1, 5 do
+        local member = GetTeamMember(i)
+        if member ~= nil then
+            local memberLevel = member:GetLevel()
+
+            if member:IsAlive() then
+                nAliveAlly = nAliveAlly + 1
+                table.insert(tAliveAllies, member)
+
+                if not member:IsBot() then
+                    if bot.tormentor_state == false and J.IsValidHero(member) then
+                        if GetUnitToLocationDistance(member, TormentorLocation) <= 1300
+                            and IsLocationVisible(TormentorLocation)
+                        then
+                            local nNeutralCreeps = member:GetNearbyNeutralCreeps(1300)
+                            for j = #nNeutralCreeps, 1, -1 do
+                                if J.IsValid(nNeutralCreeps[j]) and string.find(nNeutralCreeps[j]:GetUnitName(), 'miniboss') then
+                                    bot.tormentor_state = true
+                                end
+                            end
+                        end
+                    end
+
+                    if GetUnitToLocationDistance(member, TormentorLocation) <= 1600
+                        or GetUnitToLocationDistance(member, vWaitingLocation) <= 1600
+                    then
+                        nHumanCountInLoc = nHumanCountInLoc + 1
+                    end
+                end
+
+                -- attacking tormentor count
+                local memberTarget = J.GetProperTarget(member)
+                if J.IsTormentor(memberTarget) and J.IsAttacking(member) then
+                    nAttackingTormentorCount = nAttackingTormentorCount + 1
+                end
+
+                if member.tormentor_team_healthy == nil then member.tormentor_team_healthy = false end
+                if member.tormentor_team_healthy == true then
+                    bot.tormentor_team_healthy = true
+                end
+
+                if J.IsCore(member) then
+                    if GetUnitToLocationDistance(member, TormentorLocation) <= 900
+                        or GetUnitToLocationDistance(member, vWaitingLocation) <= 900
+                    then
+                        nCoreCountInLoc = nCoreCountInLoc + 1
+                    end
+                else
+                    if GetUnitToLocationDistance(member, TormentorLocation) <= 900
+                        or GetUnitToLocationDistance(member, vWaitingLocation) <= 900
+                    then
+                        nSuppCountInLoc = nSuppCountInLoc + 1
+                    end
+                end
+            end
+
+            -- get average levels
+            if J.IsCore(member) then
+                if memberLevel < 13 then
+                    nAveCoreLevel = 0
+                else
+                    nAveCoreLevel = nAveCoreLevel + member:GetLevel()
+                end
+            else
+                if memberLevel < 11 then
+                    nAveSuppLevel = 0
+                else
+                    nAveSuppLevel = nAveSuppLevel + member:GetLevel()
+                end
+            end
+
+            -- update tormentor state
+            if member.tormentor_state == true then
+                bot.tormentor_state = true
+            end
+
+            --update kill time
+            if member.tormentor_kill_time ~= nil
+                and member.tormentor_kill_time > 0
+                and member.tormentor_kill_time > bot.tormentor_kill_time
+            then
+                bot.tormentor_kill_time = member.tormentor_kill_time
+            end
+
+            if not member:IsBot() and not bHumanInTeam then
+                bHumanInTeam = true
+            end
+        end
+    end
+
+    if #tAllyInTormentorLocation <= 1 and nHumanCountInLoc == 0
+        and DotaTime() > (J.IsModeTurbo() and (25 * 60) or (40 * 60)) then
+        return BOT_MODE_DESIRE_NONE
+    end
+
+    local hEnemyAncient = GetAncient(GetOpposingTeam())
+    if #tAllyInTormentorLocation <= 1 and nHumanCountInLoc == 0
+        and GetUnitToLocationDistance(bot, TormentorLocation) > 1600
+        and (GetUnitToUnitDistance(bot, hEnemyAncient) < 4000
+            and #J.GetEnemiesAroundAncient(4000) > 0
+            or (J.IsDoingRoshan(bot) and bot:GetActiveModeDesire() >= BOT_MODE_DESIRE_HIGH)
+        ) then
+        return BOT_MODE_DESIRE_NONE
+    end
+
+    if #J.GetEnemiesNearLoc(GetAncient(GetTeam()):GetLocation(), 2000) >= 2
+        or (GetTower(GetTeam(), TOWER_TOP_3) == nil or GetTower(GetTeam(), TOWER_MID_3) == nil or GetTower(GetTeam(), TOWER_BOT_3) == nil) -- stop when any these towers fall
+    then
+        return BOT_MODE_DESIRE_NONE
+    end
+
+    nAveCoreLevel = nAveCoreLevel / 3
+    nAveSuppLevel = nAveSuppLevel / 2
+
+    if nAveSuppLevel < 11 then
+        return BOT_MODE_DESIRE_NONE
+    end
+
+    local bGoodRightClickDamage = X.IsGoodRighClickDamage()
+
+    -- TODO: reduce wasting time waiting for someone as the location is very far now
+    -- Someone go check Tormentor
+    if DotaTime() >= nTormentorSpawnTime * 60 and (DotaTime() - bot.tormentor_kill_time) >= nTormentorSpawnInterval * 60 then
+        if not X.IsTormentorAlive() and bot.tormentor_state ~= true then
+            if (nAveCoreLevel >= 13 and nAveSuppLevel >= 11)
+                and GetUnitToUnitDistance(bot, hEnemyAncient) > 4000
+                and bGoodRightClickDamage
+            then
+                local ally = nil
+                local allyDist = 100000
+                for i = 1, 5 do
+                    local member = GetTeamMember(i)
+                    if J.IsValidHero(member) and member:IsBot() and not J.IsCore(member) then
+                        local memberDist = GetUnitToLocationDistance(member, TormentorLocation)
+                        if memberDist < allyDist then
+                            ally = member
+                            allyDist = memberDist
+                        end
+                    end
+                end
+
+                if ally ~= nil and bot == ally and bot.tormentor_state == false then
+                    local tInRangeAlly = J.GetAlliesNearLoc(bot:GetLocation(), 1200)
+                    if not J.IsRealInvisible(bot) and (#tInRangeEnemy > #tInRangeAlly) then
+                        return BOT_MODE_DESIRE_LOW
+                    else
+                        return BOT_MODE_DESIRE_VERYHIGH
+                    end
+                end
+            end
+        else
+            bot.tormentor_state = true
+        end
+    else
+        bot.tormentor_state = false
+    end
+
+    if bot.tormentor_state == true
+        and bGoodRightClickDamage
+        and nAveCoreLevel >= 13
+        and nAveSuppLevel >= 11
+        and (not bHumanInTeam or (bHumanInTeam and X.DidHumanPingedOrAtLocation()))
+        and ((bot.tormentor_kill_time == 0 and nAliveAlly >= 5)
+            or (bot.tormentor_kill_time == 0 and nAliveAlly >= 4 and nCoreCountInLoc >= 3 and nSuppCountInLoc >= 1)
+            or (bot.tormentor_kill_time > 0 and nAliveAlly >= 3 and J.GetAliveAllyCoreCount() >= 2)
+            or (nAttackingTormentorCount >= 2 and nCoreCountInLoc >= 2)
+        ) then
+        if bot.tormentor_state == true and bot.tormentor_team_healthy == false and bot == J.GetFirstBotInTeam() then
+            if X.IsTeamHealthy() then
+                bot.tormentor_team_healthy = true
+            end
+        end
+
+        if bot.tormentor_team_healthy == false then
+            return BOT_MODE_DESIRE_NONE
+        end
+
+        canDoTormentor = true
+
+        if J.GetHP(bot) < 0.3
+            and not bot:HasModifier('modifier_item_crimson_guard_extra')
+            and J.IsTormentor(Tormentor)
+            and J.GetHP(Tormentor) > 0.3 then
+            return BOT_MODE_DESIRE_NONE
+        end
+
+        local nDesire = 0.9
+
+        if (#tAllyInTormentorLocation >= 2 or #tAllyInTormentorWaitLocation >= 2)
+            or nCoreCountInLoc >= 1
+            or nSuppCountInLoc >= 2
+            or nHumanCountInLoc >= 1 then
+            nDesire = 0.9
+        else
+            nDesire = 0.75
+        end
+
+        local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), 1200)
+
+        return nDesire - (#nInRangeEnemy * (0.9 / 5))
+    end
+
+    if bot.tormentor_state == false then
+        bot.tormentor_team_healthy = false
+    end
+
+    canDoTormentor = false
+    return BOT_MODE_DESIRE_NONE
 end
 
+local fNextMovementTime = 0
+local fStillAlive = 0
+local bTormentorAlive = false
 function Think()
-	if desiremode == "LH" or desiremode == "Deny" then
-		bot:Action_AttackUnit(target, false)
-	elseif desiremode == "unstuck" then
-		local ScrollSlot = bot:FindItemSlot("item_tpscroll")
-		local tpScroll = bot:GetItemInSlot(ScrollSlot)
-		
-		bot:Action_UseAbilityOnLocation(tpScroll, PAF.GetFountainLocation(bot))
-		--bot:ActionImmediate_Chat("TPing because I'm stuck", true)
-		
-		StuckTime = DotaTime()
-		StuckLocation = bot:GetLocation()
-	elseif desiremode == "StopLH" then
-		bot:Action_ClearActions(true)
-	elseif desiremode == "Harass" then
-		bot:Action_AttackUnit(bot:GetAttackTarget(), false)
-	elseif desiremode == "PartnerAttack" then
-		bot:Action_AttackUnit(PATarget, true)
-	elseif desiremode == "SFRaze" and target ~= nil then
-		bot:Action_MoveToLocation(target:GetLocation())
-	elseif desiremode == "ForceRetreat" then
-		if P.IsInLaningPhase() then
-			local FriendlyTowers = GetUnitList(UNIT_LIST_ALLIED_BUILDINGS)
-			local ClosestTower = nil
-			local ClosestDistance = 99999999
-			
-			for v, Tower in pairs(FriendlyTowers) do
-				if Tower:IsTower() and GetUnitToUnitDistance(bot, Tower) < ClosestDistance then
-					ClosestTower = Tower
-					ClosestDistance = GetUnitToUnitDistance(bot, Tower)
-				end
-			end
-			
-			local RetreatSpot = ClosestTower:GetLocation()
-			
-			local Enemies = bot:GetNearbyHeroes(800, false, BOT_MODE_NONE)
-			
-			for v, enemy in pairs(Enemies) do
-				if GetUnitToUnitDistance(enemy, ClosestTower) <= 800 then
-					if bot:GetTeam() == TEAM_RADIANT then
-						RetreatSpot = Vector(-7174.0, -6671.0, 0.0)
-					elseif bot:GetTeam() == TEAM_DIRE then
-						RetreatSpot = Vector(7023.0, 6450.0, 0.0)
-					end
-					
-					break
-				end
-			end
-			
-			bot:Action_MoveToLocation(RetreatSpot)
-		else
-			if bot:GetTeam() == TEAM_RADIANT then
-				bot:Action_MoveToLocation(Vector(-7174.0, -6671.0, 0.0))
-			elseif bot:GetTeam() == TEAM_DIRE then
-				bot:Action_MoveToLocation(Vector(7023.0, 6450.0, 0.0))
-			end
-		end
-	elseif desiremode == "AttackItem" then
-		print("Attack item")
-		print(itemtarget)
-		bot:Action_AttackUnit(itemtarget, true)
-	elseif desiremode == "AbilityChannel" then
-		--return
-	elseif desiremode == "CourierRetrieve" then
-		local Courier = GetCourier(bot.courierID)
-		bot:Action_MoveToLocation(Courier:GetLocation())
-	end
+    if J.CanNotUseAction(bot) then return end
+
+    if bot.tormentor_state == true and GetUnitToLocationDistance(bot, TormentorLocation) > 800 and GetUnitToLocationDistance(bot, TormentorLocation) < 1800 then
+        local nLaneCreeps = bot:GetNearbyLaneCreeps(Min(1600, bot:GetAttackRange() + 300), true)
+        if J.IsValid(nLaneCreeps[1])
+            and J.CanBeAttacked(nLaneCreeps[1])
+        then
+            bot:Action_AttackUnit(nLaneCreeps[1], true)
+            return
+        end
+    end
+
+    if bot.tormentor_state == true and not X.IsEnoughAllies(vWaitingLocation, 1600) then
+        if X.GetClosestBot() == bot and DotaTime() > fStillAlive + 15.0 then
+            if GetUnitToLocationDistance(bot, TormentorLocation) <= 350 then
+                local nNeutralCreeps = bot:GetNearbyNeutralCreeps(900)
+                for i = #nNeutralCreeps, 1, -1 do
+                    if J.IsValid(nNeutralCreeps[i]) and string.find(nNeutralCreeps[i]:GetUnitName(), 'miniboss') then
+                        fStillAlive = DotaTime()
+                        bTormentorAlive = true
+                    end
+                end
+                if not bTormentorAlive then
+                    bot.tormentor_kill_time = DotaTime()
+                    bot.tormentor_state = false
+                    bTormentorAlive = false
+                end
+            end
+
+            bot:Action_MoveToLocation(TormentorLocation)
+            return
+        end
+
+        if DotaTime() >= fNextMovementTime then
+            bot:Action_MoveToLocation(vWaitingLocation + RandomVector(300))
+            fNextMovementTime = DotaTime() + RandomFloat(0.05, 0.2)
+            return
+        end
+    else
+        if GetUnitToLocationDistance(bot, TormentorLocation) > bot:GetAttackRange() + 50 then
+            bot:Action_MoveToLocation(TormentorLocation)
+            return
+        else
+            local tCreeps = bot:GetNearbyNeutralCreeps(900)
+            for _, c in pairs(tCreeps) do
+                if J.IsValid(c) and string.find(c:GetUnitName(), 'miniboss') then
+                    Tormentor = c
+                    if GetUnitToUnitDistance(bot, c) > bot:GetAttackRange() + 50 then
+                        bot:Action_MoveDirectly(TormentorLocation)
+                        return
+                    else
+                        if X.IsEnoughAllies(TormentorLocation, 900) or J.GetHP(c) < 0.25 then
+                            bot:Action_AttackUnit(c, true)
+                            return
+                        end
+                    end
+
+                    if J.GetFirstBotInTeam() == bot and canDoTormentor and (DotaTime() > tormentorMessageTime + 15) then
+                        tormentorMessageTime = DotaTime()
+                        bot:ActionImmediate_Chat("Let's try Tormentor?", false)
+                        bot:ActionImmediate_Ping(c:GetLocation().x, c:GetLocation().y, true)
+                        return
+                    end
+                end
+            end
+        end
+    end
 end
 
-function OnEnd()
-	StartRunTime = 0
-	RetreatTime = 0
+function X.IsTormentorAlive()
+    if IsLocationVisible(TormentorLocation) then
+        for i = 1, 5 do
+            local member = GetTeamMember(i)
+            if member ~= nil and member:IsAlive() then
+                if GetUnitToLocationDistance(member, TormentorLocation) <= 350 then
+                    local nNeutralCreeps = member:GetNearbyNeutralCreeps(900)
+                    for j = #nNeutralCreeps, 1, -1 do
+                        if J.IsValid(nNeutralCreeps[j]) and string.find(nNeutralCreeps[j]:GetUnitName(), 'miniboss') then
+                            return true
+                        end
+                    end
+
+                    member.tormentor_kill_time = DotaTime()
+                end
+            end
+        end
+    end
+
+    return false
 end
 
------------------------------------------------------------------------------------------------------------------------------
+function X.IsEnoughAllies(vLocation, nRadius)
+    local nAllyCount = 0
+    local nCoreCountInLoc2 = 0
+    local nSuppCountInLoc2 = 0
+    for i = 1, 5 do
+        local member = GetTeamMember(i)
+        if member ~= nil and member:IsAlive() then
+            if GetUnitToLocationDistance(member, vLocation) <= nRadius then
+                nAllyCount = nAllyCount + 1
+                if J.IsCore(member) then
+                    nCoreCountInLoc2 = nCoreCountInLoc2 + 1
+                else
+                    nSuppCountInLoc2 = nSuppCountInLoc2 + 1
+                end
+            end
+        end
+    end
 
-function CanLastHitCreep(creeps)
-	local attackdmg = bot:GetAttackDamage()
-	
-	if bot:FindItemSlot("item_quelling_blade") >= 0 then
-		if bot:GetUnitName() == "npc_dota_hero_templar_assassin"
-		or bot:GetAttackRange() > 301 then
-			attackdmg = (attackdmg + 4)
-		else
-			attackdmg = (attackdmg + 8)
-		end
-	elseif bot:FindItemSlot("item_bfury") >= 0 then
-		if bot:GetUnitName() == "npc_dota_hero_templar_assassin"
-		or bot:GetAttackRange() > 301 then
-			attackdmg = (attackdmg + 5)
-		else
-			attackdmg = (attackdmg + 10)
-		end
-	end
-
-	for v, hcreep in pairs(creeps) do
-		if #creeps > 0 and hcreep ~= nil and hcreep:CanBeSeen() then
-			local incdmg = hcreep:GetActualIncomingDamage(attackdmg, DAMAGE_TYPE_PHYSICAL)
-					
-			local projectiles = hcreep:GetIncomingTrackingProjectiles()
-			local casterdmg = 0
-			local projloc = Vector(0,0,0)
-					
-			for i, proj in pairs(projectiles) do
-				if proj.is_attack == true then
-					local caster = proj.caster
-							
-					if caster ~= nil and caster:CanBeSeen() then
-						casterdmg = caster:GetAttackDamage()
-						projloc = proj.location
-						break
-					end
-				end
-			end
-					
-			local actualcasterdmg = hcreep:GetActualIncomingDamage(casterdmg, DAMAGE_TYPE_PHYSICAL)
-				
-			if hcreep:GetHealth() <= incdmg or ((hcreep:GetHealth() - actualcasterdmg) < incdmg and GetUnitToLocationDistance(hcreep, projloc) <= 300) then
-				target = hcreep
-				return true
-			end
-		end
-	end
-	
-	return false
+    return ((bot.tormentor_kill_time == 0 and nAllyCount >= 5)
+            or (bot.tormentor_kill_time == 0 and nAllyCount >= 4 and nCoreCountInLoc2 >= 3 and nSuppCountInLoc2 >= 1)
+            or (bot.tormentor_kill_time > 0 and nAllyCount >= 3))
+        and nCoreCountInLoc2 >= 2
 end
 
-function IsCoreNearby()
-	local AlliesWithinRange = bot:GetNearbyHeroes(1000, false, BOT_MODE_NONE)
-	local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
-	
-	if PRoles.GetPRole(bot, bot:GetUnitName()) == "SoftSupport"
-	or PRoles.GetPRole(bot, bot:GetUnitName()) == "HardSupport" then
-		for v, Ally in pairs(FilteredAllies) do
-			if PRoles.GetPRole(Ally, Ally:GetUnitName()) == "MidLane"
-			or PRoles.GetPRole(Ally, Ally:GetUnitName()) == "OffLane"
-			or PRoles.GetPRole(Ally, Ally:GetUnitName()) == "SafeLane" then
-				return true
-			end
-				
-			if not Ally:IsBot() then
-				return true
-			end
-		end
-	end
-	
-	return false
+function X.GetClosestBot()
+    local hUnitList = J.GetAlliesNearLoc(vWaitingLocation, 2800)
+    local hTarget = nil
+    local hTargetDistance = math.huge
+    for _, unit in pairs(hUnitList) do
+        if J.IsValidHero(unit) and GetUnitToLocationDistance(unit, TormentorLocation) < 2000 then
+            local unitDistance = GetUnitToLocationDistance(unit, TormentorLocation)
+            if hTargetDistance > unitDistance * (1 - J.GetHP(unit)) then
+                hTargetDistance = unitDistance
+                hTarget = unit
+            end
+        end
+    end
+
+    if hTarget ~= nil then
+        return hTarget
+    end
+    return nil
 end
 
-function IsSuitableToLastHit()
-	return bot:GetActiveMode() ~= BOT_MODE_EVASIVE_MANEUVERS
-	and not P.IsRetreating(bot)
-	and not PAF.IsEngaging(bot)
-	and bot:GetHealth() > (bot:GetMaxHealth() * 0.35)
+function X.IsTeamHealthy()
+    local nHealthyAlly = 0
+    for i = 1, 5 do
+        local member = GetTeamMember(i)
+        if J.IsValid(member) and (J.GetHP(member) > 0.5 or not member:IsBot()) then
+            nHealthyAlly = nHealthyAlly + 1
+        end
+    end
+
+    return nHealthyAlly >= J.GetNumOfAliveHeroes(false)
 end
 
-function ShouldRetreat()
-	if not ShouldIgnoreRetreatMode() then
-		--[[local AlliedHeroes = GetUnitList(UNIT_LIST_ALLIED_HEROES)
-		for v, AllyHero in pairs(AlliedHeroes) do
-			local ID = AllyHero:GetPlayerID()
-			if not IsPlayerBot(ID) then
-				local RecentPing = AllyHero:GetMostRecentPing()
-				
-				if RecentPing.normal_ping == false then
-					if GameTime() - RecentPing.time <= 5 then
-						if GetUnitToLocationDistance(bot, RecentPing.location) <= 1600 then
-							StartRunTime = DotaTime()
-							RetreatTime = 2.5
-							return true
-						end
-					end
-				end
-			end
-		end]]--
-	
-		if P.IsInLaningPhase() then
-			local towers = bot:GetNearbyTowers(1000, true)
-			if #towers >= 1 and PAF.IsEngaging(bot) then
-				StartRunTime = DotaTime()
-				RetreatTime = 1
-				return true
-			end
-			
-			--[[local EnemiesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
-			local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
-			local FearedEnemies = {}
-			if #FilteredEnemies > 0 then
-				for v, Enemy in pairs(FilteredEnemies) do
-					if not P.IsMeepoClone(Enemy) then
-						table.insert(FearedEnemies, Enemy)
-					end
-				end
-			end
-			
-			local AlliesWithinRange = bot:GetNearbyHeroes(1200, false, BOT_MODE_NONE)
-			local FilteredAllies = PAF.FilterTrueUnits(AlliesWithinRange)
-			local ConsideredAllies = {}
-			if #FilteredAllies > 0 then
-				for v, Ally in pairs(FilteredAllies) do
-					if not P.IsMeepoClone(Ally) then
-						table.insert(ConsideredAllies, Ally)
-					end
-				end
-			end
-			
-			if #ConsideredAllies < #FearedEnemies then
-				StartRunTime = DotaTime()
-				RetreatTime = 1.5
-				return true
-			end]]--
-		else
-			local EnemiesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
-			local FilteredEnemies = PAF.FilterTrueUnits(EnemiesWithinRange)
-			local AlliesWithinRange = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
-			local FilteredAllies = PAF.FilterTrueUnits(EnemiesWithinRange)
-			local EnemyTowers = bot:GetNearbyTowers(1200, true)
-			
-			if #FilteredEnemies - #FilteredAllies >= 2 then
-				StartRunTime = DotaTime()
-				RetreatTime = 1.3
-				return true
-			end
-		end
-		
-		if PAF.IsEngaging(bot) then
-			local BotTarget = bot:GetTarget()
-			
-			if PAF.IsValidHeroAndNotIllusion(BotTarget) then
-				local NearbyTowers = bot:GetNearbyTowers(1200, true)
-						
-				if GetUnitToLocationDistance(bot, PAF.GetFountainLocation(BotTarget)) <= 1200 then
-					StartRunTime = DotaTime()
-					RetreatTime = 1.65
-					return true
-				end
-						
-				if bot:GetLevel() < 6
-				and GetUnitToLocationDistance(bot, PAF.GetFountainLocation(BotTarget)) <= 7500
-				and (BotTarget:GetHealth() >= (BotTarget:GetMaxHealth() * 0.3)
-				or GetUnitToUnitDistance(bot, BotTarget) > bot:GetAttackRange() + 200) then
-					StartRunTime = DotaTime()
-					RetreatTime = 2.1
-					return true
-				end
-			end
-		end
-		
-		return false
-	end
+-- just some threshold
+local tTeamDamage = {}
+local fThresholdChatTime = 0
+function X.IsGoodRighClickDamage()
+    if bot.tormentor_kill_time > 0 then return true end
+
+    for i = 1, 5 do
+        local member = GetTeamMember(i)
+        if member ~= nil
+            and member:CanBeSeen()
+            and J.IsCore(member)
+            and not J.DoesUnitHaveTemporaryBuff(member)
+        then
+            local memberPosition = J.GetPosition(member)
+            local attackDamage = member:GetAttackDamage() * member:GetAttackSpeed()
+            if memberPosition == 1 then
+                attackDamage = attackDamage * 0.50
+            elseif memberPosition == 2 then
+                attackDamage = attackDamage * 0.25
+            elseif memberPosition == 3 then
+                attackDamage = attackDamage * 0.25
+            end
+
+            local id = member:GetPlayerID()
+            if tTeamDamage[id] == nil then tTeamDamage[id] = 0 end
+            if tTeamDamage[id] < attackDamage then
+                tTeamDamage[id] = attackDamage
+            end
+        end
+    end
+
+    local totalAttackDamage = 0
+    for _, damage in pairs(tTeamDamage) do totalAttackDamage = totalAttackDamage + damage end
+
+    if not J.IsDoingTormentor(bot) and J.GetFirstBotInTeam() == bot and bot.tormentor_state == true and DotaTime() - fThresholdChatTime < 30 and totalAttackDamage >= 400.0 then
+        bot:ActionImmediate_Chat("Tormentor threshold met..", false)
+        fThresholdChatTime = DotaTime()
+    end
+
+    -- if math.floor(DotaTime()) % 5 == 0 then
+    --     if GetTeam() == TEAM_RADIANT then
+    --         print(bot.tormentor_team_healthy, 'RADIANT:', totalAttackDamage)
+    --     else
+    --         print(bot.tormentor_team_healthy, 'DIRE:', totalAttackDamage)
+    --     end
+    -- end
+
+    return totalAttackDamage >= 400.0
 end
 
-function ShouldIgnoreRetreatMode()
-	--[[if P.IsInPhalanxTeamFight(bot) then
-		if bot:HasModifier("modifier_item_satanic_unholy") 
-		or bot:HasModifier("modifier_abaddon_borrowed_time")
-		or bot:HasModifier("modifier_item_mask_of_madness_berserk")
-		or bot:HasModifier("modifier_oracle_false_promise_timer")
-		or bot:HasModifier("modifier_black_king_bar_immune") then
-			return true
-		end
-		
-		if bot:GetUnitName() == "npc_dota_hero_razor" and bot:GetLevel() >= 6 then
-			if bot:HasModifier("modifier_item_bloodstone_active") then
-				return true
-			end
-		end
-		
-		if bot:GetUnitName() == "npc_dota_hero_skeleton_king" and bot:GetLevel() >= 6 then
-			local Reincarnation = bot:GetAbilityByName("skeleton_king_reincarnation")
-			
-			if Reincarnation:GetCooldownTimeRemaining() <= 1 and bot:GetMana() >= Reincarnation:GetManaCost() then
-				return true
-			end
-		end
-	end]]--
+local bHumanPinged = false
+function X.DidHumanPingedOrAtLocation()
+    local human, ping = J.GetHumanPing()
+    if bot.tormentor_state == true and human and ping and not bHumanPinged then
+        if J.GetDistance(ping.location, vWaitingLocation) <= 800
+            or J.GetDistance(ping.location, TormentorLocation) <= 800
+        then
+            if GameTime() < ping.time + 15 then
+                bHumanPinged = true
+            end
+        end
+    end
 
-	return false
-end
+    if bot.tormentor_state == false then
+        bHumanPinged = false
+    elseif bot.tormentor_state == true and bHumanPinged then
+        return true
+    end
 
-function CanAttackWithPartner()
-	--if PRoles.GetPRole(bot, bot:GetUnitName()) ~= "MidLane" then
-		local allies = bot:GetNearbyHeroes(800, false, BOT_MODE_NONE)
-		local enemies = bot:GetNearbyHeroes(600, true, BOT_MODE_NONE)
-		local attacktarget = PAF.GetWeakestUnit(enemies)
-		local AttackRange = bot:GetAttackRange()
-		
-		local CCPower = 2
-		local TargetHealth = 0
-		local EstimatedDamage = 0
-		
-		if attacktarget ~= nil then
-			for v, AllyP in pairs(allies) do
-				local StunDuration = AllyP:GetStunDuration(true)
-				local SlowDuration = AllyP:GetSlowDuration(true)
-				
-				CCPower = CCPower + (StunDuration + SlowDuration)
-			end
-			
-			for v, AllyP in pairs(allies) do
-				EstimatedDamage = EstimatedDamage + AllyP:GetEstimatedDamageToTarget(true, attacktarget, CCPower, DAMAGE_TYPE_ALL)
-			end
-			
-			local TargetHealth = attacktarget:GetHealth()
-			print (EstimatedDamage.." to "..TargetHealth)
-		end
-		
-		if attacktarget ~= nil and #allies >= 2 and EstimatedDamage > TargetHealth and GetUnitToUnitDistance(bot, attacktarget) <= 800 and GetUnitToUnitDistance(allies[2], attacktarget) <= 600 then
-			PATarget = attacktarget
-			return true
-		end
-	--end
-	
-	return false
+    return false
 end
