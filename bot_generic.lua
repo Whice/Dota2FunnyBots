@@ -1,62 +1,132 @@
-function Think()
-    local bot = GetBot()
-    if bot:IsChanneling() then return end -- Не прерывать касты
+local selfBot
+local botSlotNumber
+local botNumberInTeam
+local stateLaning = true
+local LaneTypes = 
+{
+    EASE  =1,
+    MID  =2,
+    HARD  =3
+}
+local laneType
 
-    -- 1. Проверка безопасности
-    if ShouldRetreat(bot) then
-        bot:SetNextAction(MoveToSafeSpot())
-        return
+function IsRadiant(bot)
+    return bot:GetTeam()== TEAM_RADIANT
+end
+function GetConcreteLineByLaneType(bot)
+    local isRadiant = IsRadiant(bot)
+
+    if(laneType == LaneTypes.MID) then
+            return LANE_MID      
     end
-
-    -- 2. Фарм крипов
-    local creep = FindFarmTarget(bot)
-    if creep ~= nil then
-        -- 3. Выбор: атаковать или добить?
-        if CanLastHit(bot, creep) then
-            bot:SetNextAction(AttackCreep(creep)) -- Добивание
+    if(laneType == LaneTypes.EASE) then
+        if isRadiant then
+            return LANE_BOT
         else
-            bot:SetNextAction(AttackCreep(creep)) -- Обычная атака
-        end
-        return
-    end
-
-    -- 3. Денай союзных крипов
-    local denyTarget = FindDenyTarget(bot)
-    if denyTarget ~= nil and CanDeny(bot, denyTarget) then
-        bot:SetNextAction(AttackCreep(denyTarget))
-        return
-    end
-
-    -- 4. Позиционирование
-    bot:SetNextAction(AdjustPosition(bot))
-end
-
-function FindFarmTarget(bot)
-    local creeps = bot:GetNearbyCreeps(1000, true) -- Вражеские крипы
-    for _, creep in pairs(creeps) do
-        if creep:GetHealth() > 0 and not creep:IsAncient() then
-            return creep -- Первый доступный крип
+            return LANE_TOP            
         end
     end
-    return nil
+    if(laneType == LaneTypes.HARD) then
+        if isRadiant then
+            return LANE_TOP
+        else
+            return LANE_BOT        
+        end
+    end
+
 end
 
-function CanLastHit(bot, creep)
-    local dmg = bot:GetAttackDamage()
-    local timeToHit = (GetDistance(bot, creep) / bot:GetAttackSpeed()) + 0.1 -- Задержка
-    local predictedHP = creep:GetHealth() - GetIncomingDamage(creep)         -- Учет входящего урона
-
-    -- Добивание возможно, если урон бота убьет крипа
-    return predictedHP <= dmg and predictedHP > 0
-end
-
-function AdjustPosition(bot)
-    local laneFront = GetLaneFrontLocation() -- Точка фронта линии
-    local safePos = GetSafeSpot(bot) -- Безопасная позиция
+function SetLaneType()
     
-    -- Держаться рядом с крипами, но не слишком близко к врагам
-    if GetDistance(bot, laneFront) > 600 then
-        return BOT_ACTION_DESIRE_MEDIUM, safePos
+        local or15 = botNumberInTeam == 1 or botNumberInTeam == 5
+        local or34 = botNumberInTeam == 3 or botNumberInTeam == 4
+        local is2 = botNumberInTeam == 2
+        if or15  then
+    laneType = LaneTypes.EASE
+        end
+        if or34 then
+            laneType = LaneTypes.HARD
+        else
+            laneType = LaneTypes.MID
+        end
+end
+function SendMsg(message)
+    selfBot:ActionImmediate_Chat( message, false)
+end
+function SendMsgAll(message)
+    selfBot:ActionImmediate_Chat( message, true)
+end
+function IsNecrolyte(bot)
+    if bot ~= nil and bot:IsHero() then
+        return bot:GetUnitName() == "npc_dota_hero_necrolyte"
     end
-    return BOT_ACTION_DESIRE_NONE
+    return false
+end
+
+--Функция, чтобы отправить бота на линию за крипами
+function SetFrontOnLine()
+    local line  = GetConcreteLineByLaneType(selfBot)
+        selfBot:Action_MoveToLocation(GetLaneFrontLocation(selfBot:GetTeam(), line, -600))  
+end
+
+function IsAnyCreepNear()
+
+    --  `float GetUnitToUnitDistanceSqr( hUnit1, hUnit2 )` - Возвращает квадрат расстояния между двумя юнитами (оптимизировано для сравнений).
+    --{ hUnit, ... } GetNearbyCreeps( nRadius, bEnemies ) - Крипы в радиусе (до 1600).
+
+
+    local nearDistance = 1000
+    local nearDistanceSqr = nearDistance*nearDistance
+
+
+end
+
+local isNamePrint = false
+
+function Think()
+    if selfBot == nil then
+    selfBot = GetBot()
+
+    botSlotNumber = selfBot:GetPlayerID()
+if botSlotNumber<5 then
+    botNumberInTeam = botSlotNumber+1
+else
+    botNumberInTeam = botSlotNumber-4
+end
+SetLaneType()
+    end
+
+if not isNamePrint then
+    --SendMsgAll("My slot: "..botSlotNumber)
+    SendMsgAll("My pos: "..botNumberInTeam)
+    local line  = GetConcreteLineByLaneType(selfBot)
+    SendMsgAll("My line: "..line)
+    isNamePrint = true
+end
+
+    if(stateLaning) then        
+        if selfBot:IsChanneling() then return end -- Не прерывать касты
+        
+        local creepMinHp = 99999
+        local hMinHpCreep = nil
+        for _, creep in pairs(selfBot:GetNearbyCreeps(1000, true)) do
+            local hp = creep:GetHealth()
+            if hp < creepMinHp then
+                creepMinHp = hp
+                hMinHpCreep = creep
+            end
+        end
+
+        if(hMinHpCreep==nil)then
+        SetFrontOnLine()
+    else
+        local damage  = selfBot:GetAttackDamage()
+        if creepMinHp <= damage then
+            --Action_AttackUnit( hUnit, bOnce ) - Приказывает атаковать юнита. При bOnce=true останавливается после одной атаки.
+            selfBot:Action_AttackUnit(hMinHpCreep, true)
+
+        end
+    end
+        
+    end
 end
