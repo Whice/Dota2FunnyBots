@@ -20,23 +20,35 @@ function gf.GetNumAttackers(hTargetUnit)
     if not invalidTarget then
         local nearbyEnemies = hTargetUnit:GetNearbyHeroes(1200, true, BOT_MODE_NONE) -- Герои в радиусе 1200
 
-        -- Проверяем вражеских героев
-        for _, enemy in ipairs(nearbyEnemies) do
-            if enemy:GetAttackTarget() == hTargetUnit then
-                attackers = attackers + 1
+        if nearbyEnemies ~= nil then
+            -- Проверяем вражеских героев
+            for _, enemy in ipairs(nearbyEnemies) do
+                if enemy ~= nil and enemy:GetAttackTarget() == hTargetUnit then
+                    attackers = attackers + 1
+                end
             end
         end
 
         -- Проверяем крипов (добавьте при необходимости)
         local nearbyCreeps = hTargetUnit:GetNearbyCreeps(1200, true)
-        for _, creep in ipairs(nearbyCreeps) do
-            if creep:GetAttackTarget() == hTargetUnit then
-                attackers = attackers + 1
+        if nearbyCreeps ~= nil then
+            for _, creep in ipairs(nearbyCreeps) do
+                if creep ~= nil and creep:GetAttackTarget() == hTargetUnit then
+                    attackers = attackers + 1
+                end
             end
         end
     end
 
     return attackers
+end
+
+function gf.IsTargetInRange(hUnitAttaker, hUnitTarget)
+    local attackRange = hUnitAttaker:GetAttackRange()
+    local sqrAttackRange = attackRange * attackRange
+    -- `float GetUnitToUnitDistanceSqr( hUnit1, hUnit2 )` - Возвращает квадрат расстояния между двумя юнитами (оптимизировано для сравнений).
+    local sqrDistance = GetUnitToUnitDistanceSqr(hUnitAttaker, hUnitTarget)
+    return sqrDistance < sqrAttackRange
 end
 
 return gf

@@ -115,11 +115,13 @@ function LaningStateBehaviourCreator.Create()
         --ToDo: позже надо будет вынести причины отступления в отдельную функцию для чистоты и оптимизации
         --Вражеский крип найден
         local hasEnemyCreep = hMinHpEnemyCreep ~= nil
+        --ToDo: в будущем учесть получаемый крипом урон, дальность атаки бота и его скорость передвижения.
         --Скоро надо будет добить крипа
-        local isSoonHitCreep = creepHpPercent < 0.3
+        local isSoonHitCreep = creepHpPercent < (0.3 + 0.05* gf.GetNumAttackers(hMinHpEnemyCreep))
         --Надо отойти в безопасное положение за линией фронта
         local retreatToSafeOnLine = not hasEnemyCreep or not isSoonHitCreep
         --Отойти также, если атакую двое или больше
+        --ToDo: в будущем учесть атаку башни
         local botAttakersCount = gf.GetNumAttackers(LaningStateBehaviour.selfBot)
         retreatToSafeOnLine = retreatToSafeOnLine or botAttakersCount > 1
 
@@ -134,7 +136,8 @@ function LaningStateBehaviourCreator.Create()
                 --Action_AttackUnit( hUnit, bOnce ) - Приказывает атаковать юнита. При bOnce=true останавливается после одной атаки.
                 LaningStateBehaviour.selfBot:Action_AttackUnit(hMinHpEnemyCreep, true)
             else
-                if isSoonHitCreep then --Подойти к крипу, которого скоро можно будет добить.
+                local prepareForAttack = gf.IsTargetInRange(LaningStateBehaviour.selfBot, hMinHpEnemyCreep)
+                if isSoonHitCreep and not prepareForAttack then --Подойти к крипу, которого скоро можно будет добить.
                     local creepLocation = hMinHpEnemyCreep:GetLocation()
                     LaningStateBehaviour.MoveBotLocation(creepLocation)
                 end
