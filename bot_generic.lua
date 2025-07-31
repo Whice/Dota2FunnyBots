@@ -1,4 +1,5 @@
-local LaningStateBehaviour = require(GetScriptDirectory() .. "\\Behaviuors.LaningStateBehaviour")
+local LaningStateBehaviourCreator = require(GetScriptDirectory() .. "\\Behaviuors.LaningStateBehaviour")
+local LaningStateBehaviour = LaningStateBehaviourCreator.Create()
 local gf = require(GetScriptDirectory() .. "\\Behaviuors.GeneralFunctions")
 
 
@@ -22,6 +23,8 @@ function Think()
     local dotaTime = DotaTime()
     if selfBot == nil then
         selfBot = GetBot()
+        LaningStateBehaviour.selfBot = selfBot
+
 
         botSlotNumber = selfBot:GetPlayerID()
         if botSlotNumber < 5 then
@@ -34,13 +37,13 @@ function Think()
 
     if not isNamePrint then
         --SendMsgAll("My slot: "..botSlotNumber)
-        gf.SendMsgAll("My pos: " .. botNumberInTeam)
+        gf.SendMsgAll(selfBot, "My pos: " .. botNumberInTeam)
         local line = LaningStateBehaviour.GetConcreteLineByLaneType(selfBot)
-        gf.SendMsgAll("My line: " .. line)
+        gf.SendMsgAll(selfBot, "My line: " .. line)
         isNamePrint = true
     end
 
     if (LaningStateBehaviour.stateLaning) then
-        LaningStateBehaviour.Think(dotaTime)
+        LaningStateBehaviour.Think(selfBot, dotaTime)
     end
 end

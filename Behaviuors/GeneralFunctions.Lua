@@ -1,15 +1,14 @@
 
 
 gf = {}
-gf.selfBot = GetBot()
 
 
-function gf.SendMsg(message)
-    gf.selfBot:ActionImmediate_Chat(message, false)
+function gf.SendMsg(bot, message)
+    bot:ActionImmediate_Chat(message, false)
 end
 
-function gf.SendMsgAll(message)
-    gf.selfBot:ActionImmediate_Chat(message, true)
+function gf.SendMsgAll(bot, message)
+    bot:ActionImmediate_Chat(message, true)
 end
 function gf.IsRadiant(bot)
     return bot:GetTeam()== TEAM_RADIANT
