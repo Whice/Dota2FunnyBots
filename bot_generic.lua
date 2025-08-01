@@ -44,6 +44,6 @@ function Think()
     end
 
     if (LaningStateBehaviour.stateLaning) then
-        LaningStateBehaviour.Think(selfBot, dotaTime)
+        LaningStateBehaviour.Think(dotaTime)
     end
 end

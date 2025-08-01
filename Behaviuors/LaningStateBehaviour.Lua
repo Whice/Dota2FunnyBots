@@ -5,6 +5,10 @@ local LaningStateBehaviourCreator = {}
 function LaningStateBehaviourCreator.Create()
     local LaningStateBehaviour = {}
     LaningStateBehaviour.selfBot = nil
+    LaningStateBehaviour.weakestEnemyCreep = nil
+    LaningStateBehaviour.weakestFriendCreep = nil
+    LaningStateBehaviour.lastThinkTime = -500.0
+    LaningStateBehaviour.thinkRate = 0.05
 
     LaningStateBehaviour.stateLaning = true
     LaningStateBehaviour.LaneTypes =
@@ -65,9 +69,10 @@ function LaningStateBehaviourCreator.Create()
         local line = LaningStateBehaviour.GetConcreteLineByLaneType(LaningStateBehaviour.selfBot)
         return GetLaneFrontLocation(LaningStateBehaviour.selfBot:GetTeam(), line, -600)
     end
+
     --Функция, чтобы отправить бота на линию за крипами
     function LaningStateBehaviour.MoveToFrontOnLine()
-        local location =  LaningStateBehaviour.GetFrontOnLine()
+        local location = LaningStateBehaviour.GetFrontOnLine()
         LaningStateBehaviour.MoveBotLocation(location)
     end
 
@@ -79,19 +84,41 @@ function LaningStateBehaviourCreator.Create()
         local creepMinHp = 99999
         local creepHpPercent = 1
         local hMinHpCreep = nil
-        for _, creep in pairs(LaningStateBehaviour.selfBot:GetNearbyCreeps(1000, isEnemy)) do
-            local hp = creep:GetHealth()
-            if hp < creepMinHp then
-                creepMinHp = hp
-                hMinHpCreep = creep
+        local creeps = LaningStateBehaviour.selfBot:GetNearbyCreeps(1000, isEnemy)
+        if creeps ~= nil then
+            for _, creep in pairs(creeps) do
+                local hp = creep:GetHealth()
+                if hp < creepMinHp then
+                    creepMinHp = hp
+                    hMinHpCreep = creep
+                end
             end
         end
 
-        if hMinHpCreep ~= nil then
+        local creepResults = {}
+        creepResults.handle = hMinHpCreep
+        creepResults.hasEnemyCreep = hMinHpCreep ~= nil
+        if creepResults.hasEnemyCreep then
+            creepResults.creepMinHp = creepMinHp
             -- текущее и максимальное HP
             local currentHP = hMinHpCreep:GetHealth()
             local maxHP = hMinHpCreep:GetMaxHealth()
             creepHpPercent = (currentHP / maxHP)
+            creepResults.creepMinHp = creepHpPercent
+
+            
+            local botAttakersCount, potentialDamage = gf.GetNumAttackersAndThierDamage(hMinHpCreep)
+        
+            local creepHpPercentAfterDamage =((currentHP - potentialDamage)/ maxHP)
+            --ToDo: в будущем учесть получаемый крипом урон, дальность атаки бота и его скорость передвижения.
+            --Скоро надо будет добить крипа
+            creepResults.isSoonHitCreep = creepHpPercentAfterDamage < (0.3 + 0.02 * botAttakersCount)
+        end
+
+        if isEnemy then
+            LaningStateBehaviour.weakestEnemyCreep = creepResults
+        else
+            LaningStateBehaviour.weakestFriendCreep = creepResults
         end
 
         return hMinHpCreep, creepMinHp, creepHpPercent
@@ -103,41 +130,64 @@ function LaningStateBehaviourCreator.Create()
         return forCreepDamage >= creepHP
     end
 
-    function LaningStateBehaviour.Think(dotaTime)
-        if LaningStateBehaviour.selfBot:IsChanneling() then return end -- Не прерывать касты
+    --Проверка, надо ли отступить
+    function LaningStateBehaviour.IsNeedRetreatToSafeOnLine()
+        --ToDo: нужны оптимизации
 
-        local enemyCreepMinHp = 99999
-        local creepHpPercent = 1
-        local hMinHpEnemyCreep = nil
-        hMinHpEnemyCreep, enemyCreepMinHp, creepHpPercent = LaningStateBehaviour.GetNearbyCreepWithMinHP(true)
-        local damage = LaningStateBehaviour.selfBot:GetAttackDamage()
-
+        --Скоро надо будет добить крипа
+        local isSoonHitEnemyCreep = LaningStateBehaviour.weakestEnemyCreep.isSoonHitCreep
         --ToDo: позже надо будет вынести причины отступления в отдельную функцию для чистоты и оптимизации
         --Вражеский крип найден
-        local hasEnemyCreep = hMinHpEnemyCreep ~= nil
-        --ToDo: в будущем учесть получаемый крипом урон, дальность атаки бота и его скорость передвижения.
-        --Скоро надо будет добить крипа
-        local isSoonHitCreep = creepHpPercent < (0.3 + 0.05* gf.GetNumAttackers(hMinHpEnemyCreep))
+        local hasEnemyCreep = LaningStateBehaviour.weakestEnemyCreep.hasEnemyCreep
         --Надо отойти в безопасное положение за линией фронта
-        local retreatToSafeOnLine = not hasEnemyCreep or not isSoonHitCreep
+        local retreatToSafeOnLine = not hasEnemyCreep or not isSoonHitEnemyCreep
         --Отойти также, если атакую двое или больше
         --ToDo: в будущем учесть атаку башни
-        local botAttakersCount = gf.GetNumAttackers(LaningStateBehaviour.selfBot)
+        local botAttakersCount, _ = gf.GetNumAttackersAndThierDamage(LaningStateBehaviour.selfBot)
         retreatToSafeOnLine = retreatToSafeOnLine or botAttakersCount > 1
 
+        return retreatToSafeOnLine
+    end
+
+    --Надо добить вражеского крипа
+    function LaningStateBehaviour.IsNeedLastHitEnemyCreep()
+        --Вражеский крип найден
+        local hasEnemyCreep = LaningStateBehaviour.weakestEnemyCreep.hasEnemyCreep
+        local hMinHpEnemyCreep = LaningStateBehaviour.weakestEnemyCreep.handle
+        local enemyCreepMinHp = LaningStateBehaviour.weakestEnemyCreep.creepMinHp
+        local damage = LaningStateBehaviour.selfBot:GetAttackDamage()
+        local canLastHit = LaningStateBehaviour.CanLastHit(hMinHpEnemyCreep, enemyCreepMinHp, damage)
+        --Вражеского крипа можно добить одним ударом
+        local canLastHitEnemyCreep = hasEnemyCreep and canLastHit
+
+        return canLastHitEnemyCreep
+    end
+
+    function LaningStateBehaviour.Think(dotaTime)
+        local isNeedThink = LaningStateBehaviour.lastThinkTime + LaningStateBehaviour.thinkRate < dotaTime
+        if not isNeedThink then return end
+        LaningStateBehaviour.lastThinkTime = dotaTime
+
+        if LaningStateBehaviour.selfBot:IsChanneling() then return end -- Не прерывать касты
+        LaningStateBehaviour.GetNearbyCreepWithMinHP(true)
+
+        local isNeedRetreatToSafeOnLine = LaningStateBehaviour.IsNeedRetreatToSafeOnLine()
+
         --Отойти в безопасность, если надо
-        if (retreatToSafeOnLine) then
+        if (isNeedRetreatToSafeOnLine) then
             LaningStateBehaviour.MoveToFrontOnLine()
         else
-            --Вражеского крипа можно добить одним ударом
-            local canLastHitEnemyCreep = hasEnemyCreep and
-                LaningStateBehaviour.CanLastHit(hMinHpEnemyCreep, enemyCreepMinHp, damage)
+            local canLastHitEnemyCreep = LaningStateBehaviour.IsNeedLastHitEnemyCreep()
+            local hMinHpEnemyCreep = LaningStateBehaviour.weakestEnemyCreep.handle
             if canLastHitEnemyCreep then
                 --Action_AttackUnit( hUnit, bOnce ) - Приказывает атаковать юнита. При bOnce=true останавливается после одной атаки.
                 LaningStateBehaviour.selfBot:Action_AttackUnit(hMinHpEnemyCreep, true)
             else
                 local prepareForAttack = gf.IsTargetInRange(LaningStateBehaviour.selfBot, hMinHpEnemyCreep)
-                if isSoonHitCreep and not prepareForAttack then --Подойти к крипу, которого скоро можно будет добить.
+
+                --Скоро надо будет добить крипа
+                local isSoonHitEnemyCreep = LaningStateBehaviour.weakestEnemyCreep.isSoonHitCreep
+                if isSoonHitEnemyCreep and not prepareForAttack then --Подойти к крипу, которого скоро можно будет добить.
                     local creepLocation = hMinHpEnemyCreep:GetLocation()
                     LaningStateBehaviour.MoveBotLocation(creepLocation)
                 end
