@@ -1,6 +1,6 @@
 -- game/dota/scripts/vscripts/bots/bot_sniper.lua
 -- Подключаем дополнительные функции
-local SimpleActions = dofile(GetScriptDirectory().."/AdditionalFunctions/SimpleActions.lua")
+local SimpleActions = require(GetScriptDirectory().."/AdditionalFunctions/SimpleActions")
 
 -- Основные константы для снайпера
 local LANING_RADIUS = 1200

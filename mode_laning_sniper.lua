@@ -1,5 +1,5 @@
 -- Подключаем дополнительные функции
-local SimpleActions = dofile(GetScriptDirectory().."/AdditionalFunctions/SimpleActions.lua")
+local SimpleActions = require(GetScriptDirectory().."/AdditionalFunctions/SimpleActions")
 
 local modeLaningSniper = {}
 
