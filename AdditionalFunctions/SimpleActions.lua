@@ -161,20 +161,12 @@ function SimpleActions.HasTeleport(bot)
         return false
     end
     
-    local itemName = "item_tpscroll"
-    
-    -- Проверяем основной инвентарь (слоты 0-5)
-    for slot = 0, 5 do
-        local item = bot:GetItemInSlot(slot)
-        if item and item:GetName() == itemName then
-            return true
-        end
-    end
-    
-    -- Проверяем рюкзак (слоты 6-8)
-    for slot = 6, 8 do
-        local item = bot:GetItemInSlot(slot)
-        if item and item:GetName() == itemName then
+    --Это спец слот для телепорта
+    local item = bot:GetItemInSlot(15)
+    if item then
+        --Получить количество предметов (оно количество зарядов) в рюкзаке
+        local teleportCount = item:GetCurrentCharges()     
+        if teleportCount > 0 then
             return true
         end
     end
@@ -193,13 +185,13 @@ function SimpleActions.IsTeleportReady(bot)
         return false
     end
     
-    local itemName = "item_tpscroll"
-    
-    -- Ищем телепорт в инвентаре
-    for slot = 0, 8 do
-        local item = bot:GetItemInSlot(slot)
-        if item and item:GetName() == itemName then
-            -- Проверяем готовность телепорта (CD завершен)
+    --Это спец слот для телепорта
+    local item = bot:GetItemInSlot(15)
+    if item then
+        --Получить количество предметов (оно количество зарядов) в рюкзаке
+        local teleportCount = item:GetCurrentCharges()     
+        if teleportCount> 0 then
+                -- Проверяем готовность телепорта (CD завершен)
             return item:IsFullyCastable()
         end
     end
@@ -207,6 +199,9 @@ function SimpleActions.IsTeleportReady(bot)
     return false
 end
 
+--Время последней попытки покупки телепорта, пытаться можно не чаще раза в 2 секунды.
+-- <br/>Первую покупку можно попробовать совершить только спустя 30 секунд после начала матча.
+SimpleActions.lastTimeTeleportBouhgt = 30
 -------------------------------------------------------------------------------
 -- Покупает телепорты до максимального количества 2.
 -- <br/>Если денег хватает на 2 телепорта, покупает 2.
@@ -218,21 +213,28 @@ function SimpleActions.TryBuyTeleports(bot)
     if bot == nil then
         return 0
     end
+
+    if DotaTime()<SimpleActions.lastTimeTeleportBouhgt+2 then
+        return 0
+    end
+    SimpleActions.lastTimeTeleportBouhgt = DotaTime()
     
     local itemName = "item_tpscroll"
     local itemCost = GetItemCost(itemName)
     local currentGold = bot:GetGold()
     local teleportsBought = 0
     
+
     -- Считаем текущее количество телепортов у бота
     local teleportCount = 0
-    for slot = 0, 8 do
-        local item = bot:GetItemInSlot(slot)
-        if item and item:GetName() == itemName then
-            teleportCount = teleportCount + 1
-        end
-    end
     
+    -- Возвращает текущее количество предмета на складе лавки.
+    teleportCount = teleportCount + GetItemStockCount(itemName)
+
+    --Это спец слот для телепорта
+    local item = bot:GetItemInSlot(15)
+     --Получить количество предметов (оно количество зарядов) в рюкзаке
+     teleportCount = teleportCount +  item:GetCurrentCharges()
     -- Определяем сколько телепортов нужно купить
     local teleportsNeeded = 2 - teleportCount
     

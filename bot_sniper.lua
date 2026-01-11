@@ -32,6 +32,9 @@ function Think()
     if not npcBot:IsAlive() then
         return
     end
+
+    --Тест: попытаться покупать телепорты.
+    SimpleActions.TryBuyTeleports(npcBot)
     
     -- Получаем ближайших врагов
     local enemies = npcBot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
