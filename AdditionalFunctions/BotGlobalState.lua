@@ -5,7 +5,8 @@ local BotGlobalState = {
 function BotGlobalState.GetBotData(hBot)
     if not BotGlobalState._botsData[hBot] then
         BotGlobalState._botsData[hBot] = {
-            desire = "",
+            globalBotDesire = -1,
+            localBotDesire = -1,
             -- Можно добавить другие поля по умолчанию
             lastDesireChange = 0,
             customData = {}
