@@ -233,8 +233,10 @@ function SimpleActions.TryBuyTeleports(bot)
 
     --Это спец слот для телепорта
     local item = bot:GetItemInSlot(15)
-     --Получить количество предметов (оно количество зарядов) в рюкзаке
-     teleportCount = teleportCount +  item:GetCurrentCharges()
+    if item then
+        --Получить количество предметов (оно количество зарядов) в рюкзаке
+        teleportCount = teleportCount +  item:GetCurrentCharges()
+    end
     -- Определяем сколько телепортов нужно купить
     local teleportsNeeded = 2 - teleportCount
     
@@ -353,6 +355,62 @@ function SimpleActions.SayStatus(bot)
     local message = string.format("Статус: %d%% HP, %d%% MP, Ур. %d", 
                                  healthPercent, manaPercent, level)
     return SimpleActions.Say(bot, message)
+end
+-- Проверяет, находится ли бот около фронта на своей линии
+function SimpleActions.IsOnNearOfFrontAssignedLane(bot, target_lane, radius)
+    radius = radius or LANE_RADIUS
+    
+    if target_lane == LANE_NONE then
+        return false
+    end
+    
+    local laneFront = GetLaneFrontLocation(bot:GetTeam(), target_lane, 0)
+    if not laneFront then
+        return false
+    end
+    
+    local distance = GetUnitToLocationDistance(bot, laneFront)
+    return distance <= radius
+end
+-- Проверяет, находится ли бот на своей назначенной линии (в любом месте на линии)
+-- Использует GetAmountAlongLane для определения позиции вдоль линии
+-- @param bot - бот для проверки
+-- @param target_lane - назначенная линия (LANE_TOP, LANE_MID, LANE_BOT)
+-- @param max_distance_from_lane - максимальное расстояние от линии (по умолчанию 1500)
+-- @return true если бот находится на линии, false иначе
+function SimpleActions.IsOnAssignedLane(bot, target_lane, max_distance_from_lane)
+    max_distance_from_lane = max_distance_from_lane or 1500  -- По умолчанию 1500 единиц
+    
+    if target_lane == LANE_NONE then
+        return false
+    end
+    
+    -- Получаем позицию бота
+    local bot_location = bot:GetLocation()
+    
+    -- Используем GetAmountAlongLane для определения позиции на линии
+    -- Функция возвращает таблицу { amount, distance }
+    local lane_info = GetAmountAlongLane(target_lane, bot_location)
+    
+    if not lane_info then
+        return false  -- Не удалось получить информацию о линии
+    end
+    
+    local amount = lane_info.amount       -- Позиция вдоль линии (0.0 - 1.0)
+    local distance = lane_info.distance   -- Расстояние от линии
+    
+    -- Проверяем условия:
+    -- 1. amount должен быть между 0 и 1 (включительно)
+    -- 2. Расстояние от линии должно быть меньше max_distance_from_lane
+    -- 3. Также проверяем amount на небольшой допуск за пределы 0-1
+    local tolerance = 0.05  -- 5% допуск за пределы линии
+    
+    if (amount >= 0 - tolerance and amount <= 1 + tolerance) and 
+       (distance <= max_distance_from_lane) then
+        return true
+    end
+    
+    return false
 end
 
 return SimpleActions

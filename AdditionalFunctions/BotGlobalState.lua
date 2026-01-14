@@ -7,9 +7,8 @@ function BotGlobalState.GetBotData(hBot)
         BotGlobalState._botsData[hBot] = {
             globalBotDesire = -1,
             localBotDesire = -1,
-            -- Можно добавить другие поля по умолчанию
-            lastDesireChange = 0,
-            customData = {}
+            farm_location = nil,
+            target_lane = LANE_NONE,
         }
     end
     return BotGlobalState._botsData[hBot]
