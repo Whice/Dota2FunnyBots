@@ -7,7 +7,13 @@ FILE_EXTENSIONS = {".txt", ".lua"}
 OUTPUT_FILE = "resume.txt"
 
 # Список файлов для игнорирования
-IGNORED_FILES = {OUTPUT_FILE}
+IGNORED_FILES =    {
+    OUTPUT_FILE,
+    "Команды для консоли.txt",
+    "Текст документации.txt",
+    "hero_selection.lua",
+    "bots.lua",
+    }
 
 def collect_files(directory):
     """Собирает пути ко всем файлам с заданными расширениями в указанной папке и подпапках."""
