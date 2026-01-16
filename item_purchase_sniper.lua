@@ -1,416 +1,475 @@
--- item_purchase_sniper.lua
--- Логика покупки предметов для Снайпера (без использования goto)
+-- Файл: ItemPurchaseManager.lua
+-- Модуль для управления покупками предметов и расходников
 
-local ItemPurchaseSniper = {}
+local ItemPurchaseManager = {}
 
--- Время последней покупки кларетки
-local lastClarityPurchaseTime = -120
+-- Импортируем PurchaseCore для покупки составных предметов
+local PurchaseCore = require(GetScriptDirectory().."/ItemPurchase/item_purchase_core")
 
--- Хранилище рецептов предметов
-local itemRecipes = {
-    ["item_tango"] = {},
-    ["item_branches"] = {},
-    ["item_circlet"] = {},
-    ["item_slippers"] = {},
-    ["item_faerie_fire"] = {},
-    ["item_clarity"] = {},
-    
-    ["item_wraith_band"] = {
-        "item_circlet",
-        "item_slippers",  
-        "item_recipe_wraith_band"
-    },
-    
-    ["item_boots"] = {},
-    
-    ["item_maelstrom"] = {
-        "item_mithril_hammer",
-        "item_javelin",
-        "item_gloves"
-    },
-    
-    ["item_desolator"] = {
-        "item_blight_stone",
-        "item_mithril_hammer",
-        "item_claymore"
-    },
-    
-    ["item_dragon_lance"] = {
-        "item_blade_of_alacrity",
-        "item_belt_of_strength",
-        "item_recipe_dragon_lance"
-    },
-    
-    ["item_travel_boots"] = {
-        "item_boots",
-        "item_recipe_travel_boots"
-    },
-    
-    ["item_mjollnir"] = {
-        "item_maelstrom",
-        "item_hyperstone",
-        "item_recipe_mjollnir"
-    },
-    
-    ["item_yasha"] = {
-        "item_blade_of_alacrity",
-        "item_band_of_elvenskin",
-        "item_recipe_yasha"
-    },
-    
-    ["item_manta"] = {
-        "item_yasha",
-        "item_diadem",
-        "item_recipe_manta"
-    },
-    
-    ["item_satanic"] = {
-        "item_morbid_mask",
-        "item_claymore",
-        "item_reaver"
-    },
-    
-    ["item_butterfly"] = {
-        "item_eaglesong",
-        "item_talisman_of_evasion",
-        "item_claymore"
-    },
-    
-    ["item_skadi"] = {
-        "item_ultimate_orb",
-        "item_ultimate_orb",
-        "item_point_booster"
-    },
-    
-    ["item_aghanims_shard"] = {}
-}
+-- Хранилище данных для каждого бота
+ItemPurchaseManager.botData = {}
 
--- Порядок покупки предметов
-local purchaseOrder = {
-    "item_tango",
-    "item_branches",
-    "item_branches", 
-    "item_branches",
-    "item_circlet",
-    "item_slippers",
-    "item_faerie_fire",
-    
-    "item_circlet",
-    "item_slippers",
-    "item_recipe_wraith_band",
-    
-    "item_circlet",
-    "item_slippers",
-    "item_recipe_wraith_band",
-    
-    "item_boots",
-    
-    "item_mithril_hammer",
-    "item_javelin",
-    "item_gloves",
-    
-    "item_blight_stone",
-    "item_mithril_hammer",
-    "item_claymore",
-    
-    "item_blade_of_alacrity",
-    "item_belt_of_strength",
-    "item_recipe_dragon_lance",
-    
-    "item_boots",
-    "item_recipe_travel_boots",
-    
-    "item_blade_of_alacrity",
-    "item_belt_of_strength",
-    "item_recipe_dragon_lance",
-    
-    "item_blade_of_alacrity",
-    "item_band_of_elvenskin",
-    "item_recipe_yasha",
-    
-    "item_yasha",
-    "item_diadem",
-    "item_recipe_manta",
-    
-    "item_maelstrom",
-    "item_hyperstone",
-    "item_recipe_mjollnir",
-    
-    "item_morbid_mask",
-    "item_claymore",
-    "item_reaver",
-    
-    "item_eaglesong",
-    "item_talisman_of_evasion",
-    "item_claymore",
-    
-    "item_ultimate_orb",
-    "item_ultimate_orb",
-    "item_point_booster"
-}
+-- Константы для состояний курьера
+local COURIER_STATE_IDLE = 0
+local COURIER_STATE_AT_BASE = 1
+local COURIER_STATE_MOVING = 2
+local COURIER_STATE_DELIVERING_ITEMS = 3
+local COURIER_STATE_RETURNING_TO_BASE = 4
+local COURIER_STATE_DEAD = 5
 
--- Предметы для продажи
-local itemsToSell = {
-    "item_branches",
-    "item_circlet", 
-    "item_slippers",
-    "item_faerie_fire",
-    "item_wraith_band",
-    "item_boots",
-    "item_blight_stone",
-    "item_morbid_mask"
-}
+-- Структура данных для каждого бота:
+-- {
+--   consumables = {
+--     ["item_tango"] = {desired = 2, purchased = 0}
+--   },
+--   items = {
+--     {name = "item_wraith_band", priority = 1.0, purchased = false}
+--   },
+--   purchaseState = "idle", -- "idle", "waiting_for_courier", "processing"
+--   lastProcessTime = 0,
+--   processingDelay = 1.0,
+--   courierBusy = false,
+--   highestPriorityItem = nil
+-- }
 
--- Получить стоимость предмета
-local function GetItemCostSafe(itemName)
-    local cost = GetItemCost(itemName)
-    return cost or 0
+-- Получить или создать таблицу для бота
+function ItemPurchaseManager.GetBotTable(bot)
+    if not bot then return nil end
+    
+    local playerID = bot:GetPlayerID()
+    if not ItemPurchaseManager.botData[playerID] then
+        ItemPurchaseManager.botData[playerID] = {
+            consumables = {},
+            items = {},
+            purchaseState = "idle",
+            lastProcessTime = 0,
+            processingDelay = 1.0,
+            courierBusy = false,
+            highestPriorityItem = nil,
+            courierCheckTime = 0,
+            courierCheckDelay = 2.0
+        }
+    end
+    
+    return ItemPurchaseManager.botData[playerID]
 end
 
--- Проверяет, есть ли у бота предмет
-local function HasItem(bot, itemName)
-    for i = 0, 15 do
-        local item = bot:GetItemInSlot(i)
-        if item and item:GetName() == itemName then
-            return true
-        end
-    end
-    return false
+-- Получить ссылку на таблицу бота (для внешнего заполнения)
+function ItemPurchaseManager.GetPurchaseTable(bot)
+    return ItemPurchaseManager.GetBotTable(bot)
 end
 
--- Проверяет, собран ли предмет полностью
-local function IsItemCompleted(bot, itemName)
-    if not itemRecipes[itemName] or #itemRecipes[itemName] == 0 then
-        return HasItem(bot, itemName)
+-- Обновить таблицу желаний
+function ItemPurchaseManager.UpdateDesires(bot, consumables, items)
+    local data = ItemPurchaseManager.GetBotTable(bot)
+    if not data then return end
+    
+    if consumables then
+        data.consumables = consumables
     end
-    return HasItem(bot, itemName)
+    
+    if items then
+        data.items = items
+    end
 end
 
--- Проверяет, нужен ли предмет для крафта следующего предмета
-local function IsItemNeededForCrafting(bot, itemName)
-    local nextItem = ItemPurchaseSniper.GetNextPurchaseItem(bot)
-    if not nextItem then
-        return false
-    end
+-- Получить курьера команды
+local function GetTeamCourier(bot)
+    local team = bot:GetTeam()
+    local numCouriers = GetNumCouriers()
     
-    local recipe = itemRecipes[nextItem]
-    if not recipe then
-        return false
-    end
-    
-    for _, comp in ipairs(recipe) do
-        if comp == itemName then
-            return true
-        end
-    end
-    
-    return false
-end
-
--- Проверяет, нужно ли купить танго
-function ItemPurchaseSniper.ShouldBuyTango(bot)
-    local tpSlot = bot:GetItemInSlot(15)
-    if tpSlot and tpSlot:GetName() == "item_tpscroll" then
-        if tpSlot:GetCurrentCharges() <= 1 then
-            return true
-        end
-    else
-        return true
-    end
-    
-    for i = 0, 5 do
-        local item = bot:GetItemInSlot(i)
-        if item and item:GetName() == "item_tango" then
-            if item:GetCurrentCharges() <= 1 then
-                return true
-            end
-        end
-    end
-    
-    return false
-end
-
--- Проверяет, нужно ли купить кларетку
-function ItemPurchaseSniper.ShouldBuyClarity(bot)
-    local currentTime = DotaTime()
-    
-    if currentTime - lastClarityPurchaseTime < 120 then
-        return false
-    end
-    
-    local hasClarity = false
-    for i = 0, 15 do
-        local item = bot:GetItemInSlot(i)
-        if item and item:GetName() == "item_clarity" then
-            hasClarity = true
-            break
-        end
-    end
-    
-    if bot:GetMana() / bot:GetMaxMana() < 0.4 and not hasClarity then
-        lastClarityPurchaseTime = currentTime
-        return true
-    end
-    
-    return false
-end
-
--- Проверяет, доступен ли шард для покупки
-function ItemPurchaseSniper.IsShardAvailable()
-    return DotaTime() > 900
-end
-
--- Получает следующий предмет для покупки
-function ItemPurchaseSniper.GetNextPurchaseItem(bot)
-    -- Проверяем приоритетные покупки
-    if ItemPurchaseSniper.ShouldBuyTango(bot) then
-        return "item_tango"
-    end
-    
-    if ItemPurchaseSniper.ShouldBuyClarity(bot) then
-        return "item_clarity"
-    end
-    
-    if ItemPurchaseSniper.IsShardAvailable() and not HasItem(bot, "item_aghanims_shard") then
-        return "item_aghanims_shard"
-    end
-    
-    -- Локальная функция для обработки составных предметов
-    local function processCompositeItem(itemName)
-        if IsItemCompleted(bot, itemName) then
-            return nil  -- Предмет уже собран
-        end
-        
-        -- Проверяем все компоненты
-        for _, component in ipairs(itemRecipes[itemName]) do
-            if not HasItem(bot, component) then
-                -- Для составных компонентов (как Yasha) рекурсивно проверяем
-                if itemRecipes[component] and #itemRecipes[component] > 0 then
-                    if not IsItemCompleted(bot, component) then
-                        local subItem = ItemPurchaseSniper.GetNextPurchaseItem(bot)
-                        if subItem then
-                            return subItem
-                        end
-                    end
-                else
-                    -- Простой компонент, которого нет
-                    return component
-                end
-            end
-        end
-        
-        -- Если все компоненты есть, но предмет не собран, значит нужен рецепт
-        if itemName:find("recipe") then
-            return itemName
-        end
-        
-        return nil
-    end
-    
-    -- Основной цикл по порядку покупки
-    for _, itemName in ipairs(purchaseOrder) do
-        local nextItem = nil
-        
-        if itemRecipes[itemName] and #itemRecipes[itemName] > 0 then
-            -- Составной предмет
-            nextItem = processCompositeItem(itemName)
-        else
-            -- Простой предмет
-            if not HasItem(bot, itemName) then
-                nextItem = itemName
-            end
-        end
-        
-        if nextItem then
-            return nextItem
-        end
-    end
-    
-    -- Проверяем апгрейд предметы
-    local upgradeChecks = {
-        "item_mjollnir",
-        "item_satanic", 
-        "item_butterfly",
-        "item_skadi",
-        "item_aghanims_shard"
-    }
-    
-    for _, itemName in ipairs(upgradeChecks) do
-        if not IsItemCompleted(bot, itemName) then
-            if itemRecipes[itemName] then
-                -- Для составных апгрейд-предметов
-                for _, component in ipairs(itemRecipes[itemName]) do
-                    if not HasItem(bot, component) then
-                        return component
-                    end
-                end
-            else
-                -- Простой апгрейд-предмет
-                if not HasItem(bot, itemName) then
-                    return itemName
-                end
-            end
+    for i = 0, numCouriers - 1 do
+        local courier = GetCourier(i)
+        if courier and courier:GetTeam() == team then
+            return courier
         end
     end
     
     return nil
 end
 
--- Продает лишние предметы
-function ItemPurchaseSniper.SellUnneededItems(bot)
-    for _, itemName in ipairs(itemsToSell) do
-        for i = 0, 15 do
-            local item = bot:GetItemInSlot(i)
-            if item and item:GetName() == itemName then
-                -- Проверяем, не нужен ли предмет для текущего крафта
-                if IsItemNeededForCrafting(bot, itemName) then
-                    -- Пропускаем продажу, если предмет нужен для крафта
-                    break
-                end
-                
-                -- Продаем предмет
-                bot:ActionImmediate_SellItem(item)
+-- Проверить состояние курьера
+function ItemPurchaseManager.CheckCourierState(bot)
+    local data = ItemPurchaseManager.GetBotTable(bot)
+    if not data then return false end
+    
+    local currentTime = DotaTime()
+    if currentTime < data.courierCheckTime + data.courierCheckDelay then
+        return data.courierBusy
+    end
+    
+    data.courierCheckTime = currentTime
+    
+    local courier = GetTeamCourier(bot)
+    if not courier then
+        data.courierBusy = false
+        return false
+    end
+    
+    local courierState = courier:GetCourierState()
+    
+    -- Курьер считается занятым, если он не в базе и не простаивает
+    if courierState == COURIER_STATE_IDLE or courierState == COURIER_STATE_AT_BASE then
+        data.courierBusy = false
+    else
+        data.courierBusy = true
+    end
+    
+    return data.courierBusy
+end
+
+-- Отправить курьера за предметами
+function ItemPurchaseManager.SendCourierForItems(bot)
+    local courier = GetTeamCourier(bot)
+    if not courier then return false end
+    
+    local courierState = courier:GetCourierState()
+    
+    -- Если курьер в базе или простаивает, отправляем его за предметами
+    if courierState == COURIER_STATE_IDLE or courierState == COURIER_STATE_AT_BASE then
+        -- Команда курьеру взять предметы из кладовой и доставить герою
+        bot:ActionImmediate_Courier(courier, COURIER_ACTION_TAKE_AND_TRANSFER_ITEMS)
+        
+        local data = ItemPurchaseManager.GetBotTable(bot)
+        if data then
+            data.courierBusy = true
+            data.courierCheckTime = DotaTime()
+        end
+        
+        return true
+    end
+    
+    return false
+end
+
+-- Найти предмет с наивысшим приоритетом среди расходников
+local function FindHighestPriorityConsumable(data)
+    local highestPriority = -1
+    local selectedItem = nil
+    local selectedName = nil
+    
+    for itemName, itemData in pairs(data.consumables) do
+        local priority = itemData.priority or 1.0
+        local purchased = itemData.purchased or 0
+        local desired = itemData.desired or 1
+        
+        if purchased < desired and priority > highestPriority then
+            highestPriority = priority
+            selectedItem = itemData
+            selectedName = itemName
+        end
+    end
+    
+    return selectedName, selectedItem, highestPriority
+end
+
+-- Найти предмет с наивысшим приоритетом среди обычных предметов
+local function FindHighestPriorityItem(data)
+    local highestPriority = -1
+    local selectedItem = nil
+    
+    for i, itemData in ipairs(data.items) do
+        local priority = itemData.priority or 1.0
+        local purchased = itemData.purchased or false
+        
+        if not purchased and priority > highestPriority then
+            highestPriority = priority
+            selectedItem = itemData
+        end
+    end
+    
+    return selectedItem, highestPriority
+end
+
+-- Пытаться купить предмет с наивысшим приоритетом
+function ItemPurchaseManager.TryBuyHighestPriority(bot)
+    local data = ItemPurchaseManager.GetBotTable(bot)
+    if not data then return false end
+    
+    -- Сначала проверяем расходники
+    local consumableName, consumableData, consumablePriority = FindHighestPriorityConsumable(data)
+    
+    -- Потом обычные предметы
+    local itemData, itemPriority = FindHighestPriorityItem(data)
+    
+    local selectedType = nil -- "consumable" или "item"
+    local selectedName = nil
+    local selectedData = nil
+    
+    -- Выбираем что покупать: расходник или обычный предмет
+    if consumableData and consumablePriority > 0 then
+        if itemData and itemPriority > 0 then
+            -- Есть и расходники и обычные предметы, выбираем по приоритету
+            if consumablePriority >= itemPriority then
+                selectedType = "consumable"
+                selectedName = consumableName
+                selectedData = consumableData
+            else
+                selectedType = "item"
+                selectedName = itemData.name
+                selectedData = itemData
+            end
+        else
+            -- Только расходники
+            selectedType = "consumable"
+            selectedName = consumableName
+            selectedData = consumableData
+        end
+    elseif itemData and itemPriority > 0 then
+        -- Только обычные предметы
+        selectedType = "item"
+        selectedName = itemData.name
+        selectedData = itemData
+    else
+        -- Нет предметов для покупки
+        return false
+    end
+    
+    -- Сохраняем выбранный предмет для отслеживания
+    data.highestPriorityItem = {
+        type = selectedType,
+        name = selectedName,
+        data = selectedData
+    }
+    
+    -- Пытаемся купить
+    local success = false
+    
+    if selectedType == "consumable" then
+        success = ItemPurchaseManager.BuyConsumable(bot, selectedName, selectedData)
+    else
+        success = PurchaseCore.PurchaseItem(bot, selectedName)
+    end
+    
+    if success then
+        -- Если покупка успешна, отмечаем это
+        if selectedType == "consumable" then
+            selectedData.purchased = (selectedData.purchased or 0) + 1
+            -- Если достигли желаемого количества, удаляем из списка
+            if selectedData.purchased >= (selectedData.desired or 1) then
+                data.consumables[selectedName] = nil
+            end
+        else
+            selectedData.purchased = true
+        end
+        
+        -- После успешной покупки отправляем курьера
+        ItemPurchaseManager.SendCourierForItems(bot)
+        
+        -- Переходим в состояние ожидания курьера
+        data.purchaseState = "waiting_for_courier"
+        
+        return true
+    else
+        -- Если не удалось купить (не хватило денег), ничего не делаем
+        -- и оставляем предмет в списке для следующих попыток
+        data.highestPriorityItem = nil
+        return false
+    end
+end
+
+-- Подсчитать текущее количество предмета у бота (включая все слоты: 0-14)
+function ItemPurchaseManager.GetItemCount(bot, itemName)
+    if not bot or not itemName then return 0 end
+    
+    local count = 0
+    
+    -- Проверяем все слоты (0-14: инвентарь, рюкзак, сташ)
+    for i = 0, 14 do
+        local item = bot:GetItemInSlot(i)
+        if item and item:GetName() == itemName then
+            count = count + 1
+        end
+    end
+    
+    return count
+end
+
+-- Купить расходник (один раз за вызов)
+function ItemPurchaseManager.BuyConsumable(bot, itemName, itemData)
+    if not bot or not bot:IsAlive() then return false end
+    
+    -- Проверяем стоимость
+    local itemCost = GetItemCost(itemName) or 0
+    local currentGold = bot:GetGold()
+    
+    -- Если денег достаточно
+    if currentGold >= itemCost then
+        -- Пытаемся купить
+        local result = bot:ActionImmediate_PurchaseItem(itemName)
+        
+        if result == PURCHASE_ITEM_SUCCESS then
+            print(string.format("[Purchase] Successfully bought %s", itemName))
+            return true
+        else
+            -- Если покупка не удалась, выводим сообщение об ошибке
+            print(string.format("[Purchase Error] Failed to buy %s. Error code: %d", itemName, result))
+            return false
+        end
+    else
+        -- Недостаточно золота
+        print(string.format("[Purchase Error] Not enough gold for %s. Need: %d, Have: %d", 
+              itemName, itemCost, currentGold))
+        return false
+    end
+end
+
+-- Основная функция обработки покупок для бота
+function ItemPurchaseManager.ProcessPurchases(bot)
+    if not bot or not bot:IsAlive() then return end
+    
+    local data = ItemPurchaseManager.GetBotTable(bot)
+    if not data then return end
+    
+    -- Проверяем задержку между обработками
+    local currentTime = DotaTime()
+    if currentTime < data.lastProcessTime + data.processingDelay then
+        return
+    end
+    
+    data.lastProcessTime = currentTime
+    
+    -- Проверяем состояние курьера
+    ItemPurchaseManager.CheckCourierState(bot)
+    
+    -- В зависимости от состояния процесса покупок
+    if data.purchaseState == "idle" then
+        -- Если курьер не занят, пытаемся купить
+        if not data.courierBusy then
+            ItemPurchaseManager.TryBuyHighestPriority(bot)
+        end
+    elseif data.purchaseState == "waiting_for_courier" then
+        -- Ждем, пока курьер вернется на базу
+        if not data.courierBusy then
+            -- Курьер вернулся, можно продолжать
+            data.purchaseState = "idle"
+            data.highestPriorityItem = nil
+        end
+    end
+end
+
+-- Очистить данные для бота (например, при перезагрузке)
+function ItemPurchaseManager.ClearBotData(bot)
+    if not bot then return end
+    
+    local playerID = bot:GetPlayerID()
+    ItemPurchaseManager.botData[playerID] = nil
+end
+
+-- Очистить все данные
+function ItemPurchaseManager.ClearAllData()
+    ItemPurchaseManager.botData = {}
+end
+
+-- Вспомогательная функция для создания таблицы расходников
+function ItemPurchaseManager.CreateConsumablesTable(consumables)
+    -- consumables = {["item_tango"] = 2, ["item_clarity"] = 3}
+    -- или consumables = {["item_tango"] = {desired = 2, priority = 1.0}, ...}
+    local result = {}
+    
+    for itemName, value in pairs(consumables) do
+        if type(value) == "table" then
+            result[itemName] = {
+                desired = value.desired or value,
+                priority = value.priority or 1.0,
+                purchased = 0
+            }
+        else
+            result[itemName] = {
+                desired = value,
+                priority = 1.0,
+                purchased = 0
+            }
+        end
+    end
+    
+    return result
+end
+
+-- Вспомогательная функция для создания таблицы предметов
+function ItemPurchaseManager.CreateItemsTable(items)
+    -- items = {"item_wraith_band", "item_boots", "item_maelstrom"}
+    -- или items = {{name = "item_wraith_band", priority = 1.0}, ...}
+    local result = {}
+    
+    for _, item in ipairs(items) do
+        if type(item) == "string" then
+            table.insert(result, {
+                name = item, 
+                priority = 1.0,
+                purchased = false
+            })
+        else
+            item.purchased = item.purchased or false
+            table.insert(result, item)
+        end
+    end
+    
+    return result
+end
+
+-- Функция для ручного удаления предмета из таблицы
+function ItemPurchaseManager.RemoveItem(bot, itemName, isConsumable)
+    local data = ItemPurchaseManager.GetBotTable(bot)
+    if not data then return false end
+    
+    if isConsumable then
+        if data.consumables[itemName] then
+            data.consumables[itemName] = nil
+            return true
+        end
+    else
+        for i, itemData in ipairs(data.items) do
+            if itemData.name == itemName then
+                table.remove(data.items, i)
                 return true
             end
         end
     end
+    
     return false
 end
 
--- Основная функция покупки предметов
-function ItemPurchaseSniper.ItemPurchaseThink()
-    local bot = GetBot()
+-- Проверить статус покупки для предмета
+function ItemPurchaseManager.GetPurchaseStatus(bot, itemName, isConsumable)
+    local data = ItemPurchaseManager.GetBotTable(bot)
+    if not data then return nil end
     
-    if not bot or not bot:IsAlive() or bot:IsChanneling() then
-        return
-    end
-    
-    -- Продаем лишние предметы
-    if ItemPurchaseSniper.SellUnneededItems(bot) then
-        return
-    end
-    
-    -- Получаем следующий предмет для покупки
-    local nextItem = ItemPurchaseSniper.GetNextPurchaseItem(bot)
-    if not nextItem then
-        return
-    end
-    
-    -- Проверяем стоимость и наличие денег
-    local itemCost = GetItemCostSafe(nextItem)
-    local currentGold = bot:GetGold()
-    
-    if itemCost > 0 and currentGold >= itemCost then
-        local result = bot:ActionImmediate_PurchaseItem(nextItem)
-        
-        if result == PURCHASE_ITEM_SUCCESS then
-            return
-        elseif result == PURCHASE_ITEM_OUT_OF_STOCK then
-            return
-        elseif result == PURCHASE_ITEM_INSUFFICIENT_GOLD then
-            return
+    if isConsumable then
+        if data.consumables[itemName] then
+            local itemData = data.consumables[itemName]
+            return {
+                desired = itemData.desired,
+                purchased = itemData.purchased or 0,
+                status = "in_progress"
+            }
+        else
+            return {status = "not_in_list"}
         end
+    else
+        for _, itemData in ipairs(data.items) do
+            if itemData.name == itemName then
+                return {
+                    priority = itemData.priority,
+                    purchased = itemData.purchased or false,
+                    status = itemData.purchased and "purchased" or "waiting"
+                }
+            end
+        end
+        return {status = "not_in_list"}
     end
 end
 
-return ItemPurchaseSniper
+-- Получить состояние процесса покупок
+function ItemPurchaseManager.GetPurchaseState(bot)
+    local data = ItemPurchaseManager.GetBotTable(bot)
+    if not data then return nil end
+    
+    return {
+        state = data.purchaseState,
+        courierBusy = data.courierBusy,
+        highestPriorityItem = data.highestPriorityItem
+    }
+end
+
+return ItemPurchaseManager
