@@ -1,16 +1,41 @@
--- ItemPurchase/item_purchase_core.lua
--- Основной модуль для покупки предметов с поддержкой курьера
+-- item_purchase_core.lua
+-- Низкоуровневый модуль для работы с предметами, инвентарем и курьером.
+-- Не содержит логики приоритетов, только базовые операции.
+local SimpleActions = require(GetScriptDirectory().."/AdditionalFunctions/SimpleActions")
+local Constants= require(GetScriptDirectory().."/AdditionalFunctions/Constants")
 
 local PurchaseCore = {}
 
--- Загружаем рецепты
-local itemRecipes = require(GetScriptDirectory().."/ItemPurchase/item_recipes")
+-- Константы для состояний курьера
+PurchaseCore.COURIER_STATE = {
+    IDLE = 0,
+    AT_BASE = 1,
+    MOVING = 2,
+    DELIVERING_ITEMS = 3,
+    RETURNING_TO_BASE = 4,
+    DEAD = 5
+}
 
--- Локальные вспомогательные функции -------------------------------------------------
+-- Константы для действий курьера
+PurchaseCore.COURIER_ACTION = {
+    BURST = 0,
+    ENEMY_SECRET_SHOP = 1,
+    RETURN = 2,
+    SECRET_SHOP = 3,
+    SIDE_SHOP = 4,
+    SIDE_SHOP2 = 5,
+    TAKE_STASH_ITEMS = 6,
+    TAKE_AND_TRANSFER_ITEMS = 7,
+    TRANSFER_ITEMS = 8
+}
 
--- Получает курьера команды бота
-local function GetTeamCourier(bot)
-    local team = bot:GetTeam()
+-------------------------------------------------------------------------------
+-- Получает курьера команды
+-- @param hBot - Handle бота
+-- @return Handle курьера или nil
+-------------------------------------------------------------------------------
+function PurchaseCore.GetTeamCourier(hBot)
+    local team = hBot:GetTeam()
     local numCouriers = GetNumCouriers()
     
     for i = 0, numCouriers - 1 do
@@ -19,87 +44,66 @@ local function GetTeamCourier(bot)
             return courier
         end
     end
+    
     return nil
 end
 
--- Проверяет наличие предмета у героя (инвентарь + рюкзак)
-local function HasItemOnHero(bot, itemName)
-    for i = 0, 8 do
-        local item = bot:GetItemInSlot(i)
-        if item and item:GetName() == itemName then
-            return true, i
+-------------------------------------------------------------------------------
+-- Проверяет, занят ли курьер
+-- @param hBot - Handle бота
+-- @return true, если курьер занят
+-------------------------------------------------------------------------------
+function PurchaseCore.IsCourierBusy(hBot)
+    if IsCourierAvailable() then
+        local courierState = GetCourierState()
+
+        -- Курьер считается свободным только в определенных состояниях
+        if courierState == PurchaseCore.COURIER_STATE.IDLE or
+            courierState == PurchaseCore.COURIER_STATE.AT_BASE then
+            return false
         end
+
+        return true
     end
-    return false, -1
-end
-
--- Проверяет наличие предмета в кладовой
-local function HasItemInStash(bot, itemName)
-    for i = 9, 14 do
-        local item = bot:GetItemInSlot(i)
-        if item and item:GetName() == itemName then
-            return true, i
-        end
-    end
-    return false, -1
-end
-
--- Проверяет наличие предмета в курьере
-local function HasItemInCourier(bot, itemName)
-    local courier = GetTeamCourier(bot)
-    if not courier then return false, -1 end
     
-    for i = 0, 5 do
-        local item = courier:GetItemInSlot(i)
-        if item and item:GetName() == itemName then
-            return true, i
-        end
-    end
-    return false, -1
+    return false
 end
 
--- Проверяет наличие предмета в любом месте (герой, кладовая, курьер)
-local function HasItemAnywhere(bot, itemName)
-    -- Проверяем у героя
-    local hasOnHero, heroSlot = HasItemOnHero(bot, itemName)
-    if hasOnHero then return true, "hero", heroSlot end
-    
-    -- Проверяем в кладовой
-    local hasInStash, stashSlot = HasItemInStash(bot, itemName)
-    if hasInStash then return true, "stash", stashSlot end
-    
-    -- Проверяем в курьере
-    local hasInCourier, courierSlot = HasItemInCourier(bot, itemName)
-    if hasInCourier then return true, "courier", courierSlot end
-    
-    return false, nil, -1
-end
-
--- Проверяет, есть ли свободные слоты в основном инвентаре (0-5) и рюкзаке (6-8)
-local function HasFreeSlots(bot)
-    for i = 0, 8 do
-        if not bot:GetItemInSlot(i) then
-            return true, i
-        end
-    end
-    return false, -1
-end
-
--- Заставляет курьера доставить предметы на героя
-local function DeliverItemsWithCourier(bot)
-    local courier = GetTeamCourier(bot)
+-------------------------------------------------------------------------------
+-- Отправляет курьера за доставкой предметов
+-- @param hBot - Handle бота
+-- @return true, если команда отправлена
+-------------------------------------------------------------------------------
+function PurchaseCore.SendCourierForDelivery(hBot)
+    local courier = PurchaseCore.GetTeamCourier(hBot)
     if not courier then return false end
     
-    -- Проверяем состояние курьера
-    local courierState = courier:GetCourierState()
+    local courierState = GetCourierState()
     
-    -- Если курьер свободен и находится на базе
-    if courierState == COURIER_STATE_IDLE or courierState == COURIER_STATE_AT_BASE then
-        -- Проверяем, есть ли у героя свободные слоты
-        local hasFreeSlot, _ = HasFreeSlots(bot)
-        if hasFreeSlot then
-            -- Команда курьеру взять предметы из кладовой и доставить герою
-            bot:ActionImmediate_Courier(courier, COURIER_ACTION_TAKE_AND_TRANSFER_ITEMS)
+    -- Отправляем курьера только если он в базе или простаивает
+    if courierState == PurchaseCore.COURIER_STATE.IDLE or 
+       courierState == PurchaseCore.COURIER_STATE.AT_BASE then
+        
+        hBot:ActionImmediate_Courier(courier, PurchaseCore.COURIER_ACTION.TAKE_AND_TRANSFER_ITEMS)
+        return true
+    end
+    
+    return false
+end
+
+-------------------------------------------------------------------------------
+-- Проверяет, есть ли предмет у героя (включая сташ и рюкзак)
+-- @param hBot - Handle бота
+-- @param itemName - Имя предмета
+-- @return true, если предмет найден
+-------------------------------------------------------------------------------
+function PurchaseCore.HasItem(hBot, itemName)
+    if not hBot or not itemName then return false end
+    
+    -- Проверяем все слоты (0-14: инвентарь, рюкзак, сташ)
+    for i = 0, 14 do
+        local item = hBot:GetItemInSlot(i)
+        if item and item:GetName() == itemName then
             return true
         end
     end
@@ -107,111 +111,223 @@ local function DeliverItemsWithCourier(bot)
     return false
 end
 
--- Рекурсивная функция для покупки составных предметов
-local function PurchaseItemRecursive(bot, itemName, purchasedComponents)
-    purchasedComponents = purchasedComponents or {}
+-------------------------------------------------------------------------------
+-- Получает общее количество предмета (с учетом зарядов)
+-- @param hBot - Handle бота
+-- @param itemName - Имя предмета
+-- @return Количество предметов
+-------------------------------------------------------------------------------
+function PurchaseCore.GetItemTotalCount(hBot, itemName)
+    if not hBot or not itemName then return 0 end
     
-    -- Проверяем, не пытаемся ли мы купить уже купленный компонент в этой цепочке
-    if purchasedComponents[itemName] then
-        return true
-    end
+    local totalCount = 0
     
-    -- Проверяем, есть ли предмет уже где-либо
-    local hasItem, location, _ = HasItemAnywhere(bot, itemName)
-    if hasItem then
-        return true
-    end
-    
-    -- Получаем рецепт предмета
-    local recipe = itemRecipes[itemName]
-    
-    -- Если предмет простой (без рецепта) или рецепт пустой
-    if not recipe or #recipe == 0 then
-        -- Проверяем стоимость и наличие денег
-        local itemCost = GetItemCost(itemName) or 0
-        local currentGold = bot:GetGold()
-        
-        if itemCost > 0 and currentGold >= itemCost then
-            -- Покупаем предмет
-            local result = bot:ActionImmediate_PurchaseItem(itemName)
-            
-            if result == PURCHASE_ITEM_SUCCESS then
-                purchasedComponents[itemName] = true
-                DeliverItemsWithCourier(bot)
-                return true
+    -- Проверяем все слоты
+    for i = 0, 14 do
+        local item = hBot:GetItemInSlot(i)
+        if item and item:GetName() == itemName then
+            local charges = item:GetCurrentCharges()
+            if charges > 0 then
+                totalCount = totalCount + charges
+            else
+                totalCount = totalCount + 1
             end
         end
-        return false
     end
     
-    -- Если предмет составной, покупаем все компоненты
-    local allComponentsPurchased = true
+    return totalCount
+end
+
+-------------------------------------------------------------------------------
+-- Получает количество предметов по слотам (без учета зарядов)
+-- @param hBot - Handle бота
+-- @param itemName - Имя предмета
+-- @return Количество слотов с предметом
+-------------------------------------------------------------------------------
+function PurchaseCore.GetItemSlotCount(hBot, itemName)
+    if not hBot or not itemName then return 0 end
     
-    for _, componentName in ipairs(recipe) do
-        -- Рекурсивно покупаем компонент
-        local componentPurchased = PurchaseItemRecursive(bot, componentName, purchasedComponents)
-        
-        if not componentPurchased then
-            allComponentsPurchased = false
+    local count = 0
+    
+    for i = 0, 14 do
+        local item = hBot:GetItemInSlot(i)
+        if item and item:GetName() == itemName then
+            count = count + 1
+        end
+    end
+    
+    return count
+end
+
+-------------------------------------------------------------------------------
+-- Покупает несколько предметов сразу (для расходников)
+-- @param hBot - Handle бота
+-- @param itemName - Имя предмета
+-- @param count - Количество для покупки
+-- @return Количество фактически купленных предметов
+-------------------------------------------------------------------------------
+function PurchaseCore.BuyItemStack(hBot, itemName, count)
+    if not hBot or not itemName or count <= 0 then return 0 end
+    
+    local itemCost = GetItemCost(itemName) or 0
+    if itemCost <= 0 then return 0 end
+    
+    local currentGold = hBot:GetGold()
+    local canBuy = math.min(count, math.floor(currentGold / itemCost))
+    local boughtCount = 0
+    
+    for i = 1, canBuy do
+        local result = hBot:ActionImmediate_PurchaseItem(itemName)
+        if result == PURCHASE_ITEM_SUCCESS then
+            boughtCount = boughtCount + 1
+            currentGold = currentGold - itemCost
+        else
             break
         end
     end
     
-    return allComponentsPurchased
+    return boughtCount
 end
-
--- Основные публичные функции -------------------------------------------------------
-
-function PurchaseCore.PurchaseItem(bot, itemName)
-    if not bot or not bot:IsAlive() then
+-------------------------------------------------------------------------------
+-- Покупает составной предмет (с использованием системной логики)
+-- @param hBot - Handle бота
+-- @param itemName - Имя предмета
+-- @return true, если покупка начата успешно
+-------------------------------------------------------------------------------
+function PurchaseCore.PurchaseComplexItem(hBot, itemName)
+    if not hBot or not itemName then return false end
+    
+    local itemCost = GetItemCost(itemName) or 0
+    if itemCost <= 0 then return false end
+    
+    -- Проверяем, достаточно ли золота
+    if hBot:GetGold() < itemCost then
         return false
     end
     
-    local success = PurchaseItemRecursive(bot, itemName)
+    -- Пытаемся купить через системную функцию
+    local result = hBot:ActionImmediate_PurchaseItem(itemName)
+
+    if  result ~= PURCHASE_ITEM_SUCCESS then
+        SimpleActions.SayAction(hBot, "У меня хватает денег на "..itemName..", результат: "..Constants.purchaseStatus[result])
+    end
+
+    return result == PURCHASE_ITEM_SUCCESS
+end
+
+-------------------------------------------------------------------------------
+-- Проверяет наличие и готовность телепорта
+-- @param hBot - Handle бота
+-- @return true, если телепорт есть и готов
+-------------------------------------------------------------------------------
+function PurchaseCore.HasTeleportReady(hBot)
+    if not hBot then return false end
     
-    if success then
-        DeliverItemsWithCourier(bot)
+    -- Проверяем специальный слот для телепорта (15)
+    local teleportItem = hBot:GetItemInSlot(15)
+    if not teleportItem then return false end
+    
+    return teleportItem:IsFullyCastable()
+end
+
+-------------------------------------------------------------------------------
+-- Пытается купить телепорты
+-- @param hBot - Handle бота
+-- @return Количество купленных телепортов
+-------------------------------------------------------------------------------
+function PurchaseCore.TryBuyTeleports(hBot)
+    if not hBot then return 0 end
+    
+    local itemName = "item_tpscroll"
+    local itemCost = GetItemCost(itemName) or 0
+    if itemCost <= 0 then return 0 end
+    
+    -- Получаем текущее количество телепортов
+    local currentCount = PurchaseCore.GetItemTotalCount(hBot, itemName)
+    local maxCount = 2
+    local needed = maxCount - currentCount
+    
+    if needed <= 0 then return 0 end
+    
+    local currentGold = hBot:GetGold()
+    local canBuy = math.min(needed, math.floor(currentGold / itemCost))
+    local boughtCount = 0
+    
+    for i = 1, canBuy do
+        local result = hBot:ActionImmediate_PurchaseItem(itemName)
+        if result == PURCHASE_ITEM_SUCCESS then
+            boughtCount = boughtCount + 1
+        else
+            break
+        end
     end
     
-    return success
+    return boughtCount
 end
 
-function PurchaseCore.HasItem(bot, itemName)
-    if not bot then return false end
-    local hasItem, _, _ = HasItemAnywhere(bot, itemName)
-    return hasItem
-end
-
-function PurchaseCore.ForceDelivery(bot)
-    if not bot then return false end
-    return DeliverItemsWithCourier(bot)
-end
-
-function PurchaseCore.HasFreeInventorySlots(bot)
-    if not bot then return false end
-    local hasFree, _ = HasFreeSlots(bot)
-    return hasFree
-end
-
--- Утилиты для работы с инвентарем
-function PurchaseCore.GetItemSlot(bot, itemName)
+-------------------------------------------------------------------------------
+-- Получает информацию о предметах в инвентаре
+-- @param hBot - Handle бота
+-- @return Таблица с информацией о предметах
+-------------------------------------------------------------------------------
+function PurchaseCore.GetInventoryInfo(hBot)
+    if not hBot then return {} end
+    
+    local inventory = {}
+    
     for i = 0, 14 do
-        local item = bot:GetItemInSlot(i)
-        if item and item:GetName() == itemName then
-            return i
+        local item = hBot:GetItemInSlot(i)
+        if item then
+            table.insert(inventory, {
+                slot = i,
+                name = item:GetName(),
+                charges = item:GetCurrentCharges(),
+                cost = GetItemCost(item:GetName()) or 0
+            })
         end
     end
-    return -1
+    
+    return inventory
 end
 
-function PurchaseCore.CountFreeSlots(bot)
-    local count = 0
-    for i = 0, 8 do
-        if not bot:GetItemInSlot(i) then
-            count = count + 1
-        end
-    end
-    return count
+-------------------------------------------------------------------------------
+-- Проверяет, находится ли бот в фонтане
+-- @param hBot - Handle бота
+-- @return true, если бот в фонтане
+-------------------------------------------------------------------------------
+function PurchaseCore.IsAtFountain(hBot)
+    if not hBot then return false end
+    
+    local team = hBot:GetTeam()
+    local ancient = GetAncient(team)
+    if not ancient then return false end
+    
+    local distance = GetUnitToUnitDistance(hBot, ancient)
+    return distance < 1500
+end
+
+-------------------------------------------------------------------------------
+-- Проверяет, находится ли бот рядом с боковой лавкой
+-- @param hBot - Handle бота
+-- @return true, если бот рядом с боковой лавкой
+-------------------------------------------------------------------------------
+function PurchaseCore.IsNearSideShop(hBot)
+    if not hBot then return false end
+    
+    local distance = hBot:DistanceFromSideShop()
+    return distance < 500
+end
+
+-------------------------------------------------------------------------------
+-- Проверяет, находится ли бот рядом с секретной лавкой
+-- @param hBot - Handle бота
+-- @return true, если бот рядом с секретной лавкой
+-------------------------------------------------------------------------------
+function PurchaseCore.IsNearSecretShop(hBot)
+    if not hBot then return false end
+    
+    local distance = hBot:DistanceFromSecretShop()
+    return distance < 500
 end
 
 return PurchaseCore
