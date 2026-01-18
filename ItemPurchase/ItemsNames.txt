@@ -1,0 +1,144 @@
+Предметы [основные] / Items [common]
+Выше было написано, как прописывать тот или иной предмет в игре. Здесь же описано их название(что нужно дописывать в чате или консоли).
+I have written above how give any item in the game. Here you can see items name that you need write to the console.
+
+Название предмета / Item name	Название команды / Command name
+Aegis of the Immortal	item_aegis
+Animal Courier	item_courier
+Band of Elveskin	item_boots_of_elves
+Belt of Strength	item_belt_of_strength
+Blade of Alacrity	item_blade_of_alacrity
+Blades of Attack	item_blades_of_attack
+Blink Dagger	item_blink
+Boots of Speed	item_boots
+Bottle	item_bottle
+Broadsword	item_broadsword
+Chainmail	item_chainmail
+Cheese	item_cheese
+Circlet	item_circlet
+Clarity	item_clarity
+Claymore	item_claymore
+Cloak	item_demon_edge
+Dust of Appearance	item_dust
+Eaglesong	item_eagle
+Energy Booster	item_energy_booster
+Flying Courier	item_flying_courier
+Gauntlets of Srength	item_gauntlets
+Gem of True Sight	item_gem
+Ghost Scepter	item_ghost
+Gloves of Haste	item_gloves
+Healing Salve	item_flask
+Helm of Iron Will	item_helm_of_iron_will
+Hyperstone	item_hyperstone
+Iron Branch	item_branches
+Javelin	item_javelin
+Magic Stick	item_magic_stick
+Mantle of Intelligence	item_mantle
+Mithril Hammer	item_mithril_hammer
+Morbid Mask	item_lifesteal
+Mystic Staff	item_mystic_staff
+Observer Ward	item_ward_observer
+Ogre Club	item_ogre_axe
+Orb of Venom	item_orb_of_venom
+Platemail	item_platemail
+Point Booster	item_poing_booster
+Quartestaff	item_quartestaff
+Quelling Blade	item_quelling_blade
+Reaver	item_reaver
+Ring of Health	item_ring_of_health
+Ring of Protection	item_ring_of_protection
+Ring of Regen	item_ring_of_regen
+Robe of the Magi	item_robe
+Sacred Relic	item_relic
+Sage's Mask	item_sobi_mask
+Sentry Ward	item_ward_sentry
+Shadow Amulet	item_shadow_amulet
+Slippers of Agility	item_slippers
+Smoke of Deceit	item_smoke_of_deceit
+Staff of Wizardry	item_staff_of_wizardry
+Stout Shield	item_stout_shield
+Talisman of Evasion	item_talisman_of_evasion
+Tango	item_tango
+Tango (shared)	item_tango_single
+Town of Portal Scroll	item_tpscroll
+Ultimate Orb	item_ultimate_orb
+Vitality Booster	item_vitality_booster
+Void Stone	item_void_stone
+Предметы [рецепты] / Items [recipes]
+Некоторые предметы(Dagon, Necronomicon, Diffusal Blade) имеют свои уровни повышения. Чтобы получить именно тот уровень предмета, который вам нужен - пропишите после его название цифру(уровень). Пример: item_dagon_# (1-5)
+Some items as Dagon or Necronomicon have own upgrade. Add the required number that you need after the command. For example: item_dagon_# (1-5)
+
+Название предмета / Item name	Название команды / Command name
+Abyssal Blade	item_abyssal_blade
+Aghanim's Scepter	item_ultimate_scepter
+Arcane Boots	item_arcane_boots
+Armlet of Mordiggian	item_armlet
+Assault Cuirass	item_assault
+Battle Fury	item_bfury
+Black King Bar	item_black_king_bar
+Blade Mail	item_blade_mail
+Bloodstone	item_bloodstone
+Boots of Travel	item_travel_boots
+Bracer	item_bracer
+Buckler	item_buckler
+Butterfly	item_butterfly
+Crimson Guard	item_crimson_guard
+Crystalys	item_lesser_crit
+Daedalus	item_greater_crit
+Dagon	item_dagon_# (1-5)
+Desolator	item_desolator
+Diffusal Blade	item_diffusal_blade_# (1-2)
+Drum of Endurance	item_ancient_janggo
+Ethereal Blade	item_ethereal_blade
+Eul's Scepter of Divinity	item_cyclone
+Eye of Skadi	item_skadi
+Force Staff	item_force_staff
+Hand of Midas	item_hand_of_midas
+Headdress	item_headdress
+Heart of Tarrasque	item_heart
+Heaven's Halberd	item_heavens_halberd
+Helm of the Dominator	item_helm_of_the_dominator
+Hood of Defiance	item_hood_of_defiance
+Linken's Sphere	item_sphere
+Maelstrom	item_maelstrom
+Magic Wand	item_magic_wand
+Manta Style	item_manta
+Mask of Madness	item_mask_of_madness
+Medallion of Courage	item_medallion_of_courage
+Mekansm	item_mekansm
+Mjollnir	item_mjollnir
+Monkey King Bar	item_monkey_king_bar
+Necronomicon	item_necronomicon_# (1-3)
+Null Talisman	item_null_talisman
+Oblivion Staff	item_oblivion_staff
+Orchid Malevolence	item_orchid
+Perseverence	item_pers
+Phase Boots	item_phase_boots
+Pipe of Insight	item_pipe
+Poor Man's Shield	item_poor_mans_shield
+Power Treads	item_power_treads
+Radiance	item_radiance
+Divine Rapier	item_rapier
+Refresher Orb	item_refresher
+Ring of Aquila	item_ring_of_aquila
+Ring of Basilius	item_ring_of_basilius
+Ring of Atos	item_ring_of_atos
+Sange	item_sange
+Sange and Yasha	item_sange_and_yasha
+Satanic	item_satanic
+Scythe of Vyse	item_sheepstick
+Shadow Blade	item_invis_sword
+Shiva's Guard	item_shivas_guard
+Skull Basher	item_basher
+Soul Booster	item_soul_booster
+Soul Ring	item_soul_ring
+Tranquil Boots	item_tranquil_boots
+Urn of Shadows	item_urn_of_shadows
+Vanguard	item_vanguard
+Veil of Discord	item_veil_of_discord
+Vladmir's Offering	item_vladmir
+Wraith Band	item_wraith_band
+Yasha	item_yasha
+
+Каждый предмет в игре имеет свою команду рецепта(именно его рецепта, а не предмета). Чтобы прописать себе рецепт, напишите эту же команду, но перед названием предмета напишите "recipe_". Пример: item_recipe_yasha
+Every item in the game has their own command for a recipe. For example(how take a recipe for Yasha): item_recipe_yasha

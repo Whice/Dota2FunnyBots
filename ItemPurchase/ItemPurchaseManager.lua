@@ -2,6 +2,22 @@
 -- Модуль для управления приоритетами и порядком покупок предметов.
 -- Использует методы из item_purchase_core для низкоуровневых операций.
 
+-- Пример запроса на покупку, не удалять!
+-- local itemsTable = ItemPurchaseManager.CreateItemsTable({
+--     {
+--         name = "item_wraith_band",
+--         desired = 2,     -- Нужно 2 экземпляра
+--         purchased = 0,   -- Пока куплено 0
+--         priority = 90
+--     },
+--     {
+--         name = "item_maelstrom",
+--         desired = 1,     -- Нужно 1 экземпляр
+--         purchased = 0,   -- Пока куплено 0
+--         priority = 80
+--     }
+-- })
+
 local ItemPurchaseManager = {}
 
 -- Импортируем низкоуровневый модуль для работы с предметами
@@ -19,11 +35,9 @@ ItemPurchaseManager.PURCHASE_STATUS = {
     FAILED = "failed"
 }
 
--------------------------------------------------------------------------------
 -- Получает или создает таблицу данных для бота
 -- @param hBot - Handle бота
 -- @return Таблица данных бота
--------------------------------------------------------------------------------
 function ItemPurchaseManager.GetBotTable(hBot)
     if not hBot then return nil end
     
@@ -41,20 +55,16 @@ function ItemPurchaseManager.GetBotTable(hBot)
     return ItemPurchaseManager.botData[playerID]
 end
 
--------------------------------------------------------------------------------
 -- Получает таблицу покупок для бота (публичный интерфейс)
 -- @param hBot - Handle бота
 -- @return Таблица данных бота
--------------------------------------------------------------------------------
 function ItemPurchaseManager.GetPurchaseTable(hBot)
     return ItemPurchaseManager.GetBotTable(hBot)
 end
 
--------------------------------------------------------------------------------
 -- Обновляет список желаемых расходников
 -- @param hBot - Handle бота
 -- @param consumablesTable - Таблица расходников
--------------------------------------------------------------------------------
 function ItemPurchaseManager.SetConsumables(hBot, consumablesTable)
     local data = ItemPurchaseManager.GetBotTable(hBot)
     if not data then return end
@@ -62,11 +72,9 @@ function ItemPurchaseManager.SetConsumables(hBot, consumablesTable)
     data.consumables = consumablesTable
 end
 
--------------------------------------------------------------------------------
 -- Обновляет список желаемых предметов
 -- @param hBot - Handle бота
 -- @param itemsTable - Таблица предметов
--------------------------------------------------------------------------------
 function ItemPurchaseManager.SetItems(hBot, itemsTable)
     local data = ItemPurchaseManager.GetBotTable(hBot)
     if not data then return end
@@ -74,11 +82,9 @@ function ItemPurchaseManager.SetItems(hBot, itemsTable)
     data.items = itemsTable
 end
 
--------------------------------------------------------------------------------
 -- Сортирует расходники по приоритету (от высокого к низкому)
 -- @param consumablesTable - Таблица расходников
 -- @return Отсортированный список расходников
--------------------------------------------------------------------------------
 function ItemPurchaseManager.SortConsumablesByPriority(consumablesTable)
     local consumableList = {}
     
@@ -98,11 +104,9 @@ function ItemPurchaseManager.SortConsumablesByPriority(consumablesTable)
     return consumableList
 end
 
--------------------------------------------------------------------------------
 -- Сортирует предметы по приоритету (от высокого к низкому)
 -- @param itemsTable - Таблица предметов
 -- @return Отсортированный список предметов
--------------------------------------------------------------------------------
 function ItemPurchaseManager.SortItemsByPriority(itemsTable)
     local sortedItems = {}
     
@@ -113,17 +117,23 @@ function ItemPurchaseManager.SortItemsByPriority(itemsTable)
     table.sort(sortedItems, function(a, b)
         local priorityA = a.priority or 1.0
         local priorityB = b.priority or 1.0
+        
+        -- Если приоритеты равны, сортируем по количеству, которое нужно докупить
+        if priorityA == priorityB then
+            local aNeeded = (a.desired or 1) - (a.purchased or 0)
+            local bNeeded = (b.desired or 1) - (b.purchased or 0)
+            return aNeeded > bNeeded
+        end
+        
         return priorityA > priorityB
     end)
     
     return sortedItems
 end
 
--------------------------------------------------------------------------------
 -- Обрабатывает покупку расходников
 -- @param hBot - Handle бота
 -- @return true, если была совершена хотя бы одна покупка
--------------------------------------------------------------------------------
 function ItemPurchaseManager.ProcessConsumables(hBot)
     local data = ItemPurchaseManager.GetBotTable(hBot)
     if not data then return false end
@@ -156,11 +166,9 @@ function ItemPurchaseManager.ProcessConsumables(hBot)
     return anyPurchased
 end
 
--------------------------------------------------------------------------------
 -- Обрабатывает покупку самого приоритетного предмета
 -- @param hBot - Handle бота
 -- @return true, если была совершена покупка
--------------------------------------------------------------------------------
 function ItemPurchaseManager.ProcessPriorityItem(hBot)
     local data = ItemPurchaseManager.GetBotTable(hBot)
     if not data or #data.items == 0 then return false end
@@ -169,54 +177,57 @@ function ItemPurchaseManager.ProcessPriorityItem(hBot)
     
     for _, itemData in ipairs(sortedItems) do
         local itemName = itemData.name
+        local desiredCount = itemData.desired or 1
         
-        -- Проверяем, не куплен ли уже предмет
-        if not itemData.purchased then
-            -- Проверяем, есть ли предмет у героя
-            if PurchaseCore.HasItem(hBot, itemName) then
-                itemData.purchased = true
-                return false
+        -- Получаем текущее количество предмета у героя
+        local currentCount = PurchaseCore.GetItemTotalCount(hBot, itemName)
+        
+        -- Вычисляем, сколько еще нужно купить
+        local neededCount = desiredCount - currentCount
+        
+        if neededCount > 0 then
+            -- Нужно купить недостающее количество
+            SimpleActions.SayAction(hBot, 
+                string.format("Нужно купить %d %s (есть %d, нужно %d)", 
+                    neededCount, itemName, currentCount, desiredCount))
+            
+            -- Покупаем недостающее количество по одному
+            local boughtAny = false
+            for i = 1, neededCount do
+                local success = PurchaseCore.PurchaseComplexItem(hBot, itemName)
+                
+                if success then
+                    -- Обновляем количество купленных предметов
+                    local newCount = PurchaseCore.GetItemTotalCount(hBot, itemName)
+                    itemData.purchased = newCount
+                    
+                    SimpleActions.SayAction(hBot, 
+                        string.format("Куплен %d-й %s. Теперь есть %d", i, itemName, newCount))
+                    boughtAny = true
+                    
+                    -- Если купили хотя бы один, возвращаем успех
+                    if i == 1 then
+                        return true
+                    end
+                else
+                    SimpleActions.SayAction(hBot, 
+                        string.format("Не удалось купить %d-й %s", i, itemName))
+                    break
+                end
             end
             
-            SimpleActions.SayAction(hBot, "Хочу купить "..itemName)
-            -- Пытаемся купить через PurchaseCore
-            local success = PurchaseCore.PurchaseComplexItem(hBot, itemName)
-            
-            if success then
-                itemData.purchased = true
-                return true
-            else
-                -- Если не удалось купить этот предмет, пробуем следующий
-                break
-            end
+            return boughtAny
+        else
+            -- Уже есть нужное количество
+            itemData.purchased = currentCount
         end
     end
     
     return false
 end
 
--------------------------------------------------------------------------------
--- Проверяет, занят ли курьер
--- @param hBot - Handle бота
--- @return true, если курьер занят
--------------------------------------------------------------------------------
-function ItemPurchaseManager.IsCourierBusy(hBot)
-    return PurchaseCore.IsCourierBusy(hBot)
-end
-
--------------------------------------------------------------------------------
--- Отправляет курьера за предметами
--- @param hBot - Handle бота
--- @return true, если команда отправлена
--------------------------------------------------------------------------------
-function ItemPurchaseManager.SendCourierForItems(hBot)
-    return PurchaseCore.SendCourierForDelivery(hBot)
-end
-
--------------------------------------------------------------------------------
 -- Основная функция обработки покупок
 -- @param hBot - Handle бота
--------------------------------------------------------------------------------
 function ItemPurchaseManager.ProcessPurchases(hBot)
     if not hBot or not hBot:IsAlive() then return end
     
@@ -231,11 +242,6 @@ function ItemPurchaseManager.ProcessPurchases(hBot)
     
     data.lastProcessTime = currentTime
     
-    -- Если курьер занят, ждем
-    if ItemPurchaseManager.IsCourierBusy(hBot) then
-        return
-    end
-    
     -- 1. Обрабатываем расходники
     local consumablesPurchased = ItemPurchaseManager.ProcessConsumables(hBot)
     
@@ -243,18 +249,11 @@ function ItemPurchaseManager.ProcessPurchases(hBot)
     if not consumablesPurchased then
         ItemPurchaseManager.ProcessPriorityItem(hBot)
     end
-    
-    -- 3. Отправляем курьера, если что-то купили
-    if consumablesPurchased then
-        ItemPurchaseManager.SendCourierForItems(hBot)
-    end
 end
 
--------------------------------------------------------------------------------
 -- Создает таблицу расходников из простого формата
 -- @param simpleTable - Простая таблица формата {["item_name"] = desiredCount}
 -- @return Структурированная таблица расходников
--------------------------------------------------------------------------------
 function ItemPurchaseManager.CreateConsumablesTable(simpleTable)
     local result = {}
     
@@ -277,41 +276,43 @@ function ItemPurchaseManager.CreateConsumablesTable(simpleTable)
     return result
 end
 
--------------------------------------------------------------------------------
 -- Создает таблицу предметов из простого формата
--- @param simpleList - Простой список формата {"item_name1", "item_name2"}
+-- @param simpleList - Список предметов в формате {name, desired, purchased, priority}
 -- @return Структурированная таблица предметов
--------------------------------------------------------------------------------
 function ItemPurchaseManager.CreateItemsTable(simpleList)
     local result = {}
     
     for _, item in ipairs(simpleList) do
         if type(item) == "string" then
+            -- Если передана строка, создаем предмет с количеством 1
             table.insert(result, {
                 name = item,
-                priority = 1.0,
-                purchased = false
+                desired = 1,
+                purchased = 0,
+                priority = 1.0
             })
         else
-            item.purchased = item.purchased or false
-            table.insert(result, item)
+            -- Только новый формат с числовыми значениями
+            table.insert(result, {
+                name = item.name,
+                desired = item.desired or 1,
+                purchased = item.purchased or 0,
+                priority = item.priority or 1.0
+            })
         end
     end
     
     return result
 end
 
--------------------------------------------------------------------------------
 -- Получает статус покупок для бота
 -- @param hBot - Handle бота
 -- @return Таблица статуса
--------------------------------------------------------------------------------
 function ItemPurchaseManager.GetPurchaseStatus(hBot)
     local data = ItemPurchaseManager.GetBotTable(hBot)
     if not data then return nil end
     
     return {
-        courierBusy = ItemPurchaseManager.IsCourierBusy(hBot),
         lastProcessTime = data.lastProcessTime,
         consumablesCount = 0, -- Можно добавить подсчет
         itemsCount = #data.items,
@@ -319,10 +320,8 @@ function ItemPurchaseManager.GetPurchaseStatus(hBot)
     }
 end
 
--------------------------------------------------------------------------------
 -- Очищает данные для бота
 -- @param hBot - Handle бота
--------------------------------------------------------------------------------
 function ItemPurchaseManager.ClearBotData(hBot)
     if not hBot then return end
     
@@ -330,9 +329,7 @@ function ItemPurchaseManager.ClearBotData(hBot)
     ItemPurchaseManager.botData[playerID] = nil
 end
 
--------------------------------------------------------------------------------
 -- Очищает все данные
--------------------------------------------------------------------------------
 function ItemPurchaseManager.ClearAllData()
     ItemPurchaseManager.botData = {}
 end

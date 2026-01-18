@@ -53,7 +53,7 @@ ItemRecipes["item_mjollnir"] = {
 -- Yasha (Яша, компонент для Manta)
 ItemRecipes["item_yasha"] = {
     "item_blade_of_alacrity",    -- Blade of Alacrity (1000)
-    "item_band_of_elvenskin",    -- Band of Elvenskin (450)
+    "item_boots_of_elves",    -- Band of Elvenskin (450)
     "item_recipe_yasha"          -- Рецепт (650)
 }
 
@@ -66,7 +66,7 @@ ItemRecipes["item_manta"] = {
 
 -- Satanic (Сатаник)
 ItemRecipes["item_satanic"] = {
-    "item_morbid_mask",          -- Morbid Mask (900)
+    "item_lifesteal",          -- Morbid Mask (900)
     "item_claymore",             -- Claymore (1350)
     "item_reaver"                -- Reaver (2800)
 }
@@ -96,10 +96,10 @@ ItemRecipes["item_blight_stone"] = {}
 ItemRecipes["item_claymore"] = {}
 ItemRecipes["item_blade_of_alacrity"] = {}
 ItemRecipes["item_belt_of_strength"] = {}
-ItemRecipes["item_band_of_elvenskin"] = {}
+ItemRecipes["item_boots_of_elves"] = {}
 ItemRecipes["item_hyperstone"] = {}
 ItemRecipes["item_diadem"] = {}
-ItemRecipes["item_morbid_mask"] = {}
+ItemRecipes["item_lifesteal"] = {}
 ItemRecipes["item_reaver"] = {}
 ItemRecipes["item_eaglesong"] = {}
 ItemRecipes["item_talisman_of_evasion"] = {}

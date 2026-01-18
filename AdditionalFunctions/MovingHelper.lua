@@ -155,25 +155,25 @@ function MovingHelper.ShouldUseTeleport(bot, targetPosition)
     local totalTeleportTime = teleportTime + walkTimeAfterTeleport
 
     -- Логируем расчеты
-    SimpleActions.SayAction(bot, string.format(
-        "Рассчет телепорта: пешком %.1fсек, телепорт %.1fсек (каст %.1fсек + путь %.1fсек)",
-        walkTime, totalTeleportTime, teleportTime, walkTimeAfterTeleport
-    ))
+    -- SimpleActions.SayAction(bot, string.format(
+    --     "Рассчет телепорта: пешком %.1fсек, телепорт %.1fсек (каст %.1fсек + путь %.1fсек)",
+    --     walkTime, totalTeleportTime, teleportTime, walkTimeAfterTeleport
+    -- ))
 
     -- Сравниваем времена
     if walkTime > (totalTeleportTime + MovingHelper.TELEPORT_TIME_BONUS) then
         -- Телепорт экономит больше 20 секунд
-        SimpleActions.SayAction(bot, string.format(
-            "Использую телепорт! Экономия: пешком %.1fсек, телепорт %.1fсек",
-            walkTime, totalTeleportTime
-        ))
+        -- SimpleActions.SayAction(bot, string.format(
+        --     "Использую телепорт! Экономия: пешком %.1fсек, телепорт %.1fсек",
+        --     walkTime, totalTeleportTime
+        -- ))
         return true, teleportTarget
     else
-        SimpleActions.SayAction(bot, string.format(
-            "Иду пешком: быстрее на %.1fсек (пешком %.1fсек, телепорт %.1fсек)",
-            totalTeleportTime - (walkTime + MovingHelper.TELEPORT_TIME_BONUS),
-            walkTime, totalTeleportTime
-        ))
+        -- SimpleActions.SayAction(bot, string.format(
+        --     "Иду пешком: быстрее на %.1fсек (пешком %.1fсек, телепорт %.1fсек)",
+        --     totalTeleportTime - (walkTime + MovingHelper.TELEPORT_TIME_BONUS),
+        --     walkTime, totalTeleportTime
+        -- ))
     end
 
     return false, nil
@@ -208,7 +208,7 @@ function MovingHelper.MoveToPosition(bot, targetPosition)
         local teleportItem = TeleportHelper.GetTeleportItem(bot)
         if teleportItem then
             bot:Action_UseAbilityOnLocation(teleportItem, teleportTarget)
-            SimpleActions.SayAction(bot, "Использую телепорт для быстрого перемещения.")
+            --SimpleActions.SayAction(bot, "Использую телепорт для быстрого перемещения.")
             return
         end
     end
