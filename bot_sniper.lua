@@ -3,6 +3,7 @@ local HeroLiningBehaviour = require(GetScriptDirectory().."/Behaviuors/HeroLinin
 local BotGlobalState = require(GetScriptDirectory().."/AdditionalFunctions/BotGlobalState")
 local constants = require(GetScriptDirectory().."/AdditionalFunctions/Constants")
 local SimpleActions = require(GetScriptDirectory().."/AdditionalFunctions/SimpleActions")
+local BackpackManager = require(GetScriptDirectory().."/AdditionalFunctions/BackpackManager")
 
 local lane_assigned = false
 local last_teleport_check = 0
@@ -37,6 +38,9 @@ function Think()
     if not npcBot:IsAlive() then
         return
     end
+
+     -- Сортируем рюкзак (будет вызываться раз в секунду)
+    BackpackManager.Update(npcBot)
 
     local botData = BotGlobalState.GetBotData(npcBot)
 
